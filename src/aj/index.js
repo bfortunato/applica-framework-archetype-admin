@@ -160,7 +160,7 @@ export function registerPlugin(pluginName, pluginClass) {
  * @returns {Promise} - A promise of plugin call result
  */
 export function exec(plugin, method, data) {
-    logger.i("Executing plugin", plugin + "." + fn)
+    logger.i("Executing plugin", plugin + "." + method)
 
     //executes a class method with data, simply
     var Plugin = __plugins[plugin];
