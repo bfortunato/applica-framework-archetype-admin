@@ -149,7 +149,6 @@ export const MultiValueSettingsStore = aj.createStore(MULTIVALUE_SETTINGS, (stat
     switch (action.type) {
 
 case actions.SET_MULTIVALUE_SETTINGS:
-    debugger
     return discriminate(state, action.discriminator, {items: action.items})
 case actions.UPDATE_MULTIVALUE_SETTINGS:
     list = updatedList(

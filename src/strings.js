@@ -250,7 +250,26 @@ strings["en"] = {
     city: "City",
     coverOptionColorConfiguration: "Cover option color configuration",
     addComplementaryArticleForColor: "Add complementary article for {0}",
-    addAnalogousArticleForColor: "Add analogous article for {0}"
+    addAnalogousArticleForColor: "Add analogous article for {0}",
+    admins: "Administrators",
+    endUser: "End user",
+    fabricators: "Fabricators",
+    adminUserCategories: "Admin user categories",
+    endUserCategories: "End user categories",
+    fabricatorCategories: "Fabricator categories",
+    ecoBonus: "EcoBonus",
+    systemSettings: "System settings",
+    referenceToUserCategory: "Reference to user category",
+    accountInformations: "Account informations",
+    endUserList: "End user list",
+    fabricatorList: "Fabricator list",
+    editEndUser: "Edit end user",
+    editFabricator: "Edit fabricator",
+    businessName: "Business name",
+    province: "Province",
+    phoneNumber: "Phone number",
+    referent: "Referent",
+    lastname: "Last name"
 }
 
 strings["it"] = {
@@ -383,6 +402,28 @@ strings["it"] = {
     city: "Città",
     defaultTime: "Tempo predefinito",
     customer: "Cliente",
+    admins: "Amministratori",
+    endUser: "Utente finale",
+    fabricators: "Serramentisti",
+    adminUserCategories: "Categorie utenti admin",
+    endUserCategories: "Categorie utenti finali",
+    fabricatorCategories: "Categorie serramentisti",
+    editAdminUsersCategory: "Modifica categoria utenti admin",
+    editEndUsersCategory: "Modifica categoria utenti finali",
+    editFabricatorsCategory: "Modifica categoria serramentisti",
+    ecoBonus: "EcoBonus",
+    systemSettings: "Impostazioni di sistema",
+    referenceToUserCategory: "Riferimento a categoria utente",
+    accountInformations: "Informazioni account",
+    endUserList: "Lista utente finale",
+    fabricatorList: "Lista serramentisti",
+    editEndUser: "Modifica utente finale",
+    editFabricator: "Modifica serramentista",
+    businessName: "Ragione sociale",
+    province: "Provincia",
+    phoneNumber: "Numero di telefono",
+    referent: "Referente",
+    lastname: "Cognome"
 }
 
 export function setLanguage(language_) {
