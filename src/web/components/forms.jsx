@@ -1,16 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import M from "../../strings"
-import {Actions, Card} from "./common"
-import {format, optional, diff} from "../../utils/lang"
+import {Actions, Card, HeaderBlock} from "./common"
+import {diff, format, optional, parseBoolean} from "../../utils/lang"
 import {Observable} from "../../aj/events"
 import {ActionsCell, Grid, resultToGridData} from "./grids"
 import * as query from "../../framework/query"
 import {isCancel} from "../utils/keyboard"
 import * as inputfile from "../utils/inputfile"
 import * as datasource from "../../utils/datasource"
-import {parseBoolean} from "../../utils/lang"
 import _ from "underscore"
+import * as session from "../../api/session";
+import {getSessionToken} from "../../api/session";
+import {toast} from "../../plugins";
+import {downloadFileFromUrl} from "../../utils/customUtils";
+import * as config from "../../framework/config";
 
 export const VALIDATION_ERROR = {}
 
@@ -262,11 +266,13 @@ export class Model extends Observable {
 
 export class Label extends React.Component {
     render() {
-        let field = this.props.field
-        let className = optional(this.props.className, "")
+        let field = this.props.field;
+        let model = this.props.model;
+        let className = optional(this.props.className, "");
+        let text = _.isFunction(field.getLabel) ? field.getLabel(model) : field.label;
 
         return (
-            !_.isEmpty(field.label) && <label style={{width: "100%"}} htmlFor={field.property} className={className}>{field.label}</label>
+            !_.isEmpty(text) && <label style={{width: "100%"}} htmlFor={field.property} className={className}>{text}</label>
         )
     }
 }
@@ -296,12 +302,13 @@ export class Area extends React.Component {
         let defaultFieldCass = inline ? InlineField : Field
         let tabs = !_.isEmpty(area.tabs) && <Tabs tabs={area.tabs} model={this.props.model} descriptor={descriptor} />
         let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {key: f.property, model: this.props.model, field: f, descriptor: descriptor}))
+        let title = _.isFunction(area.getTitle) ? area.getTitle(this.props.model) : area.title;
 
         return (
-            <Card title={area.title} subtitle={area.subtitle} actions={area.actions}>
+            <Card title={title} subtitle={area.subtitle} actions={area.actions} >
                 {tabs}
-                <div className="row">
-                    <div className="col-md-12">
+                <div className="col-md-12">
+                    <div className="row">
                         {fields}
                     </div>
                 </div>
@@ -478,13 +485,23 @@ export class FormBody extends React.Component {
         return true
     }
 
+    isAreaVisible(area) {
+        let model = this.props.model
+
+        if (_.isFunction(area.visibility)) {
+            return area.visibility(model)
+        }
+
+        return true
+    }
+
     render() {
         let descriptor = this.props.descriptor
         generateKeys(descriptor)
         let model = this.props.model
         let inline = optional(descriptor.inline, false)
         let defaultFieldCass = inline ? InlineField : Field
-        let areas = !_.isEmpty(descriptor.areas) && descriptor.areas.map(a => React.createElement(optional(() => a.component, () => Area), {key: a.key, model: model, area: a, descriptor}))
+        let areas = !_.isEmpty(descriptor.areas) && _.filter(descriptor.areas, a => this.isAreaVisible(a)).map(a => React.createElement(optional(() => a.component, () => Area), {key: a.key, model: model, area: a, descriptor}))
         let tabs = !_.isEmpty(descriptor.tabs) && <Tabs tabs={descriptor.tabs} model={model} descriptor={descriptor} />
         let fields = !_.isEmpty(descriptor.fields) && _.filter(descriptor.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {key: f.property, model: model, field: f, descriptor: descriptor, params : this.props.params, onCancel: this.props.onCancel}))
         let showInCard = optional(descriptor.showInCard, true)
@@ -498,14 +515,20 @@ export class FormBody extends React.Component {
                         <Card padding="false">
                             {tabs}
                             <div className="p-l-30 p-r-30">
-                                {fields}
-                            </div>                            
+                                <div className="row">
+                                    {fields}
+                                </div>
+                            </div>
                             <div className="clearfix"></div>
                         </Card> 
                         :
                         <div className="form-body-content">
-                            {tabs}
-                            {fields}
+                            <div className="col-xs-12">
+                                <div className="row">
+                                    {tabs}
+                                    {fields}
+                                </div>
+                            </div>
                             <div className="clearfix"></div>
                         </div>
                     )
@@ -722,7 +745,7 @@ export class Field extends React.Component {
             field: this.props.field,
             model: this.props.model
         }, this.props.field.props));
-        let hasLabel = this.props.field.label != undefined && this.props.field.label != null
+        let hasLabel = (this.props.field.label != undefined && this.props.field.label != null) || _.isFunction(this.props.field.getLabel)
         let validationResult = optional(model.validationResult[this.props.field.property], {valid: true})
         if (!validationResult.valid) {
             className += " has-error"
@@ -733,7 +756,7 @@ export class Field extends React.Component {
         return (
             <div className={className} style={{minHeight: 58}}>
                 {hasLabel &&
-                    <Label field={this.props.field}/>
+                    <Label field={this.props.field} model={model}/>
                 }
                 {control}
                 {!validationResult.valid && !_.isEmpty(validationResult.message) &&
@@ -805,6 +828,7 @@ export class Control extends React.Component {
 export class Text extends Control {
     render() {
         let field = this.props.field
+        let maxLength= optional(this.props.maxLength, "");
 
         return (
             <input
@@ -814,7 +838,8 @@ export class Text extends Control {
                 data-property={field.property}
                 placeholder={field.placeholder}
                 value={optional(this.props.model.get(field.property), "")}
-                onChange={this.onValueChange.bind(this)} />
+                onChange={this.onValueChange.bind(this)}
+                maxLength={maxLength} />
         )
     }
 }
@@ -1254,7 +1279,7 @@ export class Select extends Control {
                 value={optional(model.get(field.property), multiple ? [] : "")}
                 multiple={multiple}>
                 {this.props.allowNull &&
-                    <option key="empty" value="" style={{color: "#999999"}}>{optional(this.props.nullText, "(none)")}</option>
+                    <option key="empty" value="" style={{color: "#999999"}}>{optional(this.props.nullText, M("noSelection"))}</option>
                 }
                 {options}
             </select>
@@ -2095,6 +2120,199 @@ export class SingleFile extends Control {
                     <input type="file" accept={fileTypes} onChange={this.onFileSelected.bind(this)}/>
                 </div>
             </div>
+
+        )
+    }
+}
+
+export const MULTI_FILE_MODE_SINGLE = "multiFileSingle";
+export const MULTI_FILE_MODE_MULTIPLE = "multiFileMultiple";
+
+//Dropzone
+export class NewMultiFile extends Control {
+    constructor(props) {
+        super(props)
+        this.state = {files: []};
+        this.model = this.props.model;
+        this.field = this.props.field;
+        this.dropzone = null;
+        this.addRemoveLinks = this.props.addRemoveLinks;
+        this.maxFilesize = this.props.maxFilesize || null;
+        this.maxFiles = optional(this.props.maxFiles, null);
+        this.mode = this.props.mode || MULTI_FILE_MODE_MULTIPLE;
+        this.acceptedFiles = this.props.acceptedFiles || null;
+        this.disableInitOnModelLoad =this.props.disableInitOnModelLoad || false
+    }
+
+    isMultiple() {
+        return this.mode === MULTI_FILE_MODE_MULTIPLE;
+    }
+
+    componentDidMount() {
+
+        if (!this.disableInitOnModelLoad) {
+            this.model.once("load", () => {
+                this.dropzone = new Dropzone("div#dropzone", this.generateOptions());
+
+                //if multiple is an array else is an object
+                let value = optional(this.model.get(this.field.property), null);
+                let files = [];
+                if (this.isMultiple() && value != null) {
+                    files.push(value)
+                } else {
+                    if (value)
+                        files = value ? value : files;
+                }
+                _.assign(this.state, {files: files});
+
+                if (_.isFunction(this.props.onValueChange)) {
+                    if (this.isMultiple())
+                        this.props.onValueChange(files, this.model);
+                    else
+                        this.props.onValueChange(value, this.model);
+                }
+
+                let filesToAdd = _.isArray(files) ? files : [files]
+
+                var filtered = _.filter(filesToAdd, f => f != null)
+                if (filtered) {
+                    _.forEach(filtered, f => {
+                        this.dropzone.options.addedfile.call(this.dropzone, f)
+                        this.dropzone.emit("success", f);
+                        this.dropzone.emit("complete", f);
+                        this.dropzone.options.maxFiles--;
+                    })
+                }
+
+                // files.forEach((f) =>    this.dropzone.options.addedfile.call(this.dropzone, f))
+                this.forceUpdate()
+
+            })
+        } else {
+            this.dropzone = new Dropzone("div#dropzone", this.generateOptions());
+        }
+
+
+    }
+
+
+    generateOptions() {
+        let options = {};
+        options.url = config.get("upload.url");
+
+        options.headers = {
+            'token': getSessionToken()
+        }
+
+        options.timeout = 180000
+
+        if (this.acceptedFiles) {
+            options.acceptedFiles = this.acceptedFiles;
+        }
+        if (this.maxFiles) {
+            options.maxFiles = this.maxFiles;
+        }
+        if (this.maxFilesize) {
+            options.maxFilesize = this.maxFilesize;
+        }
+
+        if (this.addRemoveLinks && _.isFunction(this.addRemoveLinks)) {
+            options.addRemoveLinks = this.addRemoveLinks(this.model);
+        }
+
+        options.success = this.onAdd.bind(this)
+        options.error = this.onError.bind(this);
+        return options;
+    }
+
+    onError(file, errorMessage) {
+        this.dropzone.removeFile(file)
+        toast(errorMessage)
+
+    }
+
+    generateToken() {
+        return session.getSessionToken()
+    }
+
+    onAdd(file, uploadedFile) {
+        if ((uploadedFile == null || !uploadedFile.value) && !file.path) {
+            toast("Errore durante l'upload del file")
+
+        } else {
+            let files = optional(this.state.files, []);
+
+            let newFile = uploadedFile != null ? uploadedFile.value : file
+            newFile.size = file.size
+
+            if (!this.disableInitOnModelLoad) {
+                $(file.previewElement).click(() => {
+                    downloadFileFromUrl(config.get("attachment.download") + "?filename=" + newFile.name + "&path=" + encodeURI(newFile.path))
+                })
+
+                if (!_.any(files, i => i != null && i.data === newFile.data)) {
+                    files.push(newFile);
+                    _.assign(this.state, {files: files})
+
+                    this.model.set(this.field.property, (this.isMultiple()) ? files : newFile)
+                    if (_.isFunction(this.props.onValueChange)) {
+                        this.props.onValueChange(newFile, this.model);
+                    }
+
+                    this.forceUpdate()
+                    return true;
+                }
+            } else {
+                if (_.isFunction(this.props.onValueChange)) {
+                    this.props.onValueChange(newFile);
+                }
+                this.dropzone.removeAllFiles(true);
+            }
+            return false;
+        }
+
+    }
+
+    onDelete(toRemove) {
+        if (!this.disableInitOnModelLoad) {
+            let files = optional(this.state.files, []);
+            files = _.filter(files, i => i.data  !== toRemove.data)
+            _.assign(this.state, {files: files})
+            this.model.set(this.field.property, this.isMultiple() ? files : null);
+            this.forceUpdate()
+
+            if (_.isFunction(this.props.onValueChange)) {
+                this.props.onValueChange(null, this.model);
+            }
+        }
+
+
+    }
+
+    render() {
+        let files = optional(this.state.files, []);
+        let fields = [];
+        let actions = [];
+        let title = this.props.field != null ? optional(this.props.field.title, M("attachments")) : ""
+
+        if (files.length > 0) {
+            //_.forEach(files, (e) => {fields.push(this.createSingleFileComponent(e))})
+        }
+
+        if (this.filesNumber===null ||(this.filesNumber!==null && files.length  < this.filesNumber)) {
+            // fields.push(this.createSingleFileComponent())
+        }
+
+        let label = this.props.field != null ? this.props.field.label : ""
+
+        return (
+            <div>
+                <HeaderBlock title={title} label={label} actions={actions}/>
+                <div id="dropzone" className="dropzone" >
+                </div>
+
+            </div>
+
 
         )
     }

@@ -7,7 +7,6 @@ import {ActionsMatcher, FloatingButton, HeaderBlock} from "../../components/comm
 import {Grid, resultToGridData} from "../../components/grids";
 import * as query from "../../../framework/query";
 import {format, optional} from "../../../utils/lang";
-import {isCancel} from "../../utils/keyboard";
 import entities from "../../entities";
 import * as ui from "../../utils/ui";
 import {Permission} from "../../../api/session";
@@ -133,32 +132,38 @@ export default class AbstractEntitiesGrid extends Screen {
                 tooltip: M("refresh"),
                 permissions: [this.getEntity() + ":" + Permission.LIST],
                 action: () => { loadEntities({discriminator: this.discriminator, entity: this.getEntity(), query: this.state.query}) }
-            },
-            {
+            }
+        ];
+
+        if (this.canCreate()){
+            defaultActions.push({
                 id: "create",
                 type: "button",
                 icon: "zmdi zmdi-plus",
                 tooltip: M("create"),
                 permissions: [this.getEntity() + ":" + Permission.NEW],
                 action: () => { this.createEntity() }
-            },
-            {
+            })
+        }
+
+        if (this.canDelete()){
+            defaultActions.push({
                 id: "delete",
                 type: "button",
                 icon: "zmdi zmdi-delete",
                 tooltip: M("delete"),
                 permissions: [this.getEntity() + ":" + Permission.DELETE],
                 action: () => { this.deleteEntities() }
-            },
-            {
-                id: "selectAll",
-                type: "button",
-                icon: "zmdi zmdi-select-all",
-                tooltip: M("selectAll"),
-                action: () => { this.refs.grid.toggleSelectAll() }
-            }
+            })
+        }
 
-        ]
+        defaultActions.push({
+            id: "selectAll",
+            type: "button",
+            icon: "zmdi zmdi-select-all",
+            tooltip: M("selectAll"),
+            action: () => { this.refs.grid.toggleSelectAll() }
+        });
 
         let grid = entities[this.getEntity()].grid
         let matcher = new ActionsMatcher(defaultActions)

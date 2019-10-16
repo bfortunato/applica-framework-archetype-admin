@@ -1,26 +1,40 @@
 import _ from "underscore";
 import {CheckCell, TextCell} from "./components/grids";
 import {check, sanitize} from "../libs/validator";
-import {DateTime, Image, Mail, PasswordText, ReadOnlyText, Text, TextArea, YesNo} from "./components/forms";
+import {
+    DateTime,
+    Image,
+    Mail,
+    MULTI_FILE_MODE_SINGLE,
+    NewMultiFile,
+    Number,
+    PasswordText,
+    ReadOnlyText,
+    Select,
+    Text,
+    TextArea,
+    YesNo
+} from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
 import M from "../strings";
+import {CustomerType, getCustomerTypeDescription} from "../model/vars";
+import * as datasource from "../utils/datasource";
 
 
 const entities = {
 	user: {
 		grid: {
-			title: M("usersList"),
-			subtitle: M("usersListDescription"),
+			title: M("adminUsersList"),
 			descriptor: {
 	            columns: _.union([
-	                {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+	                {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
 	                {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: false},
 	            ], getPersonGridColumns())
 	        }
 		},
 		form: {
-			title: M("editUser"),
-			subtitle: M("editUserDescription"),
+			title: M("editAdmin"),
 			getActions(data) {
 				let actions = ["back", "save", "save-go-back", "revisions"];
 				// if (hasPermission("canResetPassword")) {
@@ -73,24 +87,21 @@ const entities = {
 	                            property: "name",
 	                            control: Text,
 	                            label: M("name"),
-	                            placeholder: M("name")
+	                            placeholder: M("name"),
+                                size: "col-sm-4",
 	                        },
                             {
                                 property: "lastname",
                                 control: Text,
                                 label: M("lastname"),
                                 placeholder: M("lastname"),
-                            },
-                            {
-                                property: "phoneNumber",
-                                control: Text,
-                                label: M("phoneNumber"),
-                                placeholder: M("phoneNumber"),
+                                size: "col-sm-4",
                             },
                             {
                                 property: "_category",
                                 label: M("referenceToUserCategory"),
                                 control: EntitiesLookupContainer,
+                                size: "col-sm-4",
                                 props: {
                                     id: "user_category",
                                     mode: "single",
@@ -108,6 +119,13 @@ const entities = {
                                         ]
                                     }
                                 }
+                            },
+                            {
+                                property: "phoneNumber",
+                                control: Text,
+                                label: M("phoneNumber"),
+                                placeholder: M("phoneNumber"),
+                                size: "col-sm-4",
                             },
 	                    ]
 	                }
@@ -131,6 +149,11 @@ const entities = {
 			title: "Edit role",
 			subtitle: null,
 			descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    if (model.get("id") == null){
+                        model.set("active", true)
+                    }
+                },
 				fields: [
 					{
                         property: "role",
@@ -169,13 +192,95 @@ const entities = {
 		}
 	},
 
+    adminUser: {
+        grid: {
+            canDelete: ()=> {
+                return false;
+            },
+            title: M("adminUsersList"),
+            descriptor: {
+                columns: _.union([
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true}
+                ], getPersonGridColumns())
+            }
+        },
+        form: {
+            title: M("editAdmin"),
+            getActions(data) {
+                return ["back", "save", "save-go-back", "revisions"];
+            },
+            descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    if (model.get("id") == null){
+                        model.set("active", true)
+                    }
+                },
+                areas: _.union([
+                    {
+                        title: M("generalInformations"),
+                        subtitle: null,
+                        fields: [
+                            {
+                                property: "name",
+                                control: Text,
+                                label: M("name"),
+                                placeholder: M("name"),
+                            },
+                            {
+                                property: "lastname",
+                                control: Text,
+                                label: M("lastname"),
+                                placeholder: M("lastname"),
+                            },
+                            {
+                                property: "_category",
+                                label: M("referenceToUserCategory"),
+                                control: EntitiesLookupContainer,
+                                props: {
+                                    id: "user_category",
+                                    mode: "single",
+                                    entity: "adminUserCategory",
+                                    selectionGrid: {
+                                        columns: [
+                                            {property: "code", header: M("code"), cell: TextCell},
+                                            {property: "description", header: M("description"), cell: TextCell}
+                                        ]
+                                    },
+                                    popupGrid: {
+                                        columns: [
+                                            {property: "code", header: M("code"), cell: TextCell},
+                                            {property: "description", header: M("description"), cell: TextCell}
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                property: "phoneNumber",
+                                control: Text,
+                                label: M("phoneNumber"),
+                                placeholder: M("phoneNumber"),
+                            },
+                        ]
+                    }
+                ], getPersonFormAreas())
+            }
+        }
+    },
+
     endUser: {
         grid: {
+            canDelete: ()=> {
+                return false;
+            },
             title: M("endUsersList"),
             descriptor: {
                 columns: _.union([
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
                     {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
-                    {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true}
+                    {property: "sex", header: M("sex"), cell: TextCell, sortable: true, searchable: true}
                 ], getPersonGridColumns())
             }
         },
@@ -185,13 +290,18 @@ const entities = {
                 return ["back", "save", "save-go-back", "revisions"];
             },
             descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    if (model.get("id") == null){
+                        model.set("active", true)
+                    }
+                },
                 areas: _.union([
                     {
                         title: M("generalInformations"),
                         subtitle: null,
                         fields: [
                             {
-                                property: "avatar",
+                                property: "_avatar",
                                 control: Image,
                                 label: M("image")
                             },
@@ -244,10 +354,38 @@ const entities = {
 
     fabricator: {
         grid: {
+            canDelete: ()=> {
+                return false;
+            },
             title: M("fabricatorList"),
             descriptor: {
                 columns: _.union([
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
                     {property: "businessName", header: M("businessName"), cell: TextCell, sortable: true, searchable: true},
+                    {
+                        property: "address",
+                        header: M("province"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.province : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "address",
+                        header: M("municipality"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.municipality : "";
+                            }
+                        }
+                    },
                 ], getPersonGridColumns())
             }
         },
@@ -257,6 +395,11 @@ const entities = {
                 return ["back", "save", "save-go-back", "revisions"];
             },
             descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    if (model.get("id") == null){
+                        model.set("active", true)
+                    }
+                },
                 areas: _.union([
                     {
                         title: M("generalInformations"),
@@ -267,41 +410,13 @@ const entities = {
                                 control: Text,
                                 label: M("businessName"),
                                 placeholder: M("businessName"),
-                            },
-                            {
-                                property: "province",
-                                control: Text,
-                                label: M("province"),
-                                placeholder: M("province"),
-                            },
-                            {
-                                property: "city",
-                                control: Text,
-                                label: M("city"),
-                                placeholder: M("city"),
-                            },
-                            {
-                                property: "address",
-                                control: Text,
-                                label: M("address"),
-                                placeholder: M("address"),
-                            },
-                            {
-                                property: "phoneNumber",
-                                control: Text,
-                                label: M("phoneNumber"),
-                                placeholder: M("phoneNumber"),
-                            },
-                            {
-                                property: "referent",
-                                control: Text,
-                                label: M("referent"),
-                                placeholder: M("referent"),
+                                size: "col-sm-4",
                             },
                             {
                                 property: "_category",
                                 label: M("referenceToUserCategory"),
                                 control: EntitiesLookupContainer,
+                                size: "col-sm-4",
                                 props: {
                                     id: "user_category",
                                     mode: "single",
@@ -320,9 +435,647 @@ const entities = {
                                     }
                                 }
                             },
+
+                            {
+                                property: "referent",
+                                control: Text,
+                                label: M("referent"),
+                                placeholder: M("referent"),
+                                size: "col-sm-4",
+                            },
+                            // {
+                            //     property: "_city",
+                            //     label: M("city"),
+                            //     size: "col-sm-4",
+                            //     control: ValuesLookupContainer,
+                            //     formatter: v => {
+                            //         return v !== null ? v.description + ", " + (v.province !== null ? v.province.description : "") + ", " + v.cap : ""
+                            //     },
+                            //     props: {
+                            //         id: "city_province",
+                            //         mode: "single",
+                            //         getCollection: (data) => {
+                            //             return "cities"
+                            //         },
+                            //         selectionGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         },
+                            //         popupGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         }
+                            //     }
+                            // },
+                            {
+                                property: "_country",
+                                control: Text,
+                                label: M("country"),
+                                placeholder: M("country"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_region",
+                                control: Text,
+                                label: M("region"),
+                                placeholder: M("region"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_province",
+                                control: Text,
+                                label: M("province"),
+                                placeholder: M("province"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_postalCode",
+                                control: Text,
+                                label: M("postalCode"),
+                                placeholder: M("postalCode"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_municipality",
+                                control: Text,
+                                label: M("municipality"),
+                                placeholder: M("municipality"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_address",
+                                control: Text,
+                                label: M("address"),
+                                placeholder: M("address"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_streetNumber",
+                                control: Text,
+                                label: M("streetNumber"),
+                                placeholder: M("streetNumber"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "phoneNumber",
+                                control: Text,
+                                label: M("phoneNumber"),
+                                placeholder: M("phoneNumber"),
+                                size: "col-sm-3",
+                            },
                         ]
                     }
                 ], getPersonFormAreas())
+            }
+        }
+    },
+
+    customer: {
+        grid: {
+            title: M("customerList"),
+            descriptor: {
+                columns: [
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "subjectType",
+                        header: M("type"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "subjectType",
+                                    label: M("type"),
+                                    control: Select,
+                                    filterType: "eq",
+                                    props: {
+                                        datasource: datasource.fixed([
+                                            {label: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value},
+                                            {label: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.value},
+                                        ]),
+                                    },
+                                }
+                            ]
+                        },
+                        props: {
+                            formatter: v => {
+                                return v != null ? getCustomerTypeDescription(v) : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "name",
+                        header: M("name"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "name",
+                                    label: M("name"),
+                                    control: Text,
+                                    filterType: "like"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "active",
+                        header: M("active"),
+                        cell: CheckCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "active",
+                                    label: M("status"),
+                                    control: Select,
+                                    filterType: "eq",
+                                    props: {
+                                        datasource: datasource.fixed([
+                                            {label: "Attivo", value: true},
+                                            {label: "Non attivo", value: false},
+                                        ]),
+                                    },
+                                }
+                            ]
+                        },
+                    },
+                ]
+            }
+        },
+        form: {
+            title: M("editCustomer"),
+            getActions(data) {
+                return ["back", "save", "save-go-back", "revisions"];
+            },
+            descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    model.on("property:change", (property, value) => {
+                        if (property === "subjectType") {
+                            model.set("_address", null);
+                            model.set("_city", null);
+                            model.set("_streetNumber", null);
+                            model.invalidateForm()
+                        }
+                    })
+                    if (model.get("id") == null){
+                        model.set("active", true);
+                        model.set("subjectType", CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value);
+                    }
+                },
+                visibility: (field, model, descriptor) => {
+                    switch (field.property) {
+                        case "firstName":
+                        case "lastName":
+                        case "sex":
+                        case "_birthCountry":
+                        case "_birthRegion":
+                        case "_birthProvince":
+                        case "_birthPostalCode":
+                        case "_birthMunicipality":
+                            return (model != null && model.get("subjectType") === CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value);
+                        case "vatCode":
+                        case "vatCodeDisabled":
+                        case "socialReason":
+                            return (model != null && model.get("subjectType") === CustomerType.SUBJECT_TYPE_LEGAL_PERSON.value);
+                        default:
+                            return true;
+                    }
+                },
+                areas: [
+                    {
+                        title: M("generalInformations"),
+                        subtitle: null,
+                        fields: [
+                            {
+                                property: "code",
+                                control: ReadOnlyText,
+                                label: M("code"),
+                                placeholder: M("code"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "subjectType",
+                                control: Select,
+                                size: "col-sm-4",
+                                label: M("type"),
+                                placeholder: M("type"),
+                                props: {
+                                    id: "customer",
+                                    allowNull: false,
+                                    multiple: false,
+                                    datasource: datasource.fixed(
+                                        [
+                                            {label: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value},
+                                            {label: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.value},
+
+                                        ]
+                                    ),
+                                }
+                            },
+                            {
+                                property: "active",
+                                control: YesNo,
+                                label: M("active"),
+                                size: "col-sm-4",
+                                sanitizer: (value) => sanitize(value).toBoolean()
+                            },
+                        ]
+                    },
+                    {
+                        title: M("customerInformations"),
+                        subtitle: null,
+                        fields: [
+                            {
+                                property: "firstName",
+                                control: Text,
+                                label: M("name"),
+                                placeholder: M("name"),
+                                size: "col-sm-6",
+                            },
+                            {
+                                property: "lastName",
+                                control: Text,
+                                label: M("lastname"),
+                                placeholder: M("lastname"),
+                                size: "col-sm-6",
+                            },
+                            {
+                                property: "sex",
+                                control: Select,
+                                size: "col-sm-4",
+                                label: M("sex"),
+                                placeholder: M("sex"),
+                                props: {
+                                    id: "sex",
+                                    allowNull: true,
+                                    multiple: false,
+                                    datasource: datasource.fixed(
+                                        [
+                                            {label: "M", value: "M"},
+                                            {label: "F", value: "F"},
+                                        ]
+                                    ),
+                                }
+                            },
+                            {
+                                property: "socialReason",
+                                control: Text,
+                                label: M("businessName"),
+                                placeholder: M("businessName"),
+                                size: "col-sm-12",
+                            },
+                            {
+                                property: "vatCodeDisabled",
+                                control: YesNo,
+                                label: M("vatCodeDisabled"),
+                                size: "col-sm-4",
+                                sanitizer: (value) => sanitize(value).toBoolean()
+                            },
+                            {
+                                property: "vatCode",
+                                control: Text,
+                                label: M("vatCode"),
+                                placeholder: M("vatCode"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "fiscalCode",
+                                control: Text,
+                                label: M("fiscalCode"),
+                                placeholder: M("fiscalCode"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "phoneNumber",
+                                control: Text,
+                                label: M("phoneNumber"),
+                                placeholder: M("phoneNumber"),
+                                size: "col-sm-3",
+                            },
+                        ]
+                    },
+                    {
+                        title: M("placeOfBirth"),
+                        subtitle: null,
+                        visibility: model => {
+                            return model != null && model.get("subjectType") === CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value
+                        },
+                        fields: [
+                            // {
+                            //     property: "_birthCity",
+                            //     label: M("placeOfBirth"),
+                            //     size: "col-sm-4",
+                            //     control: ValuesLookupContainer,
+                            //     formatter: v => {
+                            //         return v !== null ? v.description + ", " + (v.province !== null ? v.province.description : "") + ", " + v.cap : ""
+                            //     },
+                            //     props: {
+                            //         id: "birth_city_province",
+                            //         mode: "single",
+                            //         getCollection: (data) => {
+                            //             return "cities"
+                            //         },
+                            //         selectionGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         },
+                            //         popupGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         }
+                            //     }
+                            // },
+                            {
+                                property: "_birthCountry",
+                                control: Text,
+                                label: M("country"),
+                                placeholder: M("country"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_birthRegion",
+                                control: Text,
+                                label: M("region"),
+                                placeholder: M("region"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_birthProvince",
+                                control: Text,
+                                label: M("province"),
+                                placeholder: M("province"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_birthPostalCode",
+                                control: Text,
+                                label: M("postalCode"),
+                                placeholder: M("postalCode"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_birthMunicipality",
+                                control: Text,
+                                label: M("municipality"),
+                                placeholder: M("municipality"),
+                                size: "col-sm-4",
+                            },
+                        ]
+                    },
+                    {
+                        getTitle: model =>{
+                            return model.get("subjectType") === CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value ? M("residence") : M("registeredOffice")
+                        },
+                        subtitle: null,
+                        fields: [
+                            // {
+                            //     property: "_city",
+                            //     getLabel: model => {
+                            //         return model.get("subjectType") === CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value ? M("residence") : M("registeredOffice")
+                            //     },
+                            //     size: "col-sm-4",
+                            //     control: ValuesLookupContainer,
+                            //     formatter: v => {
+                            //         return v !== null ? v.description + ", " + (v.province !== null ? v.province.description : "") + ", " + v.cap : ""
+                            //     },
+                            //     props: {
+                            //         id: "address_city_province",
+                            //         mode: "single",
+                            //         getCollection: (data) => {
+                            //             return "cities"
+                            //         },
+                            //         selectionGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         },
+                            //         popupGrid: {
+                            //             columns: [
+                            //                 {property: "description", header: M("name"), cell: TextCell},
+                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                            //                 {
+                            //                     property: "province",
+                            //                     header: M("province"),
+                            //                     cell: TextCell,
+                            //                     props: {
+                            //                         formatter: (value) => {
+                            //                             return value ? value.description : ""
+                            //                         }
+                            //                     }
+                            //                 },
+                            //             ]
+                            //         }
+                            //     }
+                            // },
+                            {
+                                property: "_country",
+                                control: Text,
+                                label: M("country"),
+                                placeholder: M("country"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_region",
+                                control: Text,
+                                label: M("region"),
+                                placeholder: M("region"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_province",
+                                control: Text,
+                                label: M("province"),
+                                placeholder: M("province"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_postalCode",
+                                control: Text,
+                                label: M("postalCode"),
+                                placeholder: M("postalCode"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_municipality",
+                                control: Text,
+                                label: M("municipality"),
+                                placeholder: M("municipality"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_address",
+                                control: Text,
+                                label: M("address"),
+                                placeholder: M("address"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_streetNumber",
+                                control: Text,
+                                label: M("streetNumber"),
+                                placeholder: M("streetNumber"),
+                                size: "col-sm-4",
+                            },
+                        ]
+                    },
+                ]
+            }
+        }
+    },
+
+    documentType: {
+        grid: {
+            title: M("documentTypeList"),
+            descriptor: {
+                columns: [
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "description", header: M("description"), cell: TextCell, sortable: true, searchable: true}
+                ]
+            }
+        },
+        form: {
+            title: M("editDocumentType"),
+            subtitle: null,
+            descriptor: {
+                onModelLoadFirstTime: (model) =>{
+                    if (model.get("id") == null){
+                        model.set("active", true)
+                    }
+                },
+                fields: [
+                    {
+                        property: "code",
+                        control: ReadOnlyText,
+                        label: M("code"),
+                        placeholder: M("code"),
+                        size: "col-sm-2"
+                    },
+                    {
+                        property: "description",
+                        control: Text,
+                        label: M("description"),
+                        placeholder: M("description"),
+                        size: "col-sm-5"
+                    },
+                    {
+                        property: "information",
+                        control: Text,
+                        label: M("information"),
+                        placeholder: M("information"),
+                        size: "col-sm-5"
+                    },
+                    {
+                        property: "active",
+                        control: YesNo,
+                        label: M("active"),
+                        size: "col-sm-6",
+                        sanitizer: (value) => sanitize(value).toBoolean()
+                    },
+                    {
+                        property: "required",
+                        control: YesNo,
+                        label: M("required"),
+                        size: "col-sm-6",
+                        sanitizer: (value) => sanitize(value).toBoolean()
+                    },
+                    {
+                        property: "_template",
+                        size: "col-sm-12",
+                        control: NewMultiFile,
+                        label: M("template"),
+                        title: "",
+                        props: {
+                            maxFiles: 1,
+                            acceptedFiles: ".docx",
+                            mode: MULTI_FILE_MODE_SINGLE
+                        }
+                    }
+                ]
             }
         }
     },
@@ -402,7 +1155,18 @@ const entities = {
 
 function getPersonGridColumns(){
 	return [
-        {property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
+        {
+            property: "_category",
+            header: M("category"),
+            cell: TextCell,
+            sortable: true,
+            searchable: true,
+            props: {
+                formatter: v => {
+                    return v != null ? v.description : "";
+                }
+            }
+        },
         {property: "active", header: M("active"), cell: CheckCell, sortable: true, searchable: true}
     ]
 }
@@ -418,18 +1182,21 @@ function getPersonFormAreas(){
                     control: Mail,
                     label: M("mail"),
                     placeholder: M("mailAddress"),
+                    size: "col-sm-4"
                 },
                 {
                     property: "password",
                     control: PasswordText,
                     label: M("password"),
                     placeholder: M("password"),
+                    size: "col-sm-4",
                     sanitizer: value => sanitize(value).trim()
                 },
                 {
                     property: "active",
                     control: YesNo,
                     label: M("active"),
+                    size: "col-sm-4",
                     sanitizer: (value) => sanitize(value).toBoolean()
                 },
                 {
@@ -437,6 +1204,10 @@ function getPersonFormAreas(){
                     control: TextArea,
                     label: M("notes"),
                     placeholder: M("notes"),
+                    size: "col-sm-12",
+                    props: {
+                        maxLength: 1000
+                    }
                 },
             ]
         }
@@ -446,12 +1217,15 @@ function getPersonFormAreas(){
 function getUsersCategories(gridTitle, formTitle) {
 	return {
         grid: {
+            canDelete: () => {
+                return false;
+            },
             title: gridTitle,
             descriptor: {
                 columns: [
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
-                    {property: "description", header: M("description"), cell: TextCell, sortable: true, searchable: true},
-                    {property: "active", header: M("active"), cell: CheckCell, sortable: true, searchable: true}
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: false},
+                    {property: "description", header: M("description"), cell: TextCell, sortable: true, searchable: false},
+                    {property: "active", header: M("active"), cell: CheckCell, sortable: true, searchable: false}
                 ]
             }
         },
@@ -473,18 +1247,24 @@ function getUsersCategories(gridTitle, formTitle) {
                                 control: ReadOnlyText,
                                 label: M("code"),
                                 placeholder: M("code"),
+                                size: "col-sm-6"
+                            },
+                            {
+                                property: "active",
+                                control: YesNo,
+                                label: M("active"),
+                                size: "col-sm-6",
+                                sanitizer: (value) => sanitize(value).toBoolean()
                             },
                             {
                                 property: "description",
                                 control: Text,
                                 label: M("description"),
                                 placeholder: M("description"),
-                            },
-                            {
-                                property: "active",
-                                control: YesNo,
-                                label: M("active"),
-                                sanitizer: (value) => sanitize(value).toBoolean()
+                                size: "col-sm-12",
+                                props: {
+                                    maxLength: 200
+                                }
                             },
                         ]
                     }

@@ -60,7 +60,7 @@ export default [
             {
                 icon: "zmdi zmdi-accounts-alt",
                 text: M("admins"),
-                href: "/#/entities/user?grid=users",
+                href: "/#/entities/adminUser?grid=adminUsers",
                 permissions: ["user:list"]
             },
             {
@@ -88,5 +88,11 @@ export default [
         text: M("ecoBonus"),
         href: "/#/entities/ecoBonus?grid=ecoBonuses",
         permissions: ["ecoBonus:list"]
+    },
+    {
+        icon: "zmdi zmdi-accounts-alt",
+        text: M("documentType"),
+        href: "/#/entities/documentType?grid=documentTypes",
+        permissions: ["documentType:list"]
     },
 ]

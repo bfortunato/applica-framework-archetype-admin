@@ -145,7 +145,7 @@ export class HeaderBlock extends React.Component {
 export class Card extends React.Component {
     render() {
         let actionKey = 1
-        let cardClass = optional(this.props.className, "card")
+        let cardClass = optional(this.props.className, "card");
         let bodyClass = "card-body"
         if (this.props.padding) {
             bodyClass += " card-padding"

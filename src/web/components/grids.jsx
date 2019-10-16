@@ -287,6 +287,17 @@ export class SearchDialog extends React.Component {
             return filterType
     }
 
+    isFieldOnlyInteger(property) {
+        let isInteger = this.props.column.isInteger;
+        if (!isInteger) {
+            const field = this.model.findField(property)
+            if (field) {
+                return field.isInteger
+            }
+        } else
+            return isInteger
+    }
+
 
     filter() {
         if (this.props.query && this.props.column && this.props.column.property) {
@@ -296,7 +307,8 @@ export class SearchDialog extends React.Component {
             _.each(_.keys(data), k => {
                 if (k !== "_filterType") {
                     const filterType = optional(this.getFieldFilterType(k), manualFilterType)
-                    this.props.query.filter(filterType, k, data[k])
+                    const isInteger = optional(this.isFieldOnlyInteger(k), false);
+                    this.props.query.filter(filterType, k, isInteger ? parseInt(data[k]) : data[k])
                 }
             })
             this.props.query.page = 1
@@ -325,9 +337,7 @@ export class SearchDialog extends React.Component {
                             <h4 className="modal-title">{this.props.column.header}</h4>
                         </div>
                         <div className="modal-body">
-                            <div className="row">
-                                <FormBody model={this.model} descriptor={searchForm} />
-                            </div>
+                            <FormBody model={this.model} descriptor={searchForm} />
                         </div>
                         <div className="modal-footer">
                             <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
