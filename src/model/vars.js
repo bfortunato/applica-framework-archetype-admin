@@ -19,3 +19,22 @@ export function getCustomerTypeDescription(customerType) {
     else
         return ""
 }
+
+export const AssignationType = {
+    ASSIGN_TO_FABRICATOR: {
+        label: M("fabricators"),
+        value: "to-fabricator"
+    },
+    ASSIGN_TO_DOSSIER: {
+        label: M("dossiers"),
+        value: "to-dossier"
+    },
+};
+
+export function getAssignationTypeDescription(assignationType) {
+    let assignationTypes = _.values(AssignationType).filter(f => f.value === assignationType);
+    if (!_.isEmpty(assignationTypes))
+        return assignationTypes[0].label;
+    else
+        return ""
+}

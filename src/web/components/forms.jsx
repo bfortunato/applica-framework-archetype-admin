@@ -322,12 +322,30 @@ export class Area extends React.Component {
 
 export class AreaNoCard extends React.Component {
 
+    isAreaVisible() {
+        let model = this.props.model;
+        if (_.isFunction(this.props.area.visibility)) {
+            return this.props.area.visibility(model)
+        }
+        return true;
+    }
+
+    onClick() {
+        if (this.props.area.fields.length > 0 && _.isFunction(this.props.area.fields[0].onClick)){
+            this.props.area.fields[0].onClick();
+        }
+    }
+
     isFieldVisible(field) {
         let descriptor = this.props.descriptor
         let model = this.props.model
 
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
+        if (descriptor && _.isFunction(descriptor.visibility)) {
+            let visibility = descriptor.visibility(field, model, descriptor)
+            if (!visibility){
+                this.setValueInModel(model, field.property, null)
+            }
+            return visibility
         }
 
         return true
@@ -336,25 +354,56 @@ export class AreaNoCard extends React.Component {
     render() {
         let descriptor = this.props.descriptor
         let area = this.props.area
-        let tabs = !_.isEmpty(area.tabs) && <Tabs tabs={area.tabs} model={this.props.model} />
-        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => Field), {key: f.property, model: this.props.model, field: f,  descriptor: descriptor}))
+        let showTabs = _.isFunction(area.showTabs) ? area.showTabs(this.props.model) : true
+        let tabs = !_.isEmpty(area.tabs) && showTabs && <Tabs lcid={lcid} tabs={area.tabs} model={this.props.model}/>
+        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => Field), {
+            key: f.property != null ? f.property :  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+            model: this.props.model,
+            field: f,
+            descriptor: descriptor,
+            onCancel: this.props.onCancel,
+            onClick: this.onClick.bind(this)
+        }))
         let actionKey = 1
+        let className = "area-no-card col-xs-12";
+        if (area.className) {
+            className += " " + area.className;
+        }
+        let useBootstrapRow = optional(descriptor.useBootstrapRow, true);
+        let style = useBootstrapRow
+            ? {
+                marginRight: "-15px",
+                marginLeft: "-15px",
+            }
+            : {
+                marginRight: "0",
+                marginLeft: "0",
+            };
 
-        return (
-            <div className="area-no-card">
-                <div className="area-no-card-header">
-                    {area.title &&
+        if (this.isAreaVisible()) {
+            return (
+                <div className={className}>
+                    <div className="area-no-card-header">
+                        {area.title &&
                         <h2>{area.title} {area.subtitle && <small>{area.subtitle}</small>}</h2>
-                    }
+                        }
 
-                    <Actions actions={area.actions} />
+                        <Actions actions={area.actions}/>
+                    </div>
+                    <div className="area-no-card-body" style={style}>
+                        <div className="clearfix col-xs-12">
+                            <div className="row">{fields}</div>
+                        </div>
+                        {tabs}
+                    </div>
+                    {area.separator &&
+                    <div className={area.separator}></div>
+                    }
                 </div>
-                <div className="area-no-card-body">
-                    {tabs}
-                    <div className="row">{fields}</div>
-                </div>
-            </div>
-        )
+            )
+        } else {
+            return <div/>
+        };
     }
 }
 
@@ -937,9 +986,39 @@ export class Color extends Control {
 }
 
 export class Spacer extends Control {
+
+    getContent() {
+        if (_.isFunction(this.props.formatter)) {
+            let model = this.props.model;
+            return this.props.formatter(model);
+        }
+        if (this.props.content) {
+            return this.props.content;
+        }
+        return null;
+    }
+
+    onClick(){
+        if (_.isFunction(this.props.onClick))
+            this.props.onClick()
+    }
+
     render() {
+        let defaultTheme = parseBoolean(optional(this.props.defaultTheme, true));
+        let className = (defaultTheme) ? "form-spacer-control" : "";
+        if (this.props.className) {
+            className += " " + this.props.className;
+        }
+        let content = this.getContent();
+        let showBorderBottom = optional(this.props.showBorderBottom, false);
+        //<div className={((defaultTheme) ? "form-spacer-control" : "")}>
         return (
-            <div className="form-spacer-control"></div>
+            <div className={className}>
+                {content &&
+                <div onClick={this.onClick.bind(this)}>{content}</div>}
+                {showBorderBottom &&
+                <hr style={{width: "100%"}}></hr>}
+            </div>
         )
     }
 }
@@ -1542,7 +1621,7 @@ export class Lookup extends Control {
 
         return (
             <div className="fg-line" tabIndex="0">
-                <div className="lookup">
+                <div className="lookup" style={{marginBottom: "0px"}}>
                     <div className="lookup-header" onClick={this.showEntities.bind(this)}>
                         <div className="actions">
                             <a href="javascript:;" className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
@@ -2316,4 +2395,85 @@ export class NewMultiFile extends Control {
 
         )
     }
+}
+
+export class Column extends React.Component {
+
+    constructor(props) {
+        super(props);
+    }
+
+    componentDidMount() {
+        let me = ReactDOM.findDOMNode(this);
+        $(me).parent().css("margin-bottom", "0").css("padding-bottom", "10px").css("padding-top", "20px");
+    }
+
+    isFieldVisible(field) {
+        let descriptor = this.props.descriptor
+        let model = this.props.model
+
+        if (descriptor && _.isFunction(descriptor.visibility)) {
+            let visibility = descriptor.visibility(field, model, descriptor)
+            if (!visibility){
+                this.setValueInModel(model, field.property, null)
+            }
+            return visibility
+        }
+
+        return true
+    }
+
+    setValueInModel(model, property, value) {
+        let i;
+        property = property.split('.');
+        for (i = 0; i < property.length - 1; i++){
+            if (i === 0){
+                model = model.data[property[i]];
+            } else if (model != null) {
+                model = model[property[i]];
+            }
+        }
+        if (model != null)
+            model[property[i]] = value;
+    }
+
+    render() {
+
+
+        let className = optional(this.props.className, "")
+        className += " " + optional(this.props.size, "col-sm-12")
+        // let size = _.isFunction(this.props.field.getSize) ? this.props.field..getSize(this.props.model) : optional(this.props.size, "col-sm-12")
+        let style = {};
+        if (this.props.field.noLateralPadding) {
+            style.paddingLeft = "0";
+            style.paddingRight = "0";
+        }
+
+        let defaultFieldCass = Field;
+        let fields = this.props.field.fields;
+        let descriptor = this.props.descriptor;
+
+        let fieldsComponents = !_.isEmpty(fields) && _.filter(fields, f => this.isFieldVisible(f)).map((f, i) => React.createElement(optional(() => f.component, () => defaultFieldCass), {
+            key: f.property + "-" + i,
+            model: this.props.model,
+            field: f,
+            descriptor: descriptor,
+            onCancel: this.props.onCancel
+        }));
+
+        return (
+
+            <div className={className} style={style}>
+                {!_.isEmpty(this.props.title) &&
+                <h4>{this.props.title}</h4>
+                }
+                <div className="row">
+                    {fieldsComponents}
+                </div>
+            </div>
+
+        );
+
+    }
+
 }

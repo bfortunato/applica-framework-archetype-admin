@@ -2,6 +2,8 @@ import _ from "underscore";
 import {CheckCell, TextCell} from "./components/grids";
 import {check, sanitize} from "../libs/validator";
 import {
+    AreaNoCard,
+    Column,
     DateTime,
     Image,
     Mail,
@@ -11,14 +13,17 @@ import {
     PasswordText,
     ReadOnlyText,
     Select,
+    Spacer,
     Text,
     TextArea,
     YesNo
 } from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
 import M from "../strings";
-import {CustomerType, getCustomerTypeDescription} from "../model/vars";
+import {AssignationType, CustomerType, getAssignationTypeDescription, getCustomerTypeDescription} from "../model/vars";
 import * as datasource from "../utils/datasource";
+import {DocumentContainer} from "./components/documents/documentContainer";
+import moment from "moment";
 
 
 const entities = {
@@ -203,7 +208,7 @@ const entities = {
                     {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
                     {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
                     {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true}
-                ], getPersonGridColumns())
+                ], getPersonGridColumns("adminUserCategory"))
             }
         },
         form: {
@@ -217,54 +222,76 @@ const entities = {
                         model.set("active", true)
                     }
                 },
-                areas: _.union([
+                areas: [
                     {
-                        title: M("generalInformations"),
-                        subtitle: null,
-                        fields: [
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: _.union([
                             {
-                                property: "name",
-                                control: Text,
-                                label: M("name"),
-                                placeholder: M("name"),
-                            },
-                            {
-                                property: "lastname",
-                                control: Text,
-                                label: M("lastname"),
-                                placeholder: M("lastname"),
-                            },
-                            {
-                                property: "_category",
-                                label: M("referenceToUserCategory"),
-                                control: EntitiesLookupContainer,
-                                props: {
-                                    id: "user_category",
-                                    mode: "single",
-                                    entity: "adminUserCategory",
-                                    selectionGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
-                                        ]
-                                    },
-                                    popupGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
+                                property: "c",
+                                control: Column,
+                                size: "col-sm-8",
+                                className: "m-b-30",
+                                noLateralPadding: false,
+                                fields: [
+                                    {
+                                        property: "c_1",
+                                        control: Column,
+                                        size: "col-sm-12",
+                                        className: "card",
+                                        noLateralPadding: false,
+                                        fields: [
+                                            {
+                                                property: "name",
+                                                control: Text,
+                                                label: M("name"),
+                                                placeholder: M("name"),
+                                                size: "col-sm-12"
+                                            },
+                                            {
+                                                property: "lastname",
+                                                control: Text,
+                                                label: M("lastname"),
+                                                placeholder: M("lastname"),
+                                                size: "col-sm-12"
+                                            },
+                                            {
+                                                property: "_category",
+                                                label: M("referenceToUserCategory"),
+                                                control: ValuesLookupContainer,
+                                                size: "col-sm-12",
+                                                props: {
+                                                    id: "user_category",
+                                                    mode: "single",
+                                                    collection: "adminUserCategories",
+                                                    selectionGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    popupGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "phoneNumber",
+                                                control: Text,
+                                                label: M("phoneNumber"),
+                                                placeholder: M("phoneNumber"),
+                                                size: "col-sm-12"
+                                            }
                                         ]
                                     }
-                                }
-                            },
-                            {
-                                property: "phoneNumber",
-                                control: Text,
-                                label: M("phoneNumber"),
-                                placeholder: M("phoneNumber"),
-                            },
-                        ]
+                                ]
+                            }
+                        ], getPersonFormAreas())
                     }
-                ], getPersonFormAreas())
+                ]
             }
         }
     },
@@ -281,7 +308,7 @@ const entities = {
                     {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
                     {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
                     {property: "sex", header: M("sex"), cell: TextCell, sortable: true, searchable: true}
-                ], getPersonGridColumns())
+                ], getPersonGridColumns("endUserCategory"))
             }
         },
         form: {
@@ -295,59 +322,77 @@ const entities = {
                         model.set("active", true)
                     }
                 },
-                areas: _.union([
+                areas: [
                     {
-                        title: M("generalInformations"),
-                        subtitle: null,
-                        fields: [
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: _.union([
                             {
-                                property: "_avatar",
-                                control: Image,
-                                label: M("image")
-                            },
-                            {
-                                property: "name",
-                                control: Text,
-                                label: M("name"),
-                                placeholder: M("name"),
-                            },
-                            {
-                                property: "lastname",
-                                control: Text,
-                                label: M("lastname"),
-                                placeholder: M("lastname"),
-                            },
-                            {
-                                property: "birthDate",
-                                control: DateTime,
-                                label: M("birthDate"),
-                                placeholder: M("birthDate"),
-                            },
-                            {
-                                property: "_category",
-                                label: M("referenceToUserCategory"),
-                                control: EntitiesLookupContainer,
-                                props: {
-                                    id: "user_category",
-                                    mode: "single",
-                                    entity: "endUserCategory",
-                                    selectionGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
-                                        ]
-                                    },
-                                    popupGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
+                                property: "c",
+                                control: Column,
+                                size: "col-sm-8",
+                                className: "m-b-30",
+                                noLateralPadding: false,
+                                fields: [
+                                    {
+                                        property: "c_1",
+                                        control: Column,
+                                        size: "col-sm-12",
+                                        className: "card",
+                                        noLateralPadding: false,
+                                        fields: [
+                                            {
+                                                property: "_avatar",
+                                                control: Image,
+                                                label: M("image")
+                                            },
+                                            {
+                                                property: "name",
+                                                control: Text,
+                                                label: M("name"),
+                                                placeholder: M("name"),
+                                            },
+                                            {
+                                                property: "lastname",
+                                                control: Text,
+                                                label: M("lastname"),
+                                                placeholder: M("lastname"),
+                                            },
+                                            {
+                                                property: "birthDate",
+                                                control: DateTime,
+                                                label: M("birthDate"),
+                                                placeholder: M("birthDate"),
+                                            },
+                                            {
+                                                property: "_category",
+                                                label: M("referenceToUserCategory"),
+                                                control: ValuesLookupContainer,
+                                                props: {
+                                                    id: "user_category",
+                                                    mode: "single",
+                                                    collections: "endUserCategories",
+                                                    selectionGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    popupGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    }
+                                                }
+                                            },
                                         ]
                                     }
-                                }
-                            },
-                        ]
+                                ]
+                            }
+                        ], getPersonFormAreas())
                     }
-                ], getPersonFormAreas())
+                ]
             }
         }
     },
@@ -386,7 +431,7 @@ const entities = {
                             }
                         }
                     },
-                ], getPersonGridColumns())
+                ], getPersonGridColumns("fabricatorCategory"))
             }
         },
         form: {
@@ -400,156 +445,186 @@ const entities = {
                         model.set("active", true)
                     }
                 },
-                areas: _.union([
+                areas: [
                     {
-                        title: M("generalInformations"),
-                        subtitle: null,
-                        fields: [
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: _.union([
                             {
-                                property: "businessName",
-                                control: Text,
-                                label: M("businessName"),
-                                placeholder: M("businessName"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_category",
-                                label: M("referenceToUserCategory"),
-                                control: EntitiesLookupContainer,
-                                size: "col-sm-4",
-                                props: {
-                                    id: "user_category",
-                                    mode: "single",
-                                    entity: "fabricatorCategory",
-                                    selectionGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
-                                        ]
-                                    },
-                                    popupGrid: {
-                                        columns: [
-                                            {property: "code", header: M("code"), cell: TextCell},
-                                            {property: "description", header: M("description"), cell: TextCell}
+                                property: "c",
+                                control: Column,
+                                size: "col-sm-8",
+                                className: "m-b-30",
+                                noLateralPadding: false,
+                                fields: [
+                                    {
+                                        property: "c_1",
+                                        control: Column,
+                                        size: "col-sm-12",
+                                        className: "card",
+                                        noLateralPadding: false,
+                                        fields: [
+                                            {
+                                                property: "businessName",
+                                                control: Text,
+                                                label: M("businessName"),
+                                                placeholder: M("businessName"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_category",
+                                                label: M("referenceToUserCategory"),
+                                                control: ValuesLookupContainer,
+                                                size: "col-sm-4",
+                                                props: {
+                                                    id: "user_category",
+                                                    mode: "single",
+                                                    collection: "fabricatorCategories",
+                                                    selectionGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    popupGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "description", header: M("description"), cell: TextCell}
+                                                        ]
+                                                    }
+                                                }
+                                            },
+
+                                            {
+                                                property: "referent",
+                                                control: Text,
+                                                label: M("referent"),
+                                                placeholder: M("referent"),
+                                                size: "col-sm-4",
+                                            },
+                                            // {
+                                            //     property: "_city",
+                                            //     label: M("city"),
+                                            //     size: "col-sm-4",
+                                            //     control: ValuesLookupContainer,
+                                            //     formatter: v => {
+                                            //         return v !== null ? v.description + ", " + (v.province !== null ? v.province.description : "") + ", " + v.cap : ""
+                                            //     },
+                                            //     props: {
+                                            //         id: "city_province",
+                                            //         mode: "single",
+                                            //         getCollection: (data) => {
+                                            //             return "cities"
+                                            //         },
+                                            //         selectionGrid: {
+                                            //             columns: [
+                                            //                 {property: "description", header: M("name"), cell: TextCell},
+                                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                                            //                 {
+                                            //                     property: "province",
+                                            //                     header: M("province"),
+                                            //                     cell: TextCell,
+                                            //                     props: {
+                                            //                         formatter: (value) => {
+                                            //                             return value ? value.description : ""
+                                            //                         }
+                                            //                     }
+                                            //                 },
+                                            //             ]
+                                            //         },
+                                            //         popupGrid: {
+                                            //             columns: [
+                                            //                 {property: "description", header: M("name"), cell: TextCell},
+                                            //                 {property: "cap", header: M("cap"), cell: TextCell},
+                                            //                 {
+                                            //                     property: "province",
+                                            //                     header: M("province"),
+                                            //                     cell: TextCell,
+                                            //                     props: {
+                                            //                         formatter: (value) => {
+                                            //                             return value ? value.description : ""
+                                            //                         }
+                                            //                     }
+                                            //                 },
+                                            //             ]
+                                            //         }
+                                            //     }
+                                            // },
+                                            {
+                                                property: "_country",
+                                                control: Text,
+                                                label: M("country"),
+                                                placeholder: M("country"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_region",
+                                                control: Text,
+                                                label: M("region"),
+                                                placeholder: M("region"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_province",
+                                                control: Text,
+                                                label: M("province"),
+                                                placeholder: M("province"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_postalCode",
+                                                control: Text,
+                                                label: M("postalCode"),
+                                                placeholder: M("postalCode"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_municipality",
+                                                control: Text,
+                                                label: M("municipality"),
+                                                placeholder: M("municipality"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_address",
+                                                control: Text,
+                                                label: M("address"),
+                                                placeholder: M("address"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "_streetNumber",
+                                                control: Text,
+                                                label: M("streetNumber"),
+                                                placeholder: M("streetNumber"),
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "phoneNumber",
+                                                control: Text,
+                                                label: M("phoneNumber"),
+                                                placeholder: M("phoneNumber"),
+                                                size: "col-sm-3",
+                                            },
                                         ]
                                     }
-                                }
-                            },
-
+                                ]
+                            }
+                        ], getPersonFormAreas())
+                    },
+                    {
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: [
                             {
-                                property: "referent",
-                                control: Text,
-                                label: M("referent"),
-                                placeholder: M("referent"),
-                                size: "col-sm-4",
-                            },
-                            // {
-                            //     property: "_city",
-                            //     label: M("city"),
-                            //     size: "col-sm-4",
-                            //     control: ValuesLookupContainer,
-                            //     formatter: v => {
-                            //         return v !== null ? v.description + ", " + (v.province !== null ? v.province.description : "") + ", " + v.cap : ""
-                            //     },
-                            //     props: {
-                            //         id: "city_province",
-                            //         mode: "single",
-                            //         getCollection: (data) => {
-                            //             return "cities"
-                            //         },
-                            //         selectionGrid: {
-                            //             columns: [
-                            //                 {property: "description", header: M("name"), cell: TextCell},
-                            //                 {property: "cap", header: M("cap"), cell: TextCell},
-                            //                 {
-                            //                     property: "province",
-                            //                     header: M("province"),
-                            //                     cell: TextCell,
-                            //                     props: {
-                            //                         formatter: (value) => {
-                            //                             return value ? value.description : ""
-                            //                         }
-                            //                     }
-                            //                 },
-                            //             ]
-                            //         },
-                            //         popupGrid: {
-                            //             columns: [
-                            //                 {property: "description", header: M("name"), cell: TextCell},
-                            //                 {property: "cap", header: M("cap"), cell: TextCell},
-                            //                 {
-                            //                     property: "province",
-                            //                     header: M("province"),
-                            //                     cell: TextCell,
-                            //                     props: {
-                            //                         formatter: (value) => {
-                            //                             return value ? value.description : ""
-                            //                         }
-                            //                     }
-                            //                 },
-                            //             ]
-                            //         }
-                            //     }
-                            // },
-                            {
-                                property: "_country",
-                                control: Text,
-                                label: M("country"),
-                                placeholder: M("country"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_region",
-                                control: Text,
-                                label: M("region"),
-                                placeholder: M("region"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_province",
-                                control: Text,
-                                label: M("province"),
-                                placeholder: M("province"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_postalCode",
-                                control: Text,
-                                label: M("postalCode"),
-                                placeholder: M("postalCode"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_municipality",
-                                control: Text,
-                                label: M("municipality"),
-                                placeholder: M("municipality"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_address",
-                                control: Text,
-                                label: M("address"),
-                                placeholder: M("address"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "_streetNumber",
-                                control: Text,
-                                label: M("streetNumber"),
-                                placeholder: M("streetNumber"),
-                                size: "col-sm-4",
-                            },
-                            {
-                                property: "phoneNumber",
-                                control: Text,
-                                label: M("phoneNumber"),
-                                placeholder: M("phoneNumber"),
-                                size: "col-sm-3",
-                            },
+                                property: "_documentTypes",
+                                control: DocumentContainer,
+                                label: null,
+                                size: "col-sm-12",
+                            }
                         ]
-                    }
-                ], getPersonFormAreas())
+                    },
+                ],
             }
         }
     },
@@ -1013,8 +1088,34 @@ const entities = {
             title: M("documentTypeList"),
             descriptor: {
                 columns: [
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
-                    {property: "description", header: M("description"), cell: TextCell, sortable: true, searchable: true}
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: false},
+                    {property: "description", header: M("description"), cell: TextCell, sortable: true, searchable: false},
+                    {
+                        property: "assignationType",
+                        header: M("assignationType"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: false,
+                        props: {
+                            formatter: v => {
+                                return v != null ? getAssignationTypeDescription(v) : "";
+                            }
+                        }
+                    },
+                    {property: "required", header: M("required"), cell: CheckCell, sortable: true, searchable: false},
+                    {
+                        property: "template",
+                        header: M("downloadableTemplate"),
+                        cell: CheckCell,
+                        sortable: true,
+                        searchable: false,
+                        props: {
+                            formatter: v => {
+                                return v != null;
+                            }
+                        }
+                    },
+                    {property: "active", header: M("active"), cell: CheckCell, sortable: true, searchable: false}
                 ]
             }
         },
@@ -1050,17 +1151,35 @@ const entities = {
                         size: "col-sm-5"
                     },
                     {
+                        property: "assignationType",
+                        control: Select,
+                        size: "col-sm-4",
+                        label: M("assignationType"),
+                        props: {
+                            id: "customer",
+                            allowNull: true,
+                            multiple: false,
+                            datasource: datasource.fixed(
+                                [
+                                    {label: AssignationType.ASSIGN_TO_FABRICATOR.label, value: AssignationType.ASSIGN_TO_FABRICATOR.value},
+                                    {label: AssignationType.ASSIGN_TO_DOSSIER.label, value: AssignationType.ASSIGN_TO_DOSSIER.value},
+
+                                ]
+                            ),
+                        }
+                    },
+                    {
                         property: "active",
                         control: YesNo,
                         label: M("active"),
-                        size: "col-sm-6",
+                        size: "col-sm-4",
                         sanitizer: (value) => sanitize(value).toBoolean()
                     },
                     {
                         property: "required",
                         control: YesNo,
                         label: M("required"),
-                        size: "col-sm-6",
+                        size: "col-sm-4",
                         sanitizer: (value) => sanitize(value).toBoolean()
                     },
                     {
@@ -1075,6 +1194,290 @@ const entities = {
                             mode: MULTI_FILE_MODE_SINGLE
                         }
                     }
+                ]
+            }
+        }
+    },
+
+    dossier: {
+        grid: {
+            canDelete: ()=> {
+                return false;
+            },
+            title: M("dossiersEcoBonus"),
+            descriptor: {
+                columns: [
+                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                ]
+            }
+        },
+        form: {
+            title: M("dossierEcoBonus"),
+            getActions(data) {
+                return ["back", "save", "save-go-back", "revisions"];
+            },
+            descriptor: {
+                areas: [
+                    {
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: [
+                            {
+                                property: "c",
+                                control: Column,
+                                size: "col-sm-8",
+                                className: "m-b-30",
+                                noLateralPadding: false,
+                                fields: [
+                                    {
+                                        property: "c_1",
+                                        control: Column,
+                                        size: "col-sm-12",
+                                        className: "card",
+                                        noLateralPadding: false,
+                                        fields: [
+                                            {
+                                                property: "c_1",
+                                                control: Column,
+                                                size: "col-sm-8",
+                                                className: "zero-padding",
+                                                noLateralPadding: false,
+                                                fields: [
+                                                    {
+                                                        property:"code",
+                                                        control: Spacer,
+                                                        label: M("dossierEcoBonus"),
+                                                        size: "col-sm-12",
+                                                        emptyRow: true,
+                                                        className: "m-b-10",
+                                                        props: {
+                                                            className: "ecobonus-code",
+                                                            defaultTheme: false,
+                                                            formatter: v => {
+                                                                return v != null ? v.get("code") : ""
+                                                            }
+                                                        },
+                                                    },
+                                                ]
+                                            },
+                                            {
+                                                property: "c_1",
+                                                control: Column,
+                                                size: "col-sm-4",
+                                                className: "zero-padding",
+                                                noLateralPadding: false,
+                                                fields: [
+                                                    {
+                                                        property: "creationDate",
+                                                        control: ReadOnlyText,
+                                                        label: M("creationDate"),
+                                                        placeholder: M("creationDate"),
+                                                        size: "col-sm-12",
+                                                        props: {
+                                                            formatter: v => {
+                                                                return v != null ? moment(v).format("DD/MM/YYYY HH:mm") : moment(new Date()).format("DD/MM/YYYY HH:mm")
+                                                            }
+                                                        }
+                                                    },
+                                                ]
+                                            },
+                                            {
+                                                property: "_customer",
+                                                label: M("customer"),
+                                                control: ValuesLookupContainer,
+                                                size: "col-sm-8",
+                                                props: {
+                                                    id: "dossier_customer",
+                                                    mode: "single",
+                                                    collection: "customers",
+                                                    selectionGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "name", header: M("name"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    popupGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "name", header: M("name"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    formatter: v => {
+                                                        return v != null ? v.name : "";
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_fabricator",
+                                                label: M("fabricator"),
+                                                control: ValuesLookupContainer,
+                                                size: "col-sm-4",
+                                                props: {
+                                                    id: "dossier_fabricator",
+                                                    mode: "single",
+                                                    collection: "fabricators",
+                                                    selectionGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "businessName", header: M("businessName"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    popupGrid: {
+                                                        columns: [
+                                                            {property: "code", header: M("code"), cell: TextCell},
+                                                            {property: "businessName", header: M("businessName"), cell: TextCell}
+                                                        ]
+                                                    },
+                                                    formatter: v => {
+                                                        return v != null ? v.businessName : "";
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_significantValue",
+                                                control: Text,
+                                                label: M("significantValue"),
+                                                placeholder: M("significantValue"),
+                                                size: "col-sm-4",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.significantValue : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_nonSignificantValue",
+                                                control: Text,
+                                                label: M("nonSignificantValue"),
+                                                placeholder: M("nonSignificantValue"),
+                                                size: "col-sm-4",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.nonSignificantValue : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_serviceValue",
+                                                control: Text,
+                                                label: M("serviceValue"),
+                                                placeholder: M("serviceValue"),
+                                                size: "col-sm-4",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.serviceValue : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "notes",
+                                                control: TextArea,
+                                                label: M("notes"),
+                                                placeholder: M("notes"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    maxLength: 1000,
+                                                    height: "91px"
+                                                }
+                                            },
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                property: "column",
+                                control: Column,
+                                size: "col-sm-4",
+                                className: "m-b-30",
+                                noLateralPadding: false,
+                                useBoostrapRow: true,
+                                fields: [
+                                    {
+                                        property: "column_1",
+                                        control: Column,
+                                        size: "col-sm-12",
+                                        className: "card-blue p-t-10",
+                                        noLateralPadding: false,
+                                        useBoostrapRow: true,
+                                        fields: [
+                                            {
+                                                property: "_recommendedPrice",
+                                                control: ReadOnlyText,
+                                                label: M("recommendedRetailPrice"),
+                                                placeholder: M("recommendedRetailPrice"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.recommendedRetailPrice : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_recommendedPrice",
+                                                control: ReadOnlyText,
+                                                label: M("netAmountToBePaid"),
+                                                placeholder: M("netAmountToBePaid"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.netAmountToBePaid : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_serviceCost",
+                                                control: ReadOnlyText,
+                                                label: M("initiativeCost"),
+                                                placeholder: M("initiativeCost"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.initiativeCost : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_serviceCost",
+                                                control: ReadOnlyText,
+                                                label: M("fabricatorPayOff"),
+                                                placeholder: M("fabricatorPayOff"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.fabricatorPayOff : ""
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                property: "_serviceCost",
+                                                control: ReadOnlyText,
+                                                label: M("fabricatorPayOff"),
+                                                placeholder: M("fabricatorPayOff"),
+                                                size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null ? v.fabricatorPayOff : ""
+                                                    }
+                                                }
+                                            },
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        component: AreaNoCard,
+                        className: "col-sm-12",
+                        fields: [
+                            {
+                                property: "_documentTypes",
+                                control: DocumentContainer,
+                                label: null,
+                                size: "col-sm-12",
+                            }
+                        ]
+                    },
                 ]
             }
         }
@@ -1153,7 +1556,7 @@ const entities = {
     // }
 }
 
-function getPersonGridColumns(){
+function getPersonGridColumns(entityForSearch){
 	return [
         {
             property: "_category",
@@ -1161,54 +1564,118 @@ function getPersonGridColumns(){
             cell: TextCell,
             sortable: true,
             searchable: true,
+            searchForm: {
+                showInCard: false,
+                fields: [
+                    {
+                        property: "categoryId",
+                        label: M("referenceToUserCategory"),
+                        control: EntitiesLookupContainer,
+                        props: {
+                            id: "user_category",
+                            mode: "single",
+                            entity: entityForSearch,
+                            selectionGrid: {
+                                columns: [
+                                    {property: "code", header: M("code"), cell: TextCell},
+                                    {property: "description", header: M("description"), cell: TextCell}
+                                ]
+                            },
+                            popupGrid: {
+                                columns: [
+                                    {property: "code", header: M("code"), cell: TextCell},
+                                    {property: "description", header: M("description"), cell: TextCell}
+                                ]
+                            }
+                        }
+                    },
+                ]
+            },
             props: {
                 formatter: v => {
                     return v != null ? v.description : "";
                 }
             }
         },
-        {property: "active", header: M("active"), cell: CheckCell, sortable: true, searchable: true}
+        {
+            property: "active",
+            header: M("active"),
+            cell: CheckCell,
+            sortable: true,
+            searchable: true,
+            searchForm: {
+                showInCard: false,
+                fields: [
+                    {
+                        property: "active",
+                        label: M("status"),
+                        control: Select,
+                        filterType: "eq",
+                        props: {
+                            datasource: datasource.fixed([
+                                {label: "Attivo", value: true},
+                                {label: "Non attivo", value: false},
+                            ]),
+                        },
+                    }
+                ]
+            },
+        }
     ]
 }
 
 function getPersonFormAreas(){
 	return [
         {
-            title: M("accountInformations"),
-            subtitle: null,
+            property: "column",
+            control: Column,
+            size: "col-sm-4",
+            className: "m-b-30",
+            noLateralPadding: false,
+            useBoostrapRow: true,
             fields: [
                 {
-                    property: "mail",
-                    control: Mail,
-                    label: M("mail"),
-                    placeholder: M("mailAddress"),
-                    size: "col-sm-4"
-                },
-                {
-                    property: "password",
-                    control: PasswordText,
-                    label: M("password"),
-                    placeholder: M("password"),
-                    size: "col-sm-4",
-                    sanitizer: value => sanitize(value).trim()
-                },
-                {
-                    property: "active",
-                    control: YesNo,
-                    label: M("active"),
-                    size: "col-sm-4",
-                    sanitizer: (value) => sanitize(value).toBoolean()
-                },
-                {
-                    property: "notes",
-                    control: TextArea,
-                    label: M("notes"),
-                    placeholder: M("notes"),
+                    property: "column_1",
+                    control: Column,
                     size: "col-sm-12",
-                    props: {
-                        maxLength: 1000
-                    }
-                },
+                    className: "card-blue p-t-10",
+                    noLateralPadding: false,
+                    useBoostrapRow: true,
+                    fields: [
+                        {
+                            property: "mail",
+                            control: Mail,
+                            label: M("mail"),
+                            placeholder: M("mailAddress"),
+                            size: "col-sm-12"
+                        },
+                        {
+                            property: "password",
+                            control: PasswordText,
+                            label: M("password"),
+                            placeholder: M("password"),
+                            size: "col-sm-12",
+                            sanitizer: value => sanitize(value).trim()
+                        },
+                        {
+                            property: "active",
+                            control: YesNo,
+                            label: M("active"),
+                            size: "col-sm-12",
+                            sanitizer: (value) => sanitize(value).toBoolean()
+                        },
+                        {
+                            property: "notes",
+                            control: Text,
+                            label: M("notes"),
+                            placeholder: M("notes"),
+                            size: "col-sm-12",
+                            props: {
+                                maxLength: 1000
+                            }
+                        },
+                    ]
+                }
             ]
         }
     ]

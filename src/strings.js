@@ -294,7 +294,23 @@ strings["en"] = {
     documentTypeList: "Document type list",
     editDocumentType: "Edit document",
     documentType: "Document type",
-    template: "Template"
+    template: "Template",
+    assignTo: "Assign to",
+    dossiers: "Dossiers",
+    downloadableTemplate: "Downloadable template",
+    assignationType: "Assignation type",
+    creationDate: "Creation date",
+    fabricator: "Fabricator",
+    significantValue: "Significant Value (€)",
+    nonSignificantValue: "Non significant (€)",
+    serviceValue: "Service (€)",
+    recommendedRetailPrice: "Recommended retail price",
+    netAmountToBePaid: "Net amount to be paid (-{0})",
+    initiativeCost: "Initiative cost",
+    fabricatorPayOff: "Fabricator pay off",
+    feeForPraticalManagement: "Fee for pratical management",
+    dossierEcoBonus: "Dossier EcoBonus",
+    dossiersEcoBonus: "Dossiers EcoBonus",
 
 }
 
@@ -439,7 +455,7 @@ strings["it"] = {
     editFabricatorsCategory: "Modifica categoria serramentisti",
     ecoBonus: "EcoBonus",
     systemSettings: "Impostazioni di sistema",
-    referenceToUserCategory: "Riferimento a categoria utente",
+    referenceToUserCategory: "Categoria utente",
     accountInformations: "Informazioni account",
     endUserList: "Lista utente finale",
     fabricatorList: "Lista serramentisti",
@@ -478,7 +494,24 @@ strings["it"] = {
     documentTypeList: "Lista documenti",
     editDocumentType: "Modifica documento",
     documentType: "Tipologia documenti",
-    template: "Template"
+    template: "Template",
+    assignTo: "Assegna a",
+    dossiers: "Pratiche",
+    downloadableTemplate: "Modello scaricabile",
+    assignationType: "Tipo assegnazione",
+    creationDate: "Data di creazione",
+    fabricator: "Serramentista",
+    significantValue: "Beni significativi (€)",
+    nonSignificantValue: "Beni non significativi (€)",
+    serviceValue: "Servizi (€)",
+    recommendedRetailPrice: "Prezzo consigliato in fattura",
+    netAmountToBePaid: "Prezzo scontato (-{0})",
+    initiativeCost: "Costo dell'iniziativa",
+    fabricatorPayOff: "Liquidazione Serramentista",
+    feeForPraticalManagement: "Quota per gestione pratica",
+    dossierEcoBonus: "Pratica EcoBonus",
+    dossiersEcoBonus: "Pratiche EcoBonus",
+
 }
 
 export function setLanguage(language_) {

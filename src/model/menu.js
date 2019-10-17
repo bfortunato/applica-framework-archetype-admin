@@ -85,9 +85,9 @@ export default [
     },
     {
         icon: "zmdi zmdi-accounts-alt",
-        text: M("ecoBonus"),
-        href: "/#/entities/ecoBonus?grid=ecoBonuses",
-        permissions: ["ecoBonus:list"]
+        text: M("dossierEcoBonus"),
+        href: "/#/entities/dossier?grid=dossiers",
+        permissions: ["dossier:list"]
     },
     {
         icon: "zmdi zmdi-accounts-alt",

@@ -308,7 +308,7 @@ export class SearchDialog extends React.Component {
                 if (k !== "_filterType") {
                     const filterType = optional(this.getFieldFilterType(k), manualFilterType)
                     const isInteger = optional(this.isFieldOnlyInteger(k), false);
-                    this.props.query.filter(filterType, k, isInteger ? parseInt(data[k]) : data[k])
+                    this.props.query.filter(filterType, k, _.isObject(data[k]) ? (data[k].id) : (isInteger ? parseInt(data[k]) : data[k]));
                 }
             })
             this.props.query.page = 1
@@ -731,7 +731,10 @@ export class TextCell extends Cell {
 
 export class CheckCell extends Cell {
     render() {
-        let checked = this.props.value === true || this.props.value === "true" || parseInt(this.props.value) > 0
+
+        let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
+        let value = formatter(this.props.value);
+        let checked = value === true || value === "true" || parseInt(value) > 0
         let icon = checked ? "zmdi zmdi-check" : "zmdi zmdi-square-o"
 
         return (
@@ -850,8 +853,9 @@ export class Filter extends React.Component {
     }
 
     render() {
+        let textProperty = this.props.data.label != null ? this.props.data.label : M(this.props.data.property)
         return (
-            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-10" >{M(this.props.data.property)}={this.props.data.value} <i className="zmdi zmdi-close"></i></button>      )
+            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-10" >{textProperty}={this.props.data.value} <i className="zmdi zmdi-close"></i></button>      )
     }
 }
 
