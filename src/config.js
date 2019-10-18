@@ -28,6 +28,7 @@ module.exports = {
     "account.resetUserPassword.url": `${serviceBase}account/resetPassword`,
     "system.url": `${serviceBase}system`,
     "upload.url": `${serviceBase}upload/file`,
+    "dossier.url": `${serviceBase}dossiers`,
     "backendVersion" : getVersion(),
     "copyrightInfos" : getCopyright()
 }

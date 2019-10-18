@@ -26,9 +26,15 @@ export const ERROR_INVALID_DEFAULT_ARTICLE               = 2002
 export const ERROR_USER_COMPANY_NOT_SETTED               = 2003
 export const ERROR_COVER_COMPONENT_ALREADY_EXISTS        = 2004
 export const ERROR_COVER_COMPONENT_NOT_CONFIGURED        = 2005
-export const ERROR_CUSTOMER_NOT_FOUND                    = 3001
 export const ERROR_WAREHOUSE_NOT_FOUND                   = 4001
-export const ERROR_DOCUMENT_NOT_FOUND                    = 5001
+
+export const ERROR_MAIL_AND_PASSWORD_REQUIRED                    = 1016
+export const ERROR_FABRICATOR_NOT_FOUND                    = 1017
+export const ERROR_CUSTOMER_NOT_FOUND                    = 1018
+export const OPERATION_NOT_ALLOWED                    = 1019
+export const ERROR_DOSSIER_NOT_FOUND                    = 1020
+export const ERROR_DOCUMENT_NOT_FOUND                    = 1021
+export const ERROR_DOCUMENT_TYPE_NOT_FOUND                    = 1022
 
 
 const messages = {
@@ -63,6 +69,12 @@ messages["en"][ERROR_CUSTOMER_NOT_FOUND]                    = "Customer not foun
 messages["en"][ERROR_WAREHOUSE_NOT_FOUND]                   = "Warehouse not found"
 messages["en"][ERROR_DOCUMENT_NOT_FOUND]                    = "Document not found"
 
+messages["en"][ERROR_MAIL_AND_PASSWORD_REQUIRED]                    = "Insert mail and password"
+messages["en"][ERROR_FABRICATOR_NOT_FOUND]                    = "Fabricator not found"
+messages["en"][OPERATION_NOT_ALLOWED]                    = "Operation not allowed"
+messages["en"][ERROR_DOSSIER_NOT_FOUND]                    = "Dossier not found"
+messages["en"][ERROR_DOCUMENT_TYPE_NOT_FOUND]                    = "Document type not found"
+
 messages["it"][OK]											= "OK"
 messages["it"][ERROR] 										= "Si è verificato un errore"
 messages["it"][ERROR_MAIL_ALREADY_EXISTS]                   = "Impossibile registrarsi: indirizzo email già presente"
@@ -88,6 +100,12 @@ messages["it"][ERROR_COVER_COMPONENT_NOT_CONFIGURED]        = "Componente di tip
 messages["it"][ERROR_CUSTOMER_NOT_FOUND]                    = "Cliente non trovato"
 messages["it"][ERROR_WAREHOUSE_NOT_FOUND]                   = "Magazzino non trovato"
 messages["it"][ERROR_DOCUMENT_NOT_FOUND]                    = "Documento non trovato"
+
+messages["it"][ERROR_MAIL_AND_PASSWORD_REQUIRED]                    = "Inserisci mail e password"
+messages["it"][ERROR_FABRICATOR_NOT_FOUND]                    = "Serramenista non trovato"
+messages["it"][OPERATION_NOT_ALLOWED]                    = "Operazione non consentita"
+messages["it"][ERROR_DOSSIER_NOT_FOUND]                    = "Pratica non trovata"
+messages["it"][ERROR_DOCUMENT_TYPE_NOT_FOUND]                    = "Tipo documento non trovato"
 
 export function msg(response) {
 	let responseCode = null;

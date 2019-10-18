@@ -12,6 +12,7 @@ import {
     Number,
     PasswordText,
     ReadOnlyText,
+    ReadOnlyTextArea,
     Select,
     Spacer,
     Text,
@@ -24,6 +25,7 @@ import {AssignationType, CustomerType, getAssignationTypeDescription, getCustome
 import * as datasource from "../utils/datasource";
 import {DocumentContainer} from "./components/documents/documentContainer";
 import moment from "moment";
+import {format} from "../utils/lang";
 
 
 const entities = {
@@ -617,7 +619,7 @@ const entities = {
                         className: "col-sm-12",
                         fields: [
                             {
-                                property: "_documentTypes",
+                                property: "documents",
                                 control: DocumentContainer,
                                 label: null,
                                 size: "col-sm-12",
@@ -1217,6 +1219,9 @@ const entities = {
                 return ["back", "save", "save-go-back", "revisions"];
             },
             descriptor: {
+                canSave: (model)=>{
+                    return model.get("id") === null;
+                },
                 areas: [
                     {
                         component: AreaNoCard,
@@ -1284,7 +1289,9 @@ const entities = {
                                             {
                                                 property: "_customer",
                                                 label: M("customer"),
-                                                control: ValuesLookupContainer,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? ValuesLookupContainer : ReadOnlyText
+                                                },
                                                 size: "col-sm-8",
                                                 props: {
                                                     id: "dossier_customer",
@@ -1310,7 +1317,9 @@ const entities = {
                                             {
                                                 property: "_fabricator",
                                                 label: M("fabricator"),
-                                                control: ValuesLookupContainer,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? ValuesLookupContainer : ReadOnlyText
+                                                },
                                                 size: "col-sm-4",
                                                 props: {
                                                     id: "dossier_fabricator",
@@ -1335,43 +1344,36 @@ const entities = {
                                             },
                                             {
                                                 property: "_significantValue",
-                                                control: Text,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                },
                                                 label: M("significantValue"),
                                                 placeholder: M("significantValue"),
                                                 size: "col-sm-4",
-                                                props: {
-                                                    formatter: v => {
-                                                        return v != null ? v.significantValue : ""
-                                                    }
-                                                }
                                             },
                                             {
                                                 property: "_nonSignificantValue",
-                                                control: Text,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                },
                                                 label: M("nonSignificantValue"),
                                                 placeholder: M("nonSignificantValue"),
                                                 size: "col-sm-4",
-                                                props: {
-                                                    formatter: v => {
-                                                        return v != null ? v.nonSignificantValue : ""
-                                                    }
-                                                }
                                             },
                                             {
                                                 property: "_serviceValue",
-                                                control: Text,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                },
                                                 label: M("serviceValue"),
                                                 placeholder: M("serviceValue"),
                                                 size: "col-sm-4",
-                                                props: {
-                                                    formatter: v => {
-                                                        return v != null ? v.serviceValue : ""
-                                                    }
-                                                }
                                             },
                                             {
                                                 property: "notes",
-                                                control: TextArea,
+                                                getControl: (model) => {
+                                                    return model.get("id") === null ? TextArea : ReadOnlyTextArea
+                                                },
                                                 label: M("notes"),
                                                 placeholder: M("notes"),
                                                 size: "col-sm-12",
@@ -1415,8 +1417,10 @@ const entities = {
                                             {
                                                 property: "_recommendedPrice",
                                                 control: ReadOnlyText,
-                                                label: M("netAmountToBePaid"),
-                                                placeholder: M("netAmountToBePaid"),
+                                                getLabel: model => {
+                                                    return model != null && model.get("_recommendedPrice") ? format(M("netAmountToBePaid"), model.get("_recommendedPrice").discount) : M("priceDiscounted");
+                                                },
+                                                placeholder: M("priceDiscounted"),
                                                 size: "col-sm-12",
                                                 props: {
                                                     formatter: v => {
@@ -1471,7 +1475,7 @@ const entities = {
                         className: "col-sm-12",
                         fields: [
                             {
-                                property: "_documentTypes",
+                                property: "documents",
                                 control: DocumentContainer,
                                 label: null,
                                 size: "col-sm-12",

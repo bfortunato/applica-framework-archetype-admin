@@ -21,15 +21,24 @@ export function getCustomerTypeDescription(customerType) {
 }
 
 export const AssignationType = {
-    ASSIGN_TO_FABRICATOR: {
-        label: M("fabricators"),
-        value: "to-fabricator"
+    FABRICATOR_PROFILE: {
+        label: M("fabricatorProfile"),
+        value: "fabricator-profile"
     },
-    ASSIGN_TO_DOSSIER: {
-        label: M("dossiers"),
-        value: "to-dossier"
+    PREPARATORY_DOCUMENTATION: {
+        label: M("preparatoryDocumentation"),
+        value: "preparatory-documentation"
+    },
+    PRIVATE_CLOSING_DOCUMENTATION: {
+        label: M("privateClosingDocumentation"),
+        value: "private-closing-documentation"
+    },
+    PUBLIC_CLOSING_DOCUMENTATION: {
+        label: M("publicClosingDocumentation"),
+        value: "public-closing-documentation"
     },
 };
+
 
 export function getAssignationTypeDescription(assignationType) {
     let assignationTypes = _.values(AssignationType).filter(f => f.value === assignationType);

@@ -13,9 +13,10 @@ import {resumeSession} from "../actions/session";
 import * as keyboard from "./utils/keyboard";
 import {SessionStore} from "../stores/session";
 import {EntitiesGrid, EntityForm, RevisionGrid} from "./screens/entities";
-import { getUserProfileImage } from "../actions/ui";
-import { setupMenu } from "../actions/menu";
+import {getUserProfileImage} from "../actions/ui";
+import {setupMenu} from "../actions/menu";
 import * as NotificationCenter from "../utils/notificationCenter";
+import DossierForm from "./components/documents/dossierForm";
 
 
 export default function main() {
@@ -24,7 +25,9 @@ export default function main() {
 
 	/* Admin routes */
 	ui.addRoute("/entities/:entity", params => ui.changeScreen(<EntitiesGrid key={params.entity} entity={params.entity} />))
+    ui.addRoute("/entities/dossier/:entityId", params => ui.changeScreen(<DossierForm key={params.entity} entity="dossier" entityId={params.entityId} params={params}/>))
 	ui.addRoute("/entities/:entity/:entityId", params => ui.changeScreen(<EntityForm key={params.entity} entity={params.entity} entityId={params.entityId} params={params}/>))
+	ui.addRoute("/:entity/:entityId", params => ui.changeScreen(<DocumentForm key={params.entity} entity={params.entity} entityId={params.entityId} params={params}/>))
 	ui.addRoute("/entities/single/:entity", params => ui.changeScreen(<EntityForm key={params.entity} entity={params.entity} entityId="_" params={params}/>))
 	ui.addRoute("/revision/:entity/:entityId", params => ui.changeScreen(<RevisionGrid key={params.entity} entityId={params.entityId}  entity={params.entity} params={params} />))
 	ui.addRoute("/recover", params => ui.changeScreen(<Recover />))

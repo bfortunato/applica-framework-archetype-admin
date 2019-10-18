@@ -912,6 +912,26 @@ export class TextArea extends Control {
     }
 }
 
+export class ReadOnlyTextArea extends Control {
+    render() {
+        let field = this.props.field
+        let style = {
+            height: optional(this.props.height, "150px")
+        }
+        return (
+            <textarea
+                style={style}
+                className="form-control"
+                id={field.property}
+                data-property={field.property}
+                placeholder={field.placeholder}
+                value={optional(this.props.model.get(field.property), "")}
+                disabled="disabled"
+                onChange={this.onValueChange.bind(this)} />
+        )
+    }
+}
+
 export class ReadOnlyText extends Control {
 
     getText() {

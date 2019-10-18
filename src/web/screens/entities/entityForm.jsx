@@ -3,7 +3,7 @@ import React from "react";
 import {Layout, Screen} from "../../components/layout"
 import M from "../../../strings"
 import {connectDiscriminated} from "../../utils/aj"
-import {checkRevisionEnableStatus, freeEntities, getEntity, saveEntity} from "../../../actions/entities"
+import {freeEntities, getEntity, saveEntity} from "../../../actions/entities"
 import {Form} from "../../components/forms"
 import entities from "../../entities"
 import * as ui from "../../utils/ui"
@@ -15,7 +15,6 @@ import {hasPermission, Permission} from "../../../api/session";
 export default class EntityForm extends Screen {
     constructor(props) {
         super(props)
-
         if (_.isEmpty(props.entity)) {
             throw new Error("Please specify entity for form")
         }
