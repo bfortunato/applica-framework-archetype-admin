@@ -82,10 +82,11 @@
   text-align: center;
   & button {
     border-style: none;
-    font-size: 14px;
+    font-size: 24px;
     font-weight: 500;
     text-transform: uppercase;
     background-color: #CBCBCB;
+    color: white;
     height: 40px;
     width: 40px;
     border-radius: 50%;
@@ -138,6 +139,14 @@
   padding-top: 12px;
 }
 
+.m-t-10 {
+  margin-top: 10px;
+}
+
+.m-b-0 {
+  margin-bottom: 0px;
+}
+
 .document-more-vert {
   font-size: 24px;
   padding: 5px;
@@ -146,5 +155,11 @@
   color: #9E9E9E;
   &:hover {
     color: #858585;
+  }
+}
+
+.button-blue {
+  & button {
+    background-color: #063868;
   }
 }

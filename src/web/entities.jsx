@@ -32,7 +32,10 @@ import {
 import * as datasource from "../utils/datasource";
 import {DocumentContainer} from "./components/documents/documentContainer";
 import moment from "moment";
-import {format} from "../utils/lang";
+import {format, isDifferent} from "../utils/lang";
+import {AddDocumentDialog} from "./components/documents/addDocumentDialog";
+import {DossierStore} from "../stores/dossier";
+import {hideAddDocumentDialog} from "../actions/dossier";
 
 
 const entities = {
@@ -1236,6 +1239,14 @@ const entities = {
                 return ["back", "save", "save-go-back", "revisions"];
             },
             descriptor: {
+                stores:[DossierStore],
+                formUpdateFunction: (newState, oldState, model) => {
+                    if (newState && newState.attached && !_.isEmpty(newState.documents) && isDifferent(newState.documents, oldState.documents)) {
+                        hideAddDocumentDialog()
+                        model.set("documents", newState.documents);
+                        model.invalidateForm();
+                    }
+                },
                 canSave: (model)=>{
                     return model.get("id") === null;
                 },
@@ -1245,9 +1256,14 @@ const entities = {
                         className: "col-sm-12",
                         fields: [
                             {
+                                property: "addDocumentDialog",
+                                control: AddDocumentDialog,
+                                emptyRow: true
+                            },
+                            {
                                 property: "c",
                                 control: Column,
-                                size: "col-sm-8",
+                                size: "col-md-8",
                                 className: "m-b-30",
                                 noLateralPadding: false,
                                 fields: [
@@ -1406,7 +1422,7 @@ const entities = {
                             {
                                 property: "column",
                                 control: Column,
-                                size: "col-sm-4",
+                                size: "col-md-4",
                                 className: "m-b-30",
                                 noLateralPadding: false,
                                 useBoostrapRow: true,

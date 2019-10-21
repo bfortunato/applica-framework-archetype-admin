@@ -4,10 +4,11 @@ import {alert, hideLoader, showLoader} from "../plugins";
 import {createAsyncAction} from "../utils/ajex";
 import * as responses from "../api/responses";
 import _ from "underscore";
-import {ATTACH_DOCUMENT, CREATE_DOSSIER} from "./types";
+import {ATTACH_DOCUMENT, CREATE_DOSSIER, HIDE_ADD_DOCUMENT_DIALOG, SHOW_ADD_DOCUMENT_DIALOG} from "./types";
 import * as DossierApi from "../api/dossier";
 import {getEntity} from "./entities";
 import M from "../strings";
+import * as aj from "../aj";
 
 export const createDossier = createAsyncAction(CREATE_DOSSIER, data => {
 
@@ -45,17 +46,32 @@ export const createDossier = createAsyncAction(CREATE_DOSSIER, data => {
 });
 
 export const attachDocument = createAsyncAction(ATTACH_DOCUMENT, data => {
+    aj.dispatch({
+        type: ATTACH_DOCUMENT
+    })
 
     showLoader();
-    DossierApi.attachDocument(data.dossierId, data.documentTypeId, data.attachmentData, data.attachmentName)
+    DossierApi.attachDocument(data.dossierId, data.documentTypeId, data.attachment.path)
         .then(response => {
             hideLoader();
-
-            createDossier.complete()
+            attachDocument.complete({documents: response.value});
         })
         .catch(e => {
             hideLoader()
             alert("Attenzione!", responses.msg(e), "error");
-            createDossier.fail()
+            attachDocument.fail()
         })
+});
+
+export const showAddDocumentDialog = aj.createAction(SHOW_ADD_DOCUMENT_DIALOG, data => {
+    aj.dispatch({
+        type: SHOW_ADD_DOCUMENT_DIALOG,
+        documentTypeId: data.documentTypeId
+    })
+});
+
+export const hideAddDocumentDialog = aj.createAction(HIDE_ADD_DOCUMENT_DIALOG, data => {
+    aj.dispatch({
+        type: HIDE_ADD_DOCUMENT_DIALOG
+    })
 });

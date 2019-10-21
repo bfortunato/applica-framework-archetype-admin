@@ -15,6 +15,7 @@ import {getSessionToken} from "../../api/session";
 import {toast} from "../../plugins";
 import {downloadFileFromUrl} from "../../utils/customUtils";
 import * as config from "../../framework/config";
+import {connect} from "../utils/aj";
 
 export const VALIDATION_ERROR = {}
 
@@ -606,7 +607,20 @@ export class Form extends React.Component {
             }
         })
 
+        let descriptor = this.props.descriptor;
 
+        if (descriptor.stores) {
+            descriptor.stores.forEach(s => connect(this, s))
+        }
+
+
+    }
+
+    componentWillUpdate(props, state) {
+        let descriptor = this.props.descriptor
+        if (_.isFunction(descriptor.formUpdateFunction)) {
+            descriptor.formUpdateFunction(state, this.state, this.model)
+        }
     }
 
     submit() {

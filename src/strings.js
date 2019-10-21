@@ -326,6 +326,7 @@ strings["en"] = {
     typology: "Typology",
     noModel: "No model",
     selfCompiledDownloadableTemplate: "Self-compiled downloadable template",
+    uploadDocument: "Upload document",
 
 }
 
@@ -541,6 +542,7 @@ strings["it"] = {
     typology: "Tipologia",
     noModel: "Nessun modello",
     selfCompiledDownloadableTemplate: "Modello scaricabile autocompilato",
+    uploadDocument: "Carica documento",
 
 }
 

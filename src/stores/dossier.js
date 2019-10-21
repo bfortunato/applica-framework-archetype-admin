@@ -29,6 +29,26 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
                 validationResult: action.validationResult
             });
 
+        case actions.SHOW_ADD_DOCUMENT_DIALOG:
+            return _.assign(state, {showAddDocumentDialog: true, documentTypeId: action.documentTypeId});
+        case actions.HIDE_ADD_DOCUMENT_DIALOG:
+            return _.assign(state, {showAddDocumentDialog: false, documentTypeId: null});
+        case actions.ATTACH_DOCUMENT:
+            return _.assign(state, {documents: null});
+        case completed(actions.ATTACH_DOCUMENT):
+            return _.assign(state, {
+                error: false,
+                attached: true,
+                documents: action.documents
+            });
+
+        case failed(actions.ATTACH_DOCUMENT):
+            return _.assign(state, {
+                error: true,
+                attached: false,
+                documents: null
+            });
+
     }
 
 });

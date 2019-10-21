@@ -7,6 +7,6 @@ export function createDossier(customerId, fabricatorId , significantValue, nonSi
     return post(config.get("dossier.url") + "/quotation", {customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue})
 }
 
-export function attachDocument(dossierId, documentTypeId , attachmentData, attachmentName) {
-    return post(config.get("dossier.url") + "/" + dossierId + "/attach/" + documentTypeId, {attachmentData, attachmentName})
+export function attachDocument(dossierId, documentTypeId , path) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/attachPath/" + documentTypeId, {path})
 }
