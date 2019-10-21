@@ -21,7 +21,14 @@ import {
 } from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
 import M from "../strings";
-import {AssignationType, CustomerType, getAssignationTypeDescription, getCustomerTypeDescription} from "../model/vars";
+import {
+    AssignationTypeDatasource,
+    CustomerType,
+    CustomerTypeDatasource,
+    DocumentTypeTypologyDatasource,
+    getAssignationTypeDescription,
+    getCustomerTypeDescription
+} from "../model/vars";
 import * as datasource from "../utils/datasource";
 import {DocumentContainer} from "./components/documents/documentContainer";
 import moment from "moment";
@@ -670,10 +677,7 @@ const entities = {
                                     control: Select,
                                     filterType: "eq",
                                     props: {
-                                        datasource: datasource.fixed([
-                                            {label: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value},
-                                            {label: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.value},
-                                        ]),
+                                        datasource: CustomerTypeDatasource,
                                     },
                                 }
                             ]
@@ -790,13 +794,7 @@ const entities = {
                                     id: "customer",
                                     allowNull: false,
                                     multiple: false,
-                                    datasource: datasource.fixed(
-                                        [
-                                            {label: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_PHYSICAL_PERSON.value},
-                                            {label: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.label, value: CustomerType.SUBJECT_TYPE_LEGAL_PERSON.value},
-
-                                        ]
-                                    ),
+                                    datasource: CustomerTypeDatasource,
                                 }
                             },
                             {
@@ -1129,7 +1127,20 @@ const entities = {
                     if (model.get("id") == null){
                         model.set("active", true)
                     }
+                    // model.on("property:change", (property, value) => {
+                    //     if (property === "typology") {
+                    //         model.invalidateForm()
+                    //     }
+                    // })
                 },
+                // visibility: (field, model, descriptor) => {
+                //     switch (field.property) {
+                //         case "_template":
+                //             return (model != null && model.get("typology") != null && model.get("typology") !== DocumentTypeTypology.NO_MODEL.value);
+                //         default:
+                //             return true;
+                //     }
+                // },
                 fields: [
                     {
                         property: "code",
@@ -1161,26 +1172,32 @@ const entities = {
                             id: "customer",
                             allowNull: true,
                             multiple: false,
-                            datasource: datasource.fixed(
-                                [
-                                    {label: AssignationType.ASSIGN_TO_FABRICATOR.label, value: AssignationType.ASSIGN_TO_FABRICATOR.value},
-                                    {label: AssignationType.ASSIGN_TO_DOSSIER.label, value: AssignationType.ASSIGN_TO_DOSSIER.value},
-
-                                ]
-                            ),
+                            datasource: AssignationTypeDatasource,
                         }
                     },
                     {
-                        property: "active",
-                        control: YesNo,
-                        label: M("active"),
+                        property: "typology",
+                        control: Select,
                         size: "col-sm-4",
-                        sanitizer: (value) => sanitize(value).toBoolean()
+                        label: M("typology"),
+                        props: {
+                            id: "typology",
+                            allowNull: true,
+                            multiple: false,
+                            datasource: DocumentTypeTypologyDatasource,
+                        }
                     },
                     {
                         property: "required",
                         control: YesNo,
                         label: M("required"),
+                        size: "col-sm-4",
+                        sanitizer: (value) => sanitize(value).toBoolean()
+                    },
+                    {
+                        property: "active",
+                        control: YesNo,
+                        label: M("active"),
                         size: "col-sm-4",
                         sanitizer: (value) => sanitize(value).toBoolean()
                     },

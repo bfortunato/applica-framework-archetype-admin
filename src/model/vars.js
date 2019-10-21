@@ -1,5 +1,6 @@
 import M from "../strings";
 import _ from "underscore"
+import * as datasource from "../utils/datasource";
 
 export const CustomerType = {
     SUBJECT_TYPE_PHYSICAL_PERSON: {
@@ -11,6 +12,8 @@ export const CustomerType = {
         value: "legal-person"
     },
 };
+
+export const CustomerTypeDatasource = datasource.fixed(_.map(CustomerType,f => {return {value: f.value, label: f.label}}));
 
 export function getCustomerTypeDescription(customerType) {
     let customerTypes = _.values(CustomerType).filter(f => f.value === customerType);
@@ -39,6 +42,8 @@ export const AssignationType = {
     },
 };
 
+export const AssignationTypeDatasource = datasource.fixed(_.map(AssignationType,f => {return {value: f.value, label: f.label}}));
+
 
 export function getAssignationTypeDescription(assignationType) {
     let assignationTypes = _.values(AssignationType).filter(f => f.value === assignationType);
@@ -47,3 +52,20 @@ export function getAssignationTypeDescription(assignationType) {
     else
         return ""
 }
+
+export const DocumentTypeTypology = {
+    NO_MODEL: {
+        label: M("noModel"),
+        value: "no-model"
+    },
+    DOWNLOADABLE_TEMPLATE: {
+        label: M("downloadableTemplate"),
+        value: "downloadable-template"
+    },
+    SELF_COMILED_DOWNLOADABLE_TEMPLATE: {
+        label: M("selfCompiledDownloadableTemplate"),
+        value: "self-compiled-downloadable-template"
+    },
+};
+
+export const DocumentTypeTypologyDatasource = datasource.fixed(_.map(DocumentTypeTypology,f => {return {value: f.value, label: f.label}}));

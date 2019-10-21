@@ -2294,6 +2294,9 @@ export class NewMultiFile extends Control {
 
     }
 
+    componentWillUnmount() {
+        this.dropzone.destroy();
+    }
 
     generateOptions() {
         let options = {};

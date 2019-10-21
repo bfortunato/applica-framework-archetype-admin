@@ -29,7 +29,7 @@ export class DocumentContainer extends React.Component {
         let field = this.props.field
         let rows = optional(model.get(field.property), []);
 
-        let items = rows.map((i, index) => <DocumentRow key={this.getKey(i)} row={i} index={index} onClick={this.onClick.bind(this)} />)
+        let items = rows.map((i, index) => <DocumentRow dossierId={model.get("id")} key={this.getKey(i)} row={i} index={index} onClick={this.onClick.bind(this)} />)
         return (
             <div>
                 {items}

@@ -323,6 +323,9 @@ strings["en"] = {
     preparatoryDocumentation: "Preparatory documentation",
     privateClosingDocumentation: "Private closing documentation",
     publicClosingDocumentation: "Public closing documentation",
+    typology: "Typology",
+    noModel: "No model",
+    selfCompiledDownloadableTemplate: "Self-compiled downloadable template",
 
 }
 
@@ -535,6 +538,9 @@ strings["it"] = {
     preparatoryDocumentation: "Documentazione propedeutica",
     privateClosingDocumentation: "Documentazione privata di chiusura",
     publicClosingDocumentation: "Documentazione pubblica di chiusura",
+    typology: "Tipologia",
+    noModel: "Nessun modello",
+    selfCompiledDownloadableTemplate: "Modello scaricabile autocompilato",
 
 }
 

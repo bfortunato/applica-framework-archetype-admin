@@ -4,7 +4,7 @@ import {alert, hideLoader, showLoader} from "../plugins";
 import {createAsyncAction} from "../utils/ajex";
 import * as responses from "../api/responses";
 import _ from "underscore";
-import {CREATE_DOSSIER} from "./types";
+import {ATTACH_DOCUMENT, CREATE_DOSSIER} from "./types";
 import * as DossierApi from "../api/dossier";
 import {getEntity} from "./entities";
 import M from "../strings";
@@ -36,6 +36,22 @@ export const createDossier = createAsyncAction(CREATE_DOSSIER, data => {
             if (data.reload) {
                 getEntity({discriminator: data.discriminator, entity: data.entity, id: response.value.id})
             }
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            createDossier.fail()
+        })
+});
+
+export const attachDocument = createAsyncAction(ATTACH_DOCUMENT, data => {
+
+    showLoader();
+    DossierApi.attachDocument(data.dossierId, data.documentTypeId, data.attachmentData, data.attachmentName)
+        .then(response => {
+            hideLoader();
+
+            createDossier.complete()
         })
         .catch(e => {
             hideLoader()
