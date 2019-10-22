@@ -5,7 +5,7 @@ import {Layout} from "../../components/layout"
 import EntityForm from "../../screens/entities/entityForm";
 import {connect} from "../../utils/aj";
 import {DossierStore} from "../../../stores/dossier";
-import {createDossier} from "../../../actions/dossier";
+import {createDossier, editDossier} from "../../../actions/dossier";
 import {format, safeGet} from "../../../utils/lang";
 import M from "../../../strings";
 
@@ -49,14 +49,28 @@ export default class DossierForm extends EntityForm {
     onSubmit(data) {
         let customer = safeGet(data, "_customer", null);
         let fabricator = safeGet(data, "_fabricator", null);
-        createDossier({
-            discriminator: "entity_form_dossier",
-            customerId: customer != null ? customer.id : null,
-            fabricatorId: fabricator != null ? fabricator.id : null,
-            significantValue: safeGet(data, "_significantValue", null),
-            nonSignificantValue: safeGet(data, "_nonSignificantValue", null),
-            serviceValue: safeGet(data, "_serviceValue", null)
-        })
+        if (safeGet(data,"id", null)){
+            editDossier({
+                discriminator: "entity_form_dossier",
+                dossierId: safeGet(data,"id", null),
+                customerId: customer != null ? customer.id : null,
+                fabricatorId: fabricator != null ? fabricator.id : null,
+                significantValue: safeGet(data, "_significantValue", null),
+                nonSignificantValue: safeGet(data, "_nonSignificantValue", null),
+                serviceValue: safeGet(data, "_serviceValue", null),
+                notes: safeGet(data, "notes", null)
+            })
+        } else {
+            createDossier({
+                discriminator: "entity_form_dossier",
+                customerId: customer != null ? customer.id : null,
+                fabricatorId: fabricator != null ? fabricator.id : null,
+                significantValue: safeGet(data, "_significantValue", null),
+                nonSignificantValue: safeGet(data, "_nonSignificantValue", null),
+                serviceValue: safeGet(data, "_serviceValue", null),
+                notes: safeGet(data, "notes", null)
+            })
+        }
     }
 
     render() {

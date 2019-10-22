@@ -816,8 +816,22 @@ export class Field extends React.Component {
         if (!_.isEmpty(this.props.field.className)) {
             className += " " + this.props.field.className
         }
+
+        let style = {};
+
+        if (this.props.field.emptyRow) {
+            style["minHeight"] = 0;
+            style["marginBottom"] = 0;
+        } else {
+            style["minHeight"] = 58;
+        }
+
+        if (this.props.field.hidden && this.props.field.hidden == true) {
+            className = "";
+            style = {};
+        }
         return (
-            <div className={className} style={{minHeight: 58}}>
+            <div className={className} style={style}>
                 {hasLabel &&
                     <Label field={this.props.field} model={model}/>
                 }

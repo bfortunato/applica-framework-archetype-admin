@@ -12,6 +12,7 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
     switch (action.type) {
 
         case completed(actions.CREATE_DOSSIER):
+        case completed(actions.EDIT_DOSSIER):
             return _.assign(state, {
                 error: false,
                 data: action.data,
@@ -21,6 +22,7 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
             });
 
         case failed(actions.CREATE_DOSSIER):
+        case failed(actions.EDIT_DOSSIER):
             return _.assign(state, {
                 error: true,
                 data: action.data,
@@ -33,19 +35,29 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
             return _.assign(state, {showAddDocumentDialog: true, documentTypeId: action.documentTypeId});
         case actions.HIDE_ADD_DOCUMENT_DIALOG:
             return _.assign(state, {showAddDocumentDialog: false, documentTypeId: null});
+        case actions.SHOW_REFUSE_DOCUMENT_DIALOG:
+            return _.assign(state, {showRefuseDocumentDialog: true, documentTypeId: action.documentTypeId});
+        case actions.HIDE_REFUSE_DOCUMENT_DIALOG:
+            return _.assign(state, {showRefuseDocumentDialog: false, documentTypeId: null});
         case actions.ATTACH_DOCUMENT:
-            return _.assign(state, {documents: null});
+        case actions.REFUSE_DOCUMENT:
+        case actions.CLEAR_DOCUMENT:
+            return _.assign(state, {completed: false, documents: null});
         case completed(actions.ATTACH_DOCUMENT):
+        case completed(actions.REFUSE_DOCUMENT):
+        case completed(actions.CLEAR_DOCUMENT):
             return _.assign(state, {
                 error: false,
-                attached: true,
+                completed: true,
                 documents: action.documents
             });
 
         case failed(actions.ATTACH_DOCUMENT):
+        case failed(actions.REFUSE_DOCUMENT):
+        case failed(actions.CLEAR_DOCUMENT):
             return _.assign(state, {
                 error: true,
-                attached: false,
+                completed: false,
                 documents: null
             });
 

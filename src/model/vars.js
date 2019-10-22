@@ -69,3 +69,49 @@ export const DocumentTypeTypology = {
 };
 
 export const DocumentTypeTypologyDatasource = datasource.fixed(_.map(DocumentTypeTypology,f => {return {value: f.value, label: f.label}}));
+
+export const DocumentStatus = {
+    TO_BE_UPLOAD: {
+        label: M("toBeUpload"),
+        value: "to-be-upload"
+    },
+    UPLOADED: {
+        label: M("uploaded"),
+        value: "uploaded"
+    },
+    TO_RECHARGE: {
+        label: M("toRecharge"),
+        value: "to-recharge"
+    },
+};
+
+export const DossierStatus = {
+    STATUS_QUOTATION: {
+        label: M("quotation"),
+        value: "quotation"
+    },
+    STATUS_DRAFT: {
+        label: M("toBeUpload"),
+        value: "draft"
+    },
+    STATUS_TO_CANDIDATE: {
+        label: M("toCandidate"),
+        value: "to-candidate"
+    },
+    STATUS_CANDIDATED: {
+        label: M("candidated"),
+        value: "candidated"
+    },
+    STATUS_REFUSED: {
+        label: M("refused"),
+        value: "refused"
+    },
+    STATUS_APPROVED: {
+        label: M("approved"),
+        value: "approved"
+    },
+    STATUS_PAY_OFF: {
+        label: M("payOff"),
+        value: "pay-off"
+    },
+};

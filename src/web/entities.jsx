@@ -12,11 +12,9 @@ import {
     Number,
     PasswordText,
     ReadOnlyText,
-    ReadOnlyTextArea,
     Select,
     Spacer,
     Text,
-    TextArea,
     YesNo
 } from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
@@ -26,6 +24,7 @@ import {
     CustomerType,
     CustomerTypeDatasource,
     DocumentTypeTypologyDatasource,
+    DossierStatus,
     getAssignationTypeDescription,
     getCustomerTypeDescription
 } from "../model/vars";
@@ -35,7 +34,7 @@ import moment from "moment";
 import {format, isDifferent} from "../utils/lang";
 import {AddDocumentDialog} from "./components/documents/addDocumentDialog";
 import {DossierStore} from "../stores/dossier";
-import {hideAddDocumentDialog} from "../actions/dossier";
+import {RefuseDocumentDialog} from "./components/documents/refuseDocumentDialog";
 
 
 const entities = {
@@ -1241,14 +1240,13 @@ const entities = {
             descriptor: {
                 stores:[DossierStore],
                 formUpdateFunction: (newState, oldState, model) => {
-                    if (newState && newState.attached && !_.isEmpty(newState.documents) && isDifferent(newState.documents, oldState.documents)) {
-                        hideAddDocumentDialog()
+                    if (newState && newState.completed && !_.isEmpty(newState.documents) && isDifferent(newState.documents, oldState.documents)) {
                         model.set("documents", newState.documents);
                         model.invalidateForm();
                     }
                 },
                 canSave: (model)=>{
-                    return model.get("id") === null;
+                    return true;
                 },
                 areas: [
                     {
@@ -1258,6 +1256,11 @@ const entities = {
                             {
                                 property: "addDocumentDialog",
                                 control: AddDocumentDialog,
+                                emptyRow: true
+                            },
+                            {
+                                property: "refuseDocumentDialog",
+                                control: RefuseDocumentDialog,
                                 emptyRow: true
                             },
                             {
@@ -1323,7 +1326,7 @@ const entities = {
                                                 property: "_customer",
                                                 label: M("customer"),
                                                 getControl: (model) => {
-                                                    return model.get("id") === null ? ValuesLookupContainer : ReadOnlyText
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? ValuesLookupContainer : ReadOnlyText
                                                 },
                                                 size: "col-sm-8",
                                                 props: {
@@ -1351,7 +1354,7 @@ const entities = {
                                                 property: "_fabricator",
                                                 label: M("fabricator"),
                                                 getControl: (model) => {
-                                                    return model.get("id") === null ? ValuesLookupContainer : ReadOnlyText
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? ValuesLookupContainer : ReadOnlyText
                                                 },
                                                 size: "col-sm-4",
                                                 props: {
@@ -1378,7 +1381,7 @@ const entities = {
                                             {
                                                 property: "_significantValue",
                                                 getControl: (model) => {
-                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? Text : ReadOnlyText
                                                 },
                                                 label: M("significantValue"),
                                                 placeholder: M("significantValue"),
@@ -1387,7 +1390,7 @@ const entities = {
                                             {
                                                 property: "_nonSignificantValue",
                                                 getControl: (model) => {
-                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? Text : ReadOnlyText
                                                 },
                                                 label: M("nonSignificantValue"),
                                                 placeholder: M("nonSignificantValue"),
@@ -1396,7 +1399,7 @@ const entities = {
                                             {
                                                 property: "_serviceValue",
                                                 getControl: (model) => {
-                                                    return model.get("id") === null ? Text : ReadOnlyText
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? Text : ReadOnlyText
                                                 },
                                                 label: M("serviceValue"),
                                                 placeholder: M("serviceValue"),
@@ -1404,9 +1407,7 @@ const entities = {
                                             },
                                             {
                                                 property: "notes",
-                                                getControl: (model) => {
-                                                    return model.get("id") === null ? TextArea : ReadOnlyTextArea
-                                                },
+                                                control: Text,
                                                 label: M("notes"),
                                                 placeholder: M("notes"),
                                                 size: "col-sm-12",
@@ -1436,7 +1437,7 @@ const entities = {
                                         useBoostrapRow: true,
                                         fields: [
                                             {
-                                                property: "_recommendedPrice",
+                                                property: "recommendedPrice",
                                                 control: ReadOnlyText,
                                                 label: M("recommendedRetailPrice"),
                                                 placeholder: M("recommendedRetailPrice"),
@@ -1448,10 +1449,10 @@ const entities = {
                                                 }
                                             },
                                             {
-                                                property: "_recommendedPrice",
+                                                property: "recommendedPrice",
                                                 control: ReadOnlyText,
                                                 getLabel: model => {
-                                                    return model != null && model.get("_recommendedPrice") ? format(M("netAmountToBePaid"), model.get("_recommendedPrice").discount) : M("priceDiscounted");
+                                                    return model != null && model.get("recommendedPrice") ? format(M("netAmountToBePaid"), model.get("recommendedPrice").discount) : M("priceDiscounted");
                                                 },
                                                 placeholder: M("priceDiscounted"),
                                                 size: "col-sm-12",
@@ -1462,7 +1463,7 @@ const entities = {
                                                 }
                                             },
                                             {
-                                                property: "_serviceCost",
+                                                property: "serviceCost",
                                                 control: ReadOnlyText,
                                                 label: M("initiativeCost"),
                                                 placeholder: M("initiativeCost"),
@@ -1474,7 +1475,7 @@ const entities = {
                                                 }
                                             },
                                             {
-                                                property: "_serviceCost",
+                                                property: "serviceCost",
                                                 control: ReadOnlyText,
                                                 label: M("fabricatorPayOff"),
                                                 placeholder: M("fabricatorPayOff"),
@@ -1486,7 +1487,7 @@ const entities = {
                                                 }
                                             },
                                             {
-                                                property: "_serviceCost",
+                                                property: "serviceCost",
                                                 control: ReadOnlyText,
                                                 label: M("fabricatorPayOff"),
                                                 placeholder: M("fabricatorPayOff"),
@@ -1506,6 +1507,9 @@ const entities = {
                     {
                         component: AreaNoCard,
                         className: "col-sm-12",
+                        visibility: model => {
+                            return model.get("status") !== DossierStatus.STATUS_QUOTATION.value;
+                        },
                         fields: [
                             {
                                 property: "documents",

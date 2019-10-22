@@ -163,3 +163,7 @@
     background-color: #063868;
   }
 }
+
+.dropdown-toggle::after {
+  content: none;
+}

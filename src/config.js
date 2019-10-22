@@ -29,6 +29,7 @@ module.exports = {
     "system.url": `${serviceBase}system`,
     "upload.url": `${serviceBase}upload/file`,
     "dossier.url": `${serviceBase}dossiers`,
+    "attachment.download" : `${serviceBase}attachment/renameAndDownload`,
     "backendVersion" : getVersion(),
     "copyrightInfos" : getCopyright()
 }

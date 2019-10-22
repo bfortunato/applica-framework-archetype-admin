@@ -26,6 +26,7 @@ export class AddDocumentDialog extends React.Component {
             documentTypeId: this.state.documentTypeId,
             attachment: newFile
         })
+        this.onClose()
     }
 
     onClose() {
