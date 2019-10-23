@@ -62,7 +62,7 @@ export const DocumentTypeTypology = {
         label: M("downloadableTemplate"),
         value: "downloadable-template"
     },
-    SELF_COMILED_DOWNLOADABLE_TEMPLATE: {
+    SELF_COMPILED_DOWNLOADABLE_TEMPLATE: {
         label: M("selfCompiledDownloadableTemplate"),
         value: "self-compiled-downloadable-template"
     },
@@ -91,7 +91,7 @@ export const DossierStatus = {
         value: "quotation"
     },
     STATUS_DRAFT: {
-        label: M("toBeUpload"),
+        label: M("draft"),
         value: "draft"
     },
     STATUS_TO_CANDIDATE: {
@@ -102,10 +102,6 @@ export const DossierStatus = {
         label: M("candidated"),
         value: "candidated"
     },
-    STATUS_REFUSED: {
-        label: M("refused"),
-        value: "refused"
-    },
     STATUS_APPROVED: {
         label: M("approved"),
         value: "approved"
@@ -114,4 +110,55 @@ export const DossierStatus = {
         label: M("payOff"),
         value: "pay-off"
     },
+    STATUS_REFUSED: {
+        label: M("refused"),
+        value: "refused"
+    },
 };
+
+export function getDossierStatusDescription(status) {
+    let dossierStatuses = _.values(DossierStatus).filter(f => f.value === status);
+    if (!_.isEmpty(dossierStatuses))
+        return dossierStatuses[0].label;
+    else
+        return ""
+}
+
+export const DossierStatusOrder = {
+    STATUS_QUOTATION: {
+        label: "quotation",
+        value: 0
+    },
+    STATUS_DRAFT: {
+        label: "draft",
+        value: 1
+    },
+    STATUS_TO_CANDIDATE: {
+        label: "to-candidate",
+        value: 2
+    },
+    STATUS_CANDIDATED: {
+        label: "candidated",
+        value: 3
+    },
+    STATUS_APPROVED: {
+        label: "approved",
+        value: 4
+    },
+    STATUS_PAY_OFF: {
+        label: "pay-off",
+        value: 5
+    },
+    STATUS_REFUSED: {
+        label: "refused",
+        value: 6
+    },
+};
+
+export function getDossierStatusPosition(status) {
+    let dossierStatuses = _.values(DossierStatusOrder).filter(f => f.label === status);
+    if (!_.isEmpty(dossierStatuses))
+        return dossierStatuses[0].value;
+    else
+        return ""
+}

@@ -8,6 +8,7 @@ import {DossierStore} from "../../../stores/dossier";
 import {createDossier, editDossier} from "../../../actions/dossier";
 import {format, safeGet} from "../../../utils/lang";
 import M from "../../../strings";
+import {DossierStatusComponent} from "./dossierStatus";
 
 class HeaderDossier extends React.Component {
     constructor(props) {
@@ -16,22 +17,21 @@ class HeaderDossier extends React.Component {
     }
 
     render() {
-
         let data = this.props.data;
         let code = safeGet(data, "code", null);
         let title = null;
         if (code != null)
             title = format(M("dossierNumber"), code);
-        let status = safeGet(data, "status", null);
 
         return (
             <div>
-                <div className="header-actions-grid fixed-top">
-                    <div className="float-left">
-                        {title}
+                <div className="header-actions-dossier fixed-top">
+                    <div className="col-8 float-left">
+                        <span style={{fontSize: "20px"}}>{title}</span>
                     </div>
-                    <div className="float-right">
-                        {status}
+                    <div className="col-4 float-right">
+                        <DossierStatusComponent
+                            data={this.props.data}/>
                     </div>
                 </div>
             </div>
@@ -78,19 +78,25 @@ export default class DossierForm extends EntityForm {
         let component = this.getFormComponent()
         let selectedTab = this.props.params.selectedTab;
 
+        let id = safeGet(this.state.data, "id", null);
+
+        let style = {
+            marginTop: id != null ? "30px" : ""
+        };
 
         return (
             <Layout>
-                <HeaderDossier
+                {id && <HeaderDossier
                     data={this.state.data}
-                />
+                />}
                 {React.createElement(component, {
                     ref: "form",
                     descriptor: descriptor,
                     data: this.state.data,
                     selectedTab : selectedTab,
                     onSubmit: this.onSubmit.bind(this),
-                    onCancel: this.onCancel.bind(this)
+                    onCancel: this.onCancel.bind(this),
+                    style: style
                 })}
             </Layout>
         )

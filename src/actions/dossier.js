@@ -5,13 +5,21 @@ import {createAsyncAction} from "../utils/ajex";
 import * as responses from "../api/responses";
 import _ from "underscore";
 import {
+    APPROVE,
+    APPROVED,
     ATTACH_DOCUMENT,
+    CANDIDATE,
     CLEAR_DOCUMENT,
+    COMMIT,
+    CONFIRM_QUOTATION,
     CREATE_DOSSIER,
     DELETE_ATTACHMENT,
     EDIT_DOSSIER,
     HIDE_ADD_DOCUMENT_DIALOG,
     HIDE_REFUSE_DOCUMENT_DIALOG,
+    PAY_OFF,
+    QUOTATION,
+    REFUSE,
     REFUSE_DOCUMENT,
     SHOW_ADD_DOCUMENT_DIALOG,
     SHOW_REFUSE_DOCUMENT_DIALOG
@@ -144,10 +152,136 @@ export const clearDocument = createAsyncAction(CLEAR_DOCUMENT, data => {
         })
 });
 
+export const quotation = createAsyncAction(QUOTATION, data => {
+    aj.dispatch({
+        type: QUOTATION
+    })
+
+    showLoader();
+    DossierApi.quotation(data.dossierId)
+        .then(response => {
+            hideLoader();
+            quotation.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            quotation.fail()
+        })
+});
+
+export const confirmQuotation = createAsyncAction(CONFIRM_QUOTATION, data => {
+    aj.dispatch({
+        type: CONFIRM_QUOTATION
+    })
+
+    showLoader();
+    DossierApi.confirmQuotation(data.dossierId)
+        .then(response => {
+            hideLoader();
+            confirmQuotation.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            confirmQuotation.fail()
+        })
+});
+
+export const commit = createAsyncAction(COMMIT, data => {
+    aj.dispatch({
+        type: COMMIT
+    })
+
+    showLoader();
+    DossierApi.commit(data.dossierId)
+        .then(response => {
+            hideLoader();
+            commit.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            commit.fail()
+        })
+});
+
+export const candidate = createAsyncAction(CANDIDATE, data => {
+    aj.dispatch({
+        type: CANDIDATE
+    })
+
+    showLoader();
+    DossierApi.candidate(data.dossierId)
+        .then(response => {
+            hideLoader();
+            candidate.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            candidate.fail()
+        })
+});
+
+export const approve = createAsyncAction(APPROVE, data => {
+    aj.dispatch({
+        type: APPROVE
+    })
+
+    showLoader();
+    DossierApi.approve(data.dossierId)
+        .then(response => {
+            hideLoader();
+            approve.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            approve.fail()
+        })
+});
+
+export const payOff = createAsyncAction(PAY_OFF, data => {
+    aj.dispatch({
+        type: PAY_OFF
+    })
+
+    showLoader();
+    DossierApi.payOff(data.dossierId)
+        .then(response => {
+            hideLoader();
+            payOff.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            payOff.fail()
+        })
+});
+
+export const refuse = createAsyncAction(REFUSE, data => {
+    aj.dispatch({
+        type: REFUSE
+    })
+
+    showLoader();
+    DossierApi.refuse(data.dossierId)
+        .then(response => {
+            hideLoader();
+            refuse.complete({status: response.value.status});
+        })
+        .catch(e => {
+            hideLoader()
+            alert("Attenzione!", responses.msg(e), "error");
+            refuse.fail()
+        })
+});
+
 export const showAddDocumentDialog = aj.createAction(SHOW_ADD_DOCUMENT_DIALOG, data => {
     aj.dispatch({
         type: SHOW_ADD_DOCUMENT_DIALOG,
-        documentTypeId: data.documentTypeId
+        documentType: data.documentType
     })
 });
 

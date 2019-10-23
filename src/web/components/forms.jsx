@@ -712,10 +712,11 @@ export class Form extends React.Component {
         let canSave = this.props.canSave
         let canCancel = this.props.canCancel
         let showFormFooter = this.showFormFooter();
+        let style = optional(this.props.style, {})
 
 
         return (
-            <div className="form">
+            <div className="form" style={style}>
                 <form action="" className={className} role="form" onSubmit={this.onSubmit.bind(this)}>
                     <FormBody descriptor={descriptor} model={model} />
 
@@ -2437,7 +2438,7 @@ export class NewMultiFile extends Control {
 
         return (
             <div>
-                <HeaderBlock title={title} label={label} actions={actions}/>
+                {(label != "" || title != "" || actions.length > 0) && <HeaderBlock title={title} label={label} actions={actions}/>}
                 <div id="dropzone" className="dropzone" >
                 </div>
 

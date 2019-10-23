@@ -1,5 +1,5 @@
 import _ from "underscore";
-import {CheckCell, TextCell} from "./components/grids";
+import {CheckCell, TextCell, TextCellWithSubText} from "./components/grids";
 import {check, sanitize} from "../libs/validator";
 import {
     AreaNoCard,
@@ -14,6 +14,7 @@ import {
     ReadOnlyText,
     Select,
     Spacer,
+    Switch,
     Text,
     YesNo
 } from "./components/forms";
@@ -29,12 +30,13 @@ import {
     getCustomerTypeDescription
 } from "../model/vars";
 import * as datasource from "../utils/datasource";
-import {DocumentContainer} from "./components/documents/documentContainer";
+import {DossierDocumentContainer} from "./components/dossiers/dossierDocumentContainer";
 import moment from "moment";
 import {format, isDifferent} from "../utils/lang";
-import {AddDocumentDialog} from "./components/documents/addDocumentDialog";
+import {AddDocumentDialog} from "./components/dossiers/addDocumentDialog";
 import {DossierStore} from "../stores/dossier";
-import {RefuseDocumentDialog} from "./components/documents/refuseDocumentDialog";
+import {RefuseDocumentDialog} from "./components/dossiers/refuseDocumentDialog";
+import {FabricatorDocumentContainer} from "./components/dossiers/fabricatorDocumentContainer";
 
 
 const entities = {
@@ -626,10 +628,13 @@ const entities = {
                     {
                         component: AreaNoCard,
                         className: "col-sm-12",
+                        visibility: model => {
+                            return model.get("id") != null;
+                        },
                         fields: [
                             {
                                 property: "documents",
-                                control: DocumentContainer,
+                                control: FabricatorDocumentContainer,
                                 label: null,
                                 size: "col-sm-12",
                             }
@@ -798,6 +803,27 @@ const entities = {
                                     multiple: false,
                                     datasource: CustomerTypeDatasource,
                                 }
+                            },
+                        ]
+                    },
+                    {
+                        title: M("accountInformations"),
+                        subtitle: null,
+                        fields: [
+                            {
+                                property: "mail",
+                                control: Mail,
+                                label: M("mail"),
+                                placeholder: M("mailAddress"),
+                                size: "col-sm-4"
+                            },
+                            {
+                                property: "password",
+                                control: PasswordText,
+                                label: M("password"),
+                                placeholder: M("password"),
+                                size: "col-sm-4",
+                                sanitizer: value => sanitize(value).trim()
                             },
                             {
                                 property: "active",
@@ -1104,7 +1130,6 @@ const entities = {
                             }
                         }
                     },
-                    {property: "required", header: M("required"), cell: CheckCell, sortable: true, searchable: false},
                     {
                         property: "template",
                         header: M("downloadableTemplate"),
@@ -1190,13 +1215,6 @@ const entities = {
                         }
                     },
                     {
-                        property: "required",
-                        control: YesNo,
-                        label: M("required"),
-                        size: "col-sm-4",
-                        sanitizer: (value) => sanitize(value).toBoolean()
-                    },
-                    {
                         property: "active",
                         control: YesNo,
                         label: M("active"),
@@ -1228,7 +1246,84 @@ const entities = {
             title: M("dossiersEcoBonus"),
             descriptor: {
                 columns: [
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "code", header: M("#"), cell: TextCell, sortable: true, searchable: true},
+                    {
+                        property: "customer",
+                        header: M("customer"),
+                        cell: TextCellWithSubText,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatterTitle: (v) => {
+                                return v != null ? v.get("name") : "";
+                            },
+                            formatterSubtitle: (v) => {
+                                return v != null ? getCustomerTypeDescription(v.get("subjectType")) : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "fabricator",
+                        header: M("fabricator"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.businessName : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "recommendedPrice",
+                        header: M("valueInBill"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.recommendedRetailPrice : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "serviceCost",
+                        header: M("fabricatorPayOffShort"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.fabricatorPayOff : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "serviceFeeInvoiced",
+                        header: M("serviceFeeInvoiced"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        props: {
+                            formatter: v => {
+                                return v != null && v ? M("yes") : M("no");
+                            }
+                        }
+                    },
+                    {
+                        property: "_preparatoryDocuments",
+                        header: M("preparatoryDocumentsShort"),
+                        cell: TextCell,
+                        sortable: false,
+                        searchable: false,
+                    },
+                    {
+                        property: "_closingDocuments",
+                        header: M("closingDocumentsShort"),
+                        cell: TextCell,
+                        sortable: false,
+                        searchable: false,
+                    },
                 ]
             }
         },
@@ -1242,6 +1337,12 @@ const entities = {
                 formUpdateFunction: (newState, oldState, model) => {
                     if (newState && newState.completed && !_.isEmpty(newState.documents) && isDifferent(newState.documents, oldState.documents)) {
                         model.set("documents", newState.documents);
+                        model.invalidateForm();
+                    }
+
+                    if (newState && newState.statusChanged && newState.status !== model.get("status")){
+                        // getEntity({discriminator: "entity_form_dossier", entity: "dossier", id: model.get("id")});
+                        model.set("status", newState.status);
                         model.invalidateForm();
                     }
                 },
@@ -1498,6 +1599,12 @@ const entities = {
                                                     }
                                                 }
                                             },
+                                            {
+                                                property: "serviceFeeInvoiced",
+                                                control: Switch,
+                                                label: M("serviceFeeInvoiced"),
+                                                size: "col-sm-12",
+                                            },
                                         ]
                                     }
                                 ]
@@ -1508,12 +1615,12 @@ const entities = {
                         component: AreaNoCard,
                         className: "col-sm-12",
                         visibility: model => {
-                            return model.get("status") !== DossierStatus.STATUS_QUOTATION.value;
+                            return model.get("id") != null && model.get("status") !== DossierStatus.STATUS_QUOTATION.value;
                         },
                         fields: [
                             {
                                 property: "documents",
-                                control: DocumentContainer,
+                                control: DossierDocumentContainer,
                                 label: null,
                                 size: "col-sm-12",
                             }

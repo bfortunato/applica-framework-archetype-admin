@@ -24,7 +24,7 @@ export class DocumentRow extends React.Component {
     attachAttachment() {
         let row = this.props.row
         showAddDocumentDialog({
-            documentTypeId: row.documentTypeId
+            documentType: row.documentType
         });
     }
 
@@ -48,6 +48,10 @@ export class DocumentRow extends React.Component {
         window.open(config.get("attachment.download") + "?filename=" + row.documentType.description + "&path=" + encodeURI(row.documentType.template.path) + "&__TOKEN=" + encodeURIComponent(getSessionToken()))
     }
 
+    downloadSelfCompiledTemplate(){
+        //TODO:
+    }
+
     render() {
         let row = this.props.row
         let index = this.props.index + 1;
@@ -68,14 +72,14 @@ export class DocumentRow extends React.Component {
             "backgroundPosition": "center",
             "height": "70px",
             "backgroundColor": "#F2F2F2"
-        }
+        };
 
         return (
             <div className="col-12 zero-padding" onClick={this.onClick.bind(this)}>
                 <div className="card m-t-10 m-b-0 p-15" style={cardStyle}>
                     <div className="col-12">
                         <div className="row">
-                            <div className="col-md-10 col-8 p-t-12">
+                            <div className="col-8 p-t-12" style={{display: "inherit"}}>
                                 <div className={circleClassName}>
                                     <button onClick={(e)=>{e.preventDefault()}}>
                                         {row.file != null && <i className="zmdi zmdi-check" />}
@@ -90,19 +94,18 @@ export class DocumentRow extends React.Component {
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-md-2 col-4">
-
-
-                                <div className="dropleft document-more-vert float-right">
+                            <div className="col-4 zero-padding">
+                                {(row.file != null || row.documentType.typology !== DocumentTypeTypology.NO_MODEL.value) && <div className="dropleft document-more-vert float-right">
                                     <a className="dropdown-toggle" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i style={{marginTop: "20px"}} className="zmdi zmdi-more-vert" />
+                                        <i className="zmdi zmdi-more-vert" />
                                     </a>
                                     <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                        {row.valid && <a className="dropdown-item" onClick={this.refuseDocument.bind(this)}>{M("refuse")}</a>}
+                                        {row.valid && row.file != null && <a className="dropdown-item" onClick={this.refuseDocument.bind(this)}>{M("refuse")}</a>}
                                         {row.file != null && <a className="dropdown-item" onClick={this.clearDocument.bind(this)}>{M("remove")}</a>}
-                                        {row.documentType.typology !== DocumentTypeTypology.NO_MODEL.value && <a className="dropdown-item" onClick={this.downloadTemplate.bind(this)}>{M("downloadTemplate")}</a>}
+                                        {row.documentType.typology !== DocumentTypeTypology.NO_MODEL.value && <a className="dropdown-item" onClick={this.downloadTemplate.bind(this)}>{row.documentType.typology === DocumentTypeTypology.SELF_COMPILED_DOWNLOADABLE_TEMPLATE.value ? M("downloadEmptyTemplate") : M("downloadTemplate")}</a>}
+                                        {row.documentType.typology === DocumentTypeTypology.SELF_COMPILED_DOWNLOADABLE_TEMPLATE.value && <a className="dropdown-item" onClick={this.downloadSelfCompiledTemplate.bind(this)}>{M("downloadTemplate")}</a>}
                                     </div>
-                                </div>
+                                </div>}
 
                                 {row.file == null && <div className="attachment-box float-right" onClick={this.attachAttachment.bind(this, row)}>
                                     <div className="add-circle-document float-left">
@@ -113,7 +116,7 @@ export class DocumentRow extends React.Component {
                                 </div>}
                                 {row.file != null &&
                                 <div className="attachment-box float-right">
-                                    <div className="input-image" style={_.assign(imgStyle, {"backgroundImage": `url("${row.preview}")`})}></div>
+                                    <div className="input-image" style={_.assign(imgStyle, {"backgroundImage": `url("${row.preview}")`})}/>
                                 </div>}
                             </div>
                         </div>

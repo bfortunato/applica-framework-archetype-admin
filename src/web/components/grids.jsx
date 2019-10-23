@@ -729,6 +729,48 @@ export class TextCell extends Cell {
     }
 }
 
+export class TextCellWithSubText extends Cell {
+    toggleExpand(e) {
+        if (_.isFunction(this.props.onExpand)) {
+            this.props.onExpand(this.props.row)
+            e.preventDefault()
+            e.stopPropagation()
+            e.nativeEvent.stopImmediatePropagation()
+        }
+    }
+
+    render() {
+        let marginLeft = 30 * (this.props.row.level || 0)
+        let icon = "zmdi "
+        if (!this.props.row.expanded) {
+            icon += " zmdi-plus"
+        } else {
+            icon += " zmdi-minus"
+        }
+
+        let formatterTitle = _.isFunction(this.props.formatterTitle) ? this.props.formatterTitle : v => v
+        let formatterSubtitle = _.isFunction(this.props.formatterSubtitle) ? this.props.formatterSubtitle : v => v
+
+        let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
+            <a style={{marginLeft: marginLeft, marginRight: 20}} href="javascript:;" className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
+                <i className={"c-black " + icon} />
+            </a> : null
+
+        let style = {}
+        if (caret == null && this.props.row.level > 0 && this.props.firstElement) {
+            style.marginLeft = marginLeft + 20
+        }
+
+        return (
+            <div>{caret}
+                <p className="textcell-title">{formatterTitle(this.props.value, this.props.row.data)}</p>
+                <p className="textcell-subtitle">{formatterSubtitle(this.props.value, this.props.row.data)}</p>
+            </div>
+
+        )
+    }
+}
+
 export class CheckCell extends Cell {
     render() {
 

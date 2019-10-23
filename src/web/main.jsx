@@ -12,11 +12,11 @@ import * as plugins from "./pluginsimpl";
 import {resumeSession} from "../actions/session";
 import * as keyboard from "./utils/keyboard";
 import {SessionStore} from "../stores/session";
-import {EntitiesGrid, EntityForm, RevisionGrid} from "./screens/entities";
+import {DossierGrid, EntitiesGrid, EntityForm, RevisionGrid} from "./screens/entities";
 import {getUserProfileImage} from "../actions/ui";
 import {setupMenu} from "../actions/menu";
 import * as NotificationCenter from "../utils/notificationCenter";
-import DossierForm from "./components/documents/dossierForm";
+import DossierForm from "./components/dossiers/dossierForm";
 
 
 export default function main() {
@@ -24,6 +24,7 @@ export default function main() {
 	plugins.register()
 
 	/* Admin routes */
+    ui.addRoute("/entities/dossier", params => ui.changeScreen(<DossierGrid key={params.entity} entity="dossier"/>))
 	ui.addRoute("/entities/:entity", params => ui.changeScreen(<EntitiesGrid key={params.entity} entity={params.entity} />))
     ui.addRoute("/entities/dossier/:entityId", params => ui.changeScreen(<DossierForm key={params.entity} entity="dossier" entityId={params.entityId} params={params}/>))
 	ui.addRoute("/entities/:entity/:entityId", params => ui.changeScreen(<EntityForm key={params.entity} entity={params.entity} entityId={params.entityId} params={params}/>))

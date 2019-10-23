@@ -32,9 +32,9 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
             });
 
         case actions.SHOW_ADD_DOCUMENT_DIALOG:
-            return _.assign(state, {showAddDocumentDialog: true, documentTypeId: action.documentTypeId});
+            return _.assign(state, {showAddDocumentDialog: true, documentType: action.documentType});
         case actions.HIDE_ADD_DOCUMENT_DIALOG:
-            return _.assign(state, {showAddDocumentDialog: false, documentTypeId: null});
+            return _.assign(state, {showAddDocumentDialog: false, documentType: null});
         case actions.SHOW_REFUSE_DOCUMENT_DIALOG:
             return _.assign(state, {showRefuseDocumentDialog: true, documentTypeId: action.documentTypeId});
         case actions.HIDE_REFUSE_DOCUMENT_DIALOG:
@@ -59,6 +59,30 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
                 error: true,
                 completed: false,
                 documents: null
+            });
+        case completed(actions.QUOTATION):
+        case completed(actions.CONFIRM_QUOTATION):
+        case completed(actions.COMMIT):
+        case completed(actions.CANDIDATE):
+        case completed(actions.APPROVE):
+        case completed(actions.PAY_OFF):
+        case completed(actions.REFUSE):
+            return _.assign(state, {
+                error: false,
+                statusChanged: true,
+                status: action.status
+            });
+
+        case failed(actions.QUOTATION):
+        case failed(actions.CONFIRM_QUOTATION):
+        case failed(actions.COMMIT):
+        case failed(actions.CANDIDATE):
+        case failed(actions.APPROVE):
+        case failed(actions.PAY_OFF):
+        case failed(actions.REFUSE):
+            return _.assign(state, {
+                error: true,
+                statusChanged: false
             });
 
     }

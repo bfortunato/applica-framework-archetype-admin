@@ -22,3 +22,32 @@ export function refuseDocument(dossierId, documentTypeId, refuseReason) {
 export function clearDocument(dossierId, documentTypeId) {
     return post(config.get("dossier.url") + "/" + dossierId + "/clear/" + documentTypeId)
 }
+
+
+export function quotation(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/quotation")
+}
+
+export function confirmQuotation(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/confirmQuotation")
+}
+
+export function commit(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/commit")
+}
+
+export function candidate(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/candidate")
+}
+
+export function approve(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/approve")
+}
+
+export function payOff(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/payOff")
+}
+
+export function refuse(dossierId) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/refuse")
+}
