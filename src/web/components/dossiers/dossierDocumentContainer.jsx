@@ -28,8 +28,8 @@ export class DossierDocumentContainer extends React.Component {
         let preparatoryRows = _.filter(rows, r=>r.documentType.assignationType === AssignationType.PREPARATORY_DOCUMENTATION.value);
         let closingRows = _.filter(rows, r=>r.documentType.assignationType === AssignationType.PRIVATE_CLOSING_DOCUMENTATION.value || r.documentType.assignationType === AssignationType.PUBLIC_CLOSING_DOCUMENTATION.value);
 
-        let preparatoryItems = preparatoryRows.map((i, index) => <DocumentRow dossierId={model.get("id")} key={this.getKey(i)} row={i} index={index} />)
-        let closingItems = closingRows.map((i, index) => <DocumentRow dossierId={model.get("id")} key={this.getKey(i)} row={i} index={index} />)
+        let preparatoryItems = preparatoryRows.map((i, index) => <DocumentRow dossierStatus={model.get("status")} dossierId={model.get("id")} key={this.getKey(i)} row={i} index={index} />)
+        let closingItems = closingRows.map((i, index) => <DocumentRow dossierStatus={model.get("status")} dossierId={model.get("id")} key={this.getKey(i)} row={i} index={index} />)
         let preparatoryFilesUploaded = _.filter(preparatoryRows, r=>r.file != null).length;
         let preparatoryFilesRefused = _.filter(preparatoryRows, r=>!r.valid).length;
         let preparatoryDescription = format(M("rowsDescription"), preparatoryFilesUploaded, preparatoryRows.length);

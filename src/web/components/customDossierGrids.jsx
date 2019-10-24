@@ -3,12 +3,14 @@ import React from "react";
 import ReactDOM from "react-dom";
 import * as query from "../../framework/query";
 import M from "../../strings";
-import {Actions, Card} from "./common";
-import {format, optional, parseBoolean} from "../../utils/lang";
+import {Card} from "./common";
+import {optional, parseBoolean, safeGet} from "../../utils/lang";
 import {Observable} from "../../aj/events";
 import {isControl, isDown, isEnter, isEsc, isShift, isUp} from "../utils/keyboard";
 import * as mobile from "../utils/mobile";
 import * as datasource from "../../utils/datasource";
+import {DossierStatus, getDossierStatusDescription, getDossierStatusPosition} from "../../model/vars";
+import {createCell, Filters, Pagination, ResultSummary, SearchDialog} from "./grids";
 
 const EXPAND_ANIMATION_TIME = 250
 const CELL_PADDING_TOP = 15
@@ -65,34 +67,7 @@ function childrenData(children, index, childrenProp) {
     return null
 }
 
-export function arrayResult(arr) {
-    let narr = optional(arr, [])
-    return {
-        rows: narr,
-        totalRows: narr.length
-    }
-}
-
-export function resultToGridData(result, childrenProp = "children") {
-    if (!result || !result.rows) {
-        return {rows: [], totalRows: 0}
-    }
-
-    let index = {value: 0}
-    return {
-        totalRows: result.totalRows,
-        rows: result.rows.map(r => {
-            return {
-                data: r,
-                index: index.value++,
-                children: childrenData(r[childrenProp], index, childrenProp),
-                selected: false
-            }
-        })
-    }
-}
-
-class Selection extends Observable {
+export class Selection extends Observable {
     constructor(rows) {
         super()
 
@@ -148,17 +123,20 @@ class Selection extends Observable {
                 })
                 this.lastSelected = row
             }
-        } else if (this.controlPressed && !this.single) {
-            row.selected = !row.selected
-            this.rangeStartRow = row
-            this.lastSelected = row
+            // } else if (this.controlPressed && !this.single) {
+            //     row.selected = !row.selected
+            //     this.rangeStartRow = row
+            //     this.lastSelected = row
         } else {
-            flatRows.forEach(r => r.selected = false)
-            row.selected = true
-            this.rangeStartRow = row
-            this.lastSelected = row
+            row.selected = !row.selected;
+            this.rangeStartRow = row.selected ? row : null;
+            this.lastSelected = row.selected ? row : null;
+            // flatRows.forEach(r => r.selected = false)
+            // row.selected = true
+            // this.rangeStartRow = row
+            // this.lastSelected = row
         }
-
+        this.allSelected = _.every(flatRows, row => row.selected);
         this.invoke("change")
     }
 
@@ -249,110 +227,6 @@ const STANDARD_SEARCH_FORM_DESCRIPTOR = (column) => _.assign({}, {
     ]
 })
 
-
-
-export class SearchDialog extends React.Component {
-    constructor(props) {
-        super(props)
-
-        this.model = new (forms().Model)()
-    }
-
-    componentDidMount() {
-    }
-
-    onChangeValue(e) {
-        let value = e.target.value
-        this.setState(_.assign(this.state, {value}))
-    }
-
-    onTypeChange(e) {
-        let type = e.target.value
-        this.setState(_.assign(this.state, {type}))
-    }
-
-    close() {
-        let me = ReactDOM.findDOMNode(this)
-        $(me).modal("hide")
-    }
-
-    getFieldFilterType(property) {
-        let filterType = this.props.column.filterType;
-        if (!filterType) {
-            const field = this.model.findField(property)
-            if (field) {
-                return field.filterType
-            }
-        } else
-            return filterType
-    }
-
-    isFieldOnlyInteger(property) {
-        let isInteger = this.props.column.isInteger;
-        if (!isInteger) {
-            const field = this.model.findField(property)
-            if (field) {
-                return field.isInteger
-            }
-        } else
-            return isInteger
-    }
-
-
-    filter() {
-        if (this.props.query && this.props.column && this.props.column.property) {
-            const manualFilterType = optional(this.model.get("_filterType"), "eq")
-            const data = this.model.sanitized()
-            this.props.query.die();
-            _.each(_.keys(data), k => {
-                if (k !== "_filterType") {
-                    const filterType = optional(this.getFieldFilterType(k), manualFilterType)
-                    const isInteger = optional(this.isFieldOnlyInteger(k), false);
-                    this.props.query.filter(filterType, k, _.isObject(data[k]) ? (data[k].id) : (isInteger ? parseInt(data[k]) : data[k]));
-                }
-            })
-            this.props.query.page = 1
-            this.props.query.live();
-            this.props.query.invokeChange();
-
-            this.close()
-        }
-    }
-
-    render() {
-        let column = this.props.column
-        let searchForm = STANDARD_SEARCH_FORM_DESCRIPTOR(column)
-        if (!_.isEmpty(column.searchForm)) {
-            searchForm = column.searchForm
-        }
-        this.model.descriptor = searchForm
-
-        const FormBody = forms().FormBody
-
-        return (
-            <div className="search-dialog modal fade" role="dialog" tabIndex="-1" style={{display: "none", zIndex: 1500}}>
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h4 className="modal-title">{this.props.column.header}</h4>
-                        </div>
-                        <div className="modal-body">
-                            <FormBody model={this.model} descriptor={searchForm} />
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
-                            <button type="button" className="btn btn-link waves-effect" data-dismiss="modal">{M("close")}</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-}
-
-
-
-
 export class HeaderCell extends React.Component {
     constructor(props) {
         super(props)
@@ -438,16 +312,39 @@ export class HeaderCell extends React.Component {
 }
 
 export class GridHeader extends React.Component {
+
+    toggleSelectAll(){
+        if (_.isFunction(this.props.toggleSelectAll)) {
+            this.props.toggleSelectAll();
+        }
+    }
+
     render() {
         if (_.isEmpty(this.props.descriptor)) {
             return null
         }
-
+        let allSelected = optional(this.props.allSelected,false);
         let id = 1
         let headerCells = this.props.descriptor.columns.map(c => <HeaderCell key={id++} column={c} query={this.props.query} />)
 
+        if (this.props.checkboxSelectEnabled)
+            headerCells = _.union(
+                [
+                    <th key="0" className="checkbox-column" style={{position: "relative"}}>
+                        <div className="grid-cell-container">
+                            <i
+                                className={"fs-16 zmdi " + ((allSelected) ? "zmdi-check-square" : "zmdi-square-o")}
+                                onClick={this.toggleSelectAll.bind(this)}
+                                role={"button"}
+                            ></i>
+                        </div>
+                    </th>
+                ],
+                headerCells
+            )
+
         return (
-            <thead>
+            <thead key={"thead"}>
                 <tr>{headerCells}</tr>
             </thead>
         )
@@ -469,8 +366,16 @@ export class Row extends React.Component {
     }
 
     onMouseDown(e) {
+        if ( $(e.target).attr('data-toggle') === "popover" ) return false;
         if (_.isFunction(this.props.onMouseDown)) {
             this.props.onMouseDown(this.props.row)
+            e.stopPropagation()
+        }
+    }
+
+    onCheckboxSelect(e){
+        if (_.isFunction(this.props.onCheckboxSelect)) {
+            this.props.onCheckboxSelect(this.props.row)
             e.stopPropagation()
         }
     }
@@ -518,7 +423,6 @@ export class Row extends React.Component {
                 this.props.onExpand(row)
             }
         }
-
         let firstElement = true
         let key = 1
         let cells = this.props.descriptor.columns.map(c => {
@@ -526,6 +430,20 @@ export class Row extends React.Component {
             firstElement = false
             return <td key={key++} className={c.tdClassName}><div className="grid-cell-container">{cell}</div></td>
         })
+
+        if (this.props.checkboxSelectEnabled) {
+            cells=_.union(
+                [<td className="checkbox-column" key={"0"} ><div className="grid-cell-container">
+                    <i
+                        className={"fs-16 zmdi " + ((this.props.row.selected) ? "zmdi-check-square" : "zmdi-square-o")}
+                        onClick={this.onCheckboxSelect.bind(this)}
+                        role={"button"}
+                    ></i>
+                </div></td>],
+                cells
+            )
+        }
+
         let className = `level-${this.props.row.level} ` + (this.props.row.selected ? "selected" : "")
         let rowClassName = this.props.descriptor.rowClassName
         if (rowClassName) {
@@ -537,12 +455,19 @@ export class Row extends React.Component {
         }
 
         return (
-            <tr onMouseDown={this.onMouseDown.bind(this)} onDoubleClick={this.doubleClick.bind(this)} className={className}>{cells}</tr>
+            <tr onClick={this.onMouseDown.bind(this)} onDoubleClick={this.doubleClick.bind(this)} className={className}>{cells}</tr>
         )
     }
 }
 
 export class GridBody extends React.Component {
+
+    onRowCheckboxSelect(row) {
+        if (_.isFunction(this.props.onRowCheckboxSelect)) {
+            this.props.onRowCheckboxSelect(row)
+        }
+    }
+
     onRowMouseDown(row) {
         if (_.isFunction(this.props.onRowMouseDown)) {
             this.props.onRowMouseDown(row)
@@ -583,7 +508,9 @@ export class GridBody extends React.Component {
                         query={this.props.query}
                         onMouseDown={this.onRowMouseDown.bind(this)}
                         onDoubleClick={this.onRowDoubleClick.bind(this)}
-                        onExpand={this.onRowExpand.bind(this)}/>
+                        onExpand={this.onRowExpand.bind(this)}
+                        checkboxSelectEnabled={this.props.checkboxSelectEnabled}
+                        onCheckboxSelect={this.onRowCheckboxSelect.bind(this)}/>
                 )
 
                 rowElements.push(element)
@@ -625,6 +552,13 @@ export class GridFooter extends React.Component {
         let id = 1
         let footerCells = this.props.descriptor.columns.map(c => <FooterCell key={id++} column={c} query={this.props.query} />)
 
+        if (this.props.checkboxSelectEnabled) {
+            footerCells =_.union(
+                [<td className="checkbox-column" key={"0"} ></td>],
+                footerCells
+            )
+        }
+
         return (
             <tfoot>
             <tr>{footerCells}</tr>
@@ -643,56 +577,7 @@ export class Cell extends React.Component {
     }
 }
 
-export class EditTextCell extends Cell {
-
-    constructor(props) {
-        super(props)
-
-        this.state = {value: ""}
-    }
-
-    componentWillUpdate(nextProps, nextState) {
-        if (nextProps.value != nextState.value) {
-            this.setState({value: nextProps.value})
-        }
-    }
-
-    componentDidMount() {
-        this.setState({value: this.props.value})
-    }
-
-    onValueChange(e) {
-        let newValue = e.target.value
-        this.setState({value: newValue})
-
-        if (_.isFunction(this.props.onValueChange)) {
-            let column = this.props.column
-            let property = this.props.property
-            let row = this.props.row
-            this.props.onValueChange(column, row.data, newValue)
-        }
-    }
-
-    render() {
-        let column = this.props.column
-        let property = this.props.property
-        let row = this.props.row
-
-        return (
-            <div className="edit-text-cell">
-                <input
-                    type={optional(this.props.type, "text")}
-                    className="form-control input-sm"
-                    data-property={property}
-                    placeholder={this.props.placeholder}
-                    value={optional(this.state.value, "")}
-                    onChange={this.onValueChange.bind(this)} />
-            </div>
-        )
-    }
-}
-
-export class TextCell extends Cell {
+export class StatusCell extends Cell {
     toggleExpand(e) {
         if (_.isFunction(this.props.onExpand)) {
             this.props.onExpand(this.props.row)
@@ -702,40 +587,31 @@ export class TextCell extends Cell {
         }
     }
 
-    render() {
-        let marginLeft = 30 * (this.props.row.level || 0)
-        let icon = "zmdi "
-        if (!this.props.row.expanded) {
-            icon += " zmdi-plus"
-        } else {
-            icon += " zmdi-minus"
+    getDraftWidth(status){
+        //TODO: Considerare solo quelli propedeutici
+        let documents = safeGet(this.props.row.data, "documents", [])
+        if (getDossierStatusPosition(status) > getDossierStatusPosition(DossierStatus.STATUS_DRAFT.value)){
+            return "100%";
         }
-        
-        let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
-
-        let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
-            <a style={{marginLeft: marginLeft, marginRight: 20}} href="javascript:;" className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
-                <i className={"c-black " + icon} />
-            </a> : null
-
-        let style = {}
-        if (caret == null && this.props.row.level > 0 && this.props.firstElement) {
-            style.marginLeft = marginLeft + 20
-        }
-
-        return (
-            <div>{caret}<span style={style}>{formatter(this.props.value)}</span></div>
-        )
+        return ((100 * _.filter(documents, d=>d.file != null && d.valid).length)/documents.length) + "%";
     }
-}
 
-export class TextCellWithSubText extends Cell {
-    toggleExpand(e) {
-        if (_.isFunction(this.props.onExpand)) {
-            this.props.onExpand(this.props.row)
-            e.preventDefault()
-            e.stopPropagation()
-            e.nativeEvent.stopImmediatePropagation()
+    getColorByStatus(status){
+        switch (status) {
+            case DossierStatus.STATUS_QUOTATION.value:
+                return "#F2981A";
+            case DossierStatus.STATUS_DRAFT.value:
+                return "#116EC7";
+            case DossierStatus.STATUS_TO_CANDIDATE.value:
+                return "#116EC7";
+            case DossierStatus.STATUS_CANDIDATED.value:
+                return "#063868";
+            case DossierStatus.STATUS_APPROVED.value:
+                return "#063868";
+            case DossierStatus.STATUS_PAY_OFF.value:
+                return "#00C634";
+            case DossierStatus.STATUS_REFUSED.value:
+                return "#FF535A";
         }
     }
 
@@ -748,9 +624,6 @@ export class TextCellWithSubText extends Cell {
             icon += " zmdi-minus"
         }
 
-        let formatterTitle = _.isFunction(this.props.formatterTitle) ? this.props.formatterTitle : v => v
-        let formatterSubtitle = _.isFunction(this.props.formatterSubtitle) ? this.props.formatterSubtitle : v => v
-
         let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
             <a style={{marginLeft: marginLeft, marginRight: 20}} href="javascript:;" className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
                 <i className={"c-black " + icon} />
@@ -761,299 +634,36 @@ export class TextCellWithSubText extends Cell {
             style.marginLeft = marginLeft + 20
         }
 
-        return (
-            <div>{caret}
-                <p className="textcell-title">{formatterTitle(this.props.value, this.props.row.data)}</p>
-                <p className="textcell-subtitle">{formatterSubtitle(this.props.value, this.props.row.data)}</p>
-            </div>
+        let status = safeGet(this.props.row.data, "status", null);
+        let color = this.getColorByStatus(status);
+        let statusStyle = {
+            color: color,
+            marginLeft: "2px"
+        };
 
-        )
-    }
-}
+        let statusPosition = getDossierStatusPosition(status);
 
-export class CheckCell extends Cell {
-    render() {
-
-        let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
-        let value = formatter(this.props.value);
-        let checked = value === true || value === "true" || parseInt(value) > 0
-        let icon = checked ? "zmdi zmdi-check" : "zmdi zmdi-square-o"
+        let draftWidth = this.getDraftWidth(status);
 
         return (
-            <i className={icon} />
-        )
-    }
-}
-    
-export class ActionsCell extends Cell {
-    componentDidMount() {
-        let me = ReactDOM.findDOMNode(this)
-        let showAlways = parseBoolean(this.props.showAlways)
-        if (!showAlways) {
-            $(me).closest("tr")
-                .mouseenter(() => {
-                    $(me).find(".grid-action").stop().fadeIn(250)
-                })
-                .mouseleave(() => {
-                    $(me).find(".grid-action").stop().fadeOut(250)
-                })
-                .find(".grid-action").hide()
-        }
-
-    }
-
-    render() {
-        let actionKey = 1
-        let actions = this.props.column.actions.map(a => 
-            React.createElement(Actions.getButtonClass(a), {key: actionKey++, action: a, arguments: [this.props.row.data], className: "grid-action"})
-        )
-
-        return (
-            <div className="grid-actions-container">
-                {actions}
-            </div>
-        )
-    }
-}
-
-export class SelectCell extends Cell {
-
-    constructor(props) {
-        super(props)
-
-        if (_.isEmpty(props.datasource)) {
-            throw new Error("Datasource is null")
-        }
-    }
-
-    componentDidMount() {
-        this.onDataSourceChange = this.props.datasource.on("change", () => {
-            this.forceUpdate()
-        })
-    }
-
-    componentWillUnmount() {
-        this.props.datasource.off("change", this.onDataSourceChange);
-    }
-
-    onChange(e) {
-        const value = e.target.value
-        let column = this.props.column
-        let row = this.props.row
-        if (_.isFunction(this.props.onChange)) {
-            this.props.onChange(column, row.data, value)
-        }
-    }
-
-    render() {
-        let datasource = this.props.datasource
-        let options = optional(() => datasource.data.rows, []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)
-        let allowNull = parseBoolean(this.props.allowNull)
-
-        return (
-            <div className="form-group select-cell">
-                <div className="fg-line">
-                    <div className="select">
-                        <select className="form-control" value={optional(this.props.value, "")} onChange={this.onChange.bind(this)}>
-                            {allowNull && 
-                                <option value=""></option>
-                            }
-                            {options}
-                            
-                        </select>
+            <div style={{width: "321px"}}>{caret}
+                <div>
+                    <div className="col-12 zero-padding float-right">
+                        <span className="text-uppercase status-text-grid" style={statusStyle}>{getDossierStatusDescription(status)}</span>
+                    </div>
+                    <div className="col-12 zero-padding" style={{display: "flex", marginTop: "5px"}}>
+                        <div className="rounded-line-grid" style={{backgroundColor: color, width: "20%"}} />
+                        <div style={{width: "60%", position: "relative", marginRight: "4px"}}>
+                            <div className="rounded-line-grid" style={{width: "100%", position: "absolute"}} />
+                            <div className="rounded-line-grid" style={{backgroundColor: color, width: draftWidth, position: "absolute"}} />
+                        </div>
+                        <div className="rounded-line-grid" style={{backgroundColor: statusPosition >= getDossierStatusPosition(DossierStatus.STATUS_TO_CANDIDATE.value) ? color : "#d7d7d7", width: "5%"}} />
+                        <div className="rounded-line-grid" style={{backgroundColor: statusPosition >= getDossierStatusPosition(DossierStatus.STATUS_CANDIDATED.value) ? color : "#d7d7d7", width: "5%"}} />
+                        <div className="rounded-line-grid" style={{backgroundColor: statusPosition >= getDossierStatusPosition(DossierStatus.STATUS_APPROVED.value) ? color : "#d7d7d7", width: "5%"}} />
+                        <div className="rounded-line-grid" style={{backgroundColor: statusPosition >= getDossierStatusPosition(DossierStatus.STATUS_PAY_OFF.value) || statusPosition >= getDossierStatusPosition(DossierStatus.STATUS_REFUSED.value) ? color : "#d7d7d7", width: "5%"}} />
                     </div>
                 </div>
             </div>
-        )
-    }
-}
-
-export class KeywordSearch extends React.Component {
-    render() {
-        return (
-            <div className="col-md-offset-8 col-md-4 keyword-search">
-                <form action="">
-                    <div className="input-group">
-                        <span className="input-group-addon"><i className="zmdi zmdi-search"></i></span>
-                        <div className="fg-line">
-                            <input type="text" className="form-control" placeholder="Search..." />
-                        </div>
-                    </div>
-                </form>
-            </div>
-        )
-    }
-}
-
-export class Filter extends React.Component {
-    unfilter() {
-        if (!this.props.query) {
-            return
-        }
-
-        this.props.query.unfilter(this.props.data.property)
-    }
-
-    render() {
-        let textProperty = this.props.data.label != null ? this.props.data.label : M(this.props.data.property)
-        return (
-            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-ponzio waves-effect m-r-10" >{textProperty} = {M(this.props.data.value)} <i className="zmdi zmdi-close"></i></button>      )
-    }
-}
-
-export class Filters extends React.Component {
-    clearFilters() {
-        if (!this.props.query) {
-            return
-        }
-
-        this.props.query.clearFilters()
-    }
-
-    render() {
-        let filters = []
-        if (this.props.query) {
-            filters = this.props.query.filters.map(f => <Filter key={f.property + f.type + f.value} data={f} query={this.props.query} />)
-        }
-
-        let actions = [
-            {icon: "zmdi zmdi-delete", action: this.clearFilters.bind(this)}
-        ]
-
-        return (
-            <div className="filters p-15">
-                <button type="button" onClick={this.clearFilters.bind(this)} className="btn btn-no-shadow btn-ponzio waves-effect m-r-10"><i className="zmdi zmdi-delete" /></button>
-                {filters}
-            </div>
-        )
-    }
-}
-
-
-export class Pagination extends React.Component {
-    changePage(page) {
-        this.props.query.setPage(page)
-    }
-
-    getTotalPages() {
-        if (!this.props.data || !this.props.data.rows || !this.props.query) {
-            return 1
-        }
-
-        let totalPages = parseInt(Math.ceil(this.props.data.totalRows / this.props.query.rowsPerPage))
-        return totalPages
-    }
-
-    nextPage() {
-        let totalPages = this.getTotalPages()
-        if (this.props.query.page < totalPages) {
-            this.props.query.setPage(this.props.query.page + 1)
-        }
-    }
-
-    previousPage() {
-        if (this.props.query.page > 1) {
-            this.props.query.setPage(this.props.query.page - 1)
-        }
-    }
-
-    firstPage() {
-        this.props.query.setPage(1)
-    }
-
-    lastPage() {
-        this.props.query.setPage(this.getTotalPages())
-    }
-
-    render() {
-        if (_.isEmpty(this.props.query) || _.isEmpty(this.props.data.rows)) {
-            return null
-        }
-
-        let totalPages = this.getTotalPages()
-        let visible = totalPages > 1
-        let page = parseInt(this.props.query.page || 1)
-        let pages = []
-        let visiblePages = []
-        if (totalPages > 10) {
-            if (page > 1) {
-                visiblePages.push(page - 1)
-            }
-            visiblePages.push(page)
-            if (page < totalPages) {
-                visiblePages.push(page + 1)
-            }
-
-            let range = 10
-            if (totalPages > 100) {
-                range = 100
-            } else if (totalPages > 1000) {
-                range = 1000
-            }
-
-            visiblePages = _.sortBy(_.union(visiblePages, _.range(range, totalPages, range)), i => i)
-        } else {
-            visiblePages = _.range(1, totalPages + 1)
-        }
-        visiblePages.forEach(i => {
-            let active = i === page ? "active" : ""
-            pages.push(<li key={i} className={active}><a href="javascript:;" onClick={this.changePage.bind(this, i)}>{i}</a></li>)
-        })
-
-        return (
-            <ul className="pagination" hidden={!visible}>
-                <li>
-                    <a href="javascript:;" onClick={this.firstPage.bind(this)} aria-label="First">
-                        <i className="zmdi zmdi-arrow-left"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="javascript:;" onClick={this.previousPage.bind(this)} aria-label="Previous">
-                        <i className="zmdi zmdi-chevron-left"></i>
-                    </a>
-                </li>
-                {pages}
-                <li>
-                    <a href="javascript:;" onClick={this.nextPage.bind(this)} aria-label="Next">
-                        <i className="zmdi zmdi-chevron-right"></i>
-                    </a>
-                </li>
-                <li>
-                    <a href="javascript:;" onClick={this.lastPage.bind(this)} aria-label="First">
-                        <i className="zmdi zmdi-arrow-right"></i>
-                    </a>
-                </li>
-            </ul>
-        )
-    }
-}
-
-
-export class ResultSummary extends React.Component {
-    render() {
-        let totalRows = 0
-        let start = 0
-        let stop = 0
-        let rowsPerPage = 0
-        let page = 0
-        if (this.props.query && this.props.data.rows) {
-            rowsPerPage = this.props.query.rowsPerPage || 0
-            totalRows = this.props.data.totalRows
-            page = parseInt(this.props.query.page || 1)
-            start = (page - 1) * rowsPerPage + 1
-            stop = Math.min(page * rowsPerPage, totalRows)
-        }
-
-        return (
-            <p className="result-summary">{format(M("pagination"), start, stop, totalRows)}</p>
-        )
-    }
-}
-
-export class NoCard extends React.Component {
-    render() {
-        return (
-            <div>{this.props.children}</div>
         )
     }
 }
@@ -1074,12 +684,12 @@ export class QuickSearch extends React.Component {
 
         $(me).find("input[type=search]")
             .focus(() => {
-                $(me).find(".quick-search").addClass("quick-search__active");    
+                $(me).find(".quick-search").addClass("quick-search__active");
             })
             .blur(() => {
                 $(me).find(".quick-search").removeClass("quick-search__active");
             })
-        
+
     }
 
     componentWillUnmount() {
@@ -1097,12 +707,15 @@ export class QuickSearch extends React.Component {
     }
 
     render() {
+
+        let placeholder = optional(this.props.placeholder, M("search"));
+
         return (
             <div className="quick-search-container">
                 <div className="quick-search">
                     <i className="zmdi zmdi-search pull-left" />
                     <div className="quick-search-input-container">
-                        <input type="search" onKeyDown={this.onKeyDown.bind(this)} onChange={this.onChange.bind(this)} placeholder={M("search")} />
+                        <input type="search" onKeyDown={this.onKeyDown.bind(this)} onChange={this.onChange.bind(this)} placeholder={placeholder} />
                         <div className="form-control__bar"/>
                     </div>
                 </div>
@@ -1111,7 +724,7 @@ export class QuickSearch extends React.Component {
     }
 }
 
-export class Grid extends React.Component {
+export class CustomDossierGrid extends React.Component {
     constructor(props) {
         super(props)
 
@@ -1119,6 +732,8 @@ export class Grid extends React.Component {
         this.state = {rows: null}
 
         this.initSelection(props)
+
+        this.id = Math.random();
     }
 
     getTotalRows() {
@@ -1192,6 +807,17 @@ export class Grid extends React.Component {
 
     onRowMouseDown(row) {
         let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+        if (selectionEnabled) {
+            this.selection.handle(row)
+        } else {
+            if (_.isFunction(this.props.onRowClick)) {
+                this.props.onRowClick(row.data)
+            }
+        }
+    }
+
+    onRowCheckboxSelect(row) {
+        let selectionEnabled = optional(parseBoolean(this.props.checkboxSelectEnabled), true)
         if (!selectionEnabled) {
             return
         }
@@ -1231,7 +857,7 @@ export class Grid extends React.Component {
     }
 
     initSelection(props) {
-        let selectionEnabled = optional(parseBoolean(props.selectionEnabled), true)
+        let selectionEnabled = optional(parseBoolean(props.selectionEnabled), true) || optional(parseBoolean(this.props.checkboxSelectEnabled), true)
         if (!selectionEnabled) {
             return
         }
@@ -1257,8 +883,16 @@ export class Grid extends React.Component {
         this.setState(_.assign(this.state, {rows}))
     }
 
+    getAllSelected(){
+        let allSelected = false;
+        if (this.selection) {
+            return this.selection.allSelected;
+        }
+        return allSelected;
+    }
+
     toggleSelectAll() {
-        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true) || optional(parseBoolean(this.props.checkboxSelectEnabled), true)
         if (!selectionEnabled) {
             return
         }
@@ -1270,7 +904,7 @@ export class Grid extends React.Component {
     }
 
     clearSelection() {
-        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true) || optional(parseBoolean(this.props.checkboxSelectEnabled), true)
         if (!selectionEnabled) {
             return
         }
@@ -1281,7 +915,7 @@ export class Grid extends React.Component {
     }
 
     getSelection() {
-        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+        let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true) || optional(parseBoolean(this.props.checkboxSelectEnabled), true)
         if (!selectionEnabled) {
             return
         }
@@ -1307,8 +941,11 @@ export class Grid extends React.Component {
             return null
         }
 
+        let allSelected = this.getAllSelected();
+
         //customization properties
         let quickSearchEnabled = optional(parseBoolean(this.props.quickSearchEnabled), false)
+        let quickSearchPlaceholder = optional(this.props.quickSearchPlaceholder, M("search"))
         let headerVisible = optional(parseBoolean(this.props.headerVisible), true)
         let footerVisible = optional(parseBoolean(this.props.footerVisible), true)
         let summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
@@ -1340,12 +977,14 @@ export class Grid extends React.Component {
             }])})
             : this.props.descriptor
 
+        let checkboxSelectEnabled = optional(parseBoolean(this.props.checkboxSelectEnabled), false);
+
         return (
             <div className="grid" tabIndex="0" onBlur={this.onBlur.bind(this)} onKeyPress={this.onKeyPress.bind(this)} onKeyUp={this.onKeyUp.bind(this)} onKeyDown={this.onKeyDown.bind(this)}>
                 <Container>
                     <div>
                         {quickSearchEnabled &&
-                            <QuickSearch query={myQuery} />
+                            <QuickSearch placeholder={quickSearchPlaceholder} query={myQuery} />
                         }
 
                         {showFilters &&
@@ -1358,11 +997,25 @@ export class Grid extends React.Component {
                             <div className="with-result">
                                 <table className={tableClassName}>
                                     {headerVisible && 
-                                        <GridHeader descriptor={descriptor} query={myQuery}/>
+                                        <GridHeader
+                                            allSelected = {allSelected}
+                                            toggleSelectAll={this.toggleSelectAll.bind(this)}
+                                            checkboxSelectEnabled={checkboxSelectEnabled}
+                                            descriptor={descriptor}
+                                            query={myQuery}/>
                                     }
-                                    <GridBody descriptor={descriptor} data={this.props.data} query={myQuery} onRowExpand={this.onRowExpand.bind(this)} onRowMouseDown={this.onRowMouseDown.bind(this)} onRowDoubleClick={this.onRowDoubleClick.bind(this)} />
+                                    <GridBody
+                                        checkboxSelectEnabled={checkboxSelectEnabled}
+                                        descriptor={descriptor}
+                                        data={this.props.data}
+                                        query={myQuery}
+                                        onRowExpand={this.onRowExpand.bind(this)}
+                                        onRowMouseDown={this.onRowMouseDown.bind(this)}
+                                        onRowDoubleClick={this.onRowDoubleClick.bind(this)}
+                                        onRowCheckboxSelect={this.onRowCheckboxSelect.bind(this)}
+                                    />
                                     {footerVisible &&
-                                        <GridFooter descriptor={descriptor} />
+                                        <GridFooter checkboxSelectEnabled={checkboxSelectEnabled} descriptor={descriptor} />
                                     }
                                 </table>
 
@@ -1388,86 +1041,6 @@ export class Grid extends React.Component {
                     </div>
                 </Container>
             </div>
-        )
-    }
-}
-export class EditCheckCell extends Cell {
-
-    constructor(props){
-        super(props)
-
-        this.state = {value: "false"}
-    }
-
-    componentWillUpdate(nextProps, nextState) {
-        if (nextProps.value != nextState.value) {
-            this.setState({value: nextProps.value})
-        }
-    }
-
-    componentDidMount() {
-        this.setState({value: this.props.value})
-    }
-
-    onValueChange(e) {
-        let newValue = $(e.target).is(":checked")
-        this.setState({value: newValue})
-
-        if (_.isFunction(this.props.onValueChange)) {
-            let column = this.props.column
-            let property = this.props.property
-            let row = this.props.row
-            this.props.onValueChange(column, row.data, newValue)
-        }
-    }
-
-    render() {
-
-        let property = this.props.property
-        let value = optional(this.state.value, "false")
-        let checked = value === true || value === "true"
-
-        return (
-            <div className="checkbox" onClick={this.onValueChange.bind(this)}>
-                <label>
-                    <input type="checkbox" value={value} data-property={property} checked={checked}/>
-                    <i className="input-helper"/>
-                </label>
-            </div>
-        )
-    }
-}
-
-
-
-export function createCell(column, row, firstElement, onExpand, props = {}) {
-    let key = column.property + "" + row.index
-    let value = row.data[column.property]
-    let cell = _.isFunction(column.getCell) ? column.getCell(value, row) : column.cell;
-    return React.createElement(cell, _.assign({key, column, property: column.property, row, value, firstElement, onExpand}, props))
-    
-}
-
-export class ButtonCell extends Cell {
-    onClick() {
-        if (_.isFunction(this.props.action)) {
-            this.props.action(this.props.column, this.props.row.data, this.props.value)
-        }
-    }
-
-    render() {
-        let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
-        let className = optional(this.props.className, "btn btn-link ")
-        let value = formatter(this.getValue())
-
-        return (
-            value === "NA" ?
-                <span>{value}</span>
-                :
-
-                <a ref="button" href="javascript:;" className={className} onClick={this.onClick.bind(this)}>
-                    <span>{value}</span>
-                </a>
         )
     }
 }

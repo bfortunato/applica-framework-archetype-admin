@@ -6,14 +6,12 @@ import * as responses from "../api/responses";
 import _ from "underscore";
 import {
     APPROVE,
-    APPROVED,
     ATTACH_DOCUMENT,
     CANDIDATE,
     CLEAR_DOCUMENT,
     COMMIT,
     CONFIRM_QUOTATION,
     CREATE_DOSSIER,
-    DELETE_ATTACHMENT,
     EDIT_DOSSIER,
     HIDE_ADD_DOCUMENT_DIALOG,
     HIDE_REFUSE_DOCUMENT_DIALOG,

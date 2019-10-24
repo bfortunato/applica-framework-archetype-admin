@@ -19,6 +19,20 @@ import {connect} from "../utils/aj";
 
 export const VALIDATION_ERROR = {}
 
+function setValueInModel(model, property, value) {
+    let i;
+    property = property.split('.');
+    for (i = 0; i < property.length - 1; i++){
+        if (i === 0){
+            model = model.data[property[i]];
+        } else if (model != null) {
+            model = model[property[i]];
+        }
+    }
+    if (model != null)
+        model[property[i]] = value;
+}
+
 export class Model extends Observable {
     constructor(form) {
         super()
@@ -2449,7 +2463,24 @@ export class NewMultiFile extends Control {
     }
 }
 
-export class Column extends React.Component {
+export class FieldContainer extends React.Component {
+    isFieldVisible(field) {
+        let descriptor = this.props.descriptor
+        let model = this.props.model
+
+        if (descriptor && _.isFunction(descriptor.visibility)) {
+            let visibility = descriptor.visibility(field, model, descriptor)
+            if (!visibility){
+                setValueInModel(model, field.property, null)
+            }
+            return visibility
+        }
+
+        return true
+    }
+}
+
+export class Column extends FieldContainer {
 
     constructor(props) {
         super(props);
@@ -2458,21 +2489,6 @@ export class Column extends React.Component {
     componentDidMount() {
         let me = ReactDOM.findDOMNode(this);
         $(me).parent().css("margin-bottom", "0").css("padding-bottom", "10px").css("padding-top", "20px");
-    }
-
-    isFieldVisible(field) {
-        let descriptor = this.props.descriptor
-        let model = this.props.model
-
-        if (descriptor && _.isFunction(descriptor.visibility)) {
-            let visibility = descriptor.visibility(field, model, descriptor)
-            if (!visibility){
-                this.setValueInModel(model, field.property, null)
-            }
-            return visibility
-        }
-
-        return true
     }
 
     setValueInModel(model, property, value) {

@@ -6,7 +6,7 @@ import _ from "underscore";
 import {clearDocument, showAddDocumentDialog, showRefuseDocumentDialog} from "../../../actions/dossier";
 import {format} from "../../../utils/lang";
 import moment from "moment";
-import {DocumentStatus, DocumentTypeTypology} from "../../../model/vars";
+import {DocumentStatus, DocumentTypeTypology, DossierStatus, getDossierStatusPosition} from "../../../model/vars";
 import * as config from "../../../framework/config";
 import {getSessionToken} from "../../../api/session";
 
@@ -23,24 +23,62 @@ export class DocumentRow extends React.Component {
 
     attachAttachment() {
         let row = this.props.row
-        showAddDocumentDialog({
-            documentType: row.documentType
-        });
+        let dossierStatus = this.props.dossierStatus;
+        if (dossierStatus != null && (getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_APPROVED.value) || getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_PAY_OFF.value))){
+            swal({title: M("confirm"), text: M("areYouSure"), showCancelButton: true})
+                .then(res => {
+                    if (res.value) {
+                        showAddDocumentDialog({
+                            documentType: row.documentType
+                        });
+                    }
+                })
+        } else {
+            showAddDocumentDialog({
+                documentType: row.documentType
+            });
+        }
     }
 
     refuseDocument() {
         let row = this.props.row
-        showRefuseDocumentDialog({
-            documentTypeId: row.documentTypeId
-        });
+        let dossierStatus = this.props.dossierStatus;
+        if (dossierStatus != null && (getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_APPROVED.value) || getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_PAY_OFF.value))){
+            swal({title: M("confirm"), text: M("areYouSure"), showCancelButton: true})
+                .then(res => {
+                    if (res.value) {
+                        showRefuseDocumentDialog({
+                            documentTypeId: row.documentTypeId
+                        });
+                    }
+                })
+        } else {
+            showRefuseDocumentDialog({
+                documentTypeId: row.documentTypeId
+            });
+        }
+
     }
 
     clearDocument() {
         let row = this.props.row
-        clearDocument({
-            documentTypeId: row.documentTypeId,
-            dossierId: this.props.dossierId
-        })
+        let dossierStatus = this.props.dossierStatus;
+        if (dossierStatus != null && (getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_APPROVED.value) || getDossierStatusPosition(dossierStatus) === getDossierStatusPosition(DossierStatus.STATUS_PAY_OFF.value))){
+            swal({title: M("confirm"), text: M("areYouSure"), showCancelButton: true})
+                .then(res => {
+                    if (res.value) {
+                        clearDocument({
+                            documentTypeId: row.documentTypeId,
+                            dossierId: this.props.dossierId
+                        })
+                    }
+                })
+        } else {
+            clearDocument({
+                documentTypeId: row.documentTypeId,
+                dossierId: this.props.dossierId
+            })
+        }
     }
 
     downloadTemplate(){

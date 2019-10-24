@@ -350,6 +350,16 @@ strings["en"] = {
     fabricatorPayOffShort: "Fab. pay off",
     serviceFeeInvoiced: "Service fee inv.",
     areYouSure: "Are you sure you want to proceed?",
+    preparatoryDocumentsShort: "Preparatory doc.",
+    closingDocumentsShort: "Closing doc.",
+    allStates: "All states",
+    searchCode: "Search code",
+    deleteDossier: "Delete dossier",
+    deleteNotAllowedForStatusPayOff: "Delete not allowed for status \"Pay Off\"",
+    warning: "Warning",
+    resetPassword: "Reset Password",
+    confirmResetPassword: "A new password will be set and sent to the user's email address"
+
 }
 
 strings["it"] = {
@@ -588,7 +598,15 @@ strings["it"] = {
     fabricatorPayOffShort: "Liquidazione serr.",
     serviceFeeInvoiced: "Quota serv. fatt.",
     areYouSure: "Sei sicuro di voler procedere?",
-
+    preparatoryDocumentsShort: "Doc. propedeutica",
+    closingDocumentsShort: "Doc. di chiusura",
+    allStates: "Tutti gli stati",
+    searchCode: "Ricerca codice",
+    deleteDossier: "Elimina pratica",
+    deleteNotAllowedForStatusPayOff: "Eliminazione non disponibile nello stato \"Liquidata\"",
+    warning: "Attenzione",
+    resetPassword: "Reset Password",
+    confirmResetPassword: "Verrà impostata una nuova password ed inviata all'indirizzo mail dell'utente",
 
 }
 

@@ -28,41 +28,39 @@ export class DossierStatusComponent extends React.Component {
             showDialog = true;
         }
 
-        //TODO: Non funziona la dialog di conferma
-
         switch (newState) {
             case DossierStatus.STATUS_QUOTATION.value:
-                callback = quotation({
+                callback = ()=>quotation({
                     dossierId: dossierId
                 })
                 break;
             case DossierStatus.STATUS_DRAFT.value:
-                callback = confirmQuotation({
+                callback = ()=>confirmQuotation({
                     dossierId: dossierId
                 });
                 break;
             case DossierStatus.STATUS_TO_CANDIDATE.value:
-                callback = commit({
+                callback = ()=>commit({
                     dossierId: dossierId
                 });
                 break;
             case DossierStatus.STATUS_CANDIDATED.value:
-                callback = candidate({
+                callback = ()=>candidate({
                     dossierId: dossierId
                 });
                 break;
             case DossierStatus.STATUS_APPROVED.value:
-                callback = approve({
+                callback = ()=>approve({
                     dossierId: dossierId
                 });
                 break;
             case DossierStatus.STATUS_PAY_OFF.value:
-                callback = payOff({
+                callback = ()=>payOff({
                     dossierId: dossierId
                 });
                 break;
             case DossierStatus.STATUS_REFUSED.value:
-                callback = refuse({
+                callback = ()=>refuse({
                     dossierId: dossierId
                 });
                 break;
@@ -70,7 +68,9 @@ export class DossierStatusComponent extends React.Component {
         if (showDialog) {
             swal({title: M("confirm"), text: M("areYouSure"), showCancelButton: true})
                 .then(res => {
-                    callback()
+                    if (res.value) {
+                        callback();
+                    }
                 })
         } else {
             callback();
@@ -109,11 +109,11 @@ export class DossierStatusComponent extends React.Component {
             };
 
             items.push(
-                <div className="dropdown-item cursor-pointer" onClick={this.changeState.bind(this, d.value)} style={{display: "inline-flex", paddingTop: "0px", paddingBottom: "0px", background: hasStatus ? "#FFFFFF" : "#F4F4F4", height: "48px"}}>
+                <div className="dropdown-item cursor-pointer" onClick={this.changeState.bind(this, d.value)} style={{display: "inline-flex", paddingTop: "0px", paddingBottom: "0px", background: hasStatus ? "#FFFFFF" : "#F4F4F4", height: "48px", marginTop: d.value === DossierStatus.STATUS_REFUSED.value ? "10px" : "0"}}>
                     <div className={circleClassName} style={{paddingTop: "0px"}}>
                         {index !== 0 && d.value !== DossierStatus.STATUS_REFUSED.value && <div style={{width: "2px", height: "8px", backgroundColor: hasStatus ? "#F2981A" : "#AAAAAA", display: "block", margin: "0 auto"}}/>}
                         <button style={{marginTop: index === 0 || d.value === DossierStatus.STATUS_REFUSED.value ? "8px" : "0"}} onClick={(e)=>{e.preventDefault()}}>
-                            {hasStatus && <i className="zmdi zmdi-check" />}
+                            <i style={{color: hasStatus ? "#FFFFFF" : "#F4F4F4"}} className="zmdi zmdi-check" />
                         </button>
                         {index !== (size-1) && d.value !== DossierStatus.STATUS_PAY_OFF.value && d.value !== DossierStatus.STATUS_REFUSED.value && <div style={{width: "2px", height: "8px", backgroundColor: hasStatus ? "#F2981A" : "#AAAAAA", display: "block", margin: "0 auto"}}/> }
                     </div>
@@ -126,9 +126,11 @@ export class DossierStatusComponent extends React.Component {
     }
 
     getDraftWidth(){
+        //TODO: Considerare solo quelli propedeutici
         let data = this.props.data;
         let status = safeGet(data, "status", null);
         let documents = safeGet(data, "documents", []);
+
         if (getDossierStatusPosition(status) > getDossierStatusPosition(DossierStatus.STATUS_DRAFT.value)){
             return "100%";
         }
@@ -159,7 +161,7 @@ export class DossierStatusComponent extends React.Component {
                             <div className="col-12 float-right">
                                 <span className="text-uppercase status-text" style={statusStyle}>{getDossierStatusDescription(status)}</span>
                             </div>
-                            <div className="col-12" style={{display: "flex"}}>
+                            <div className="col-12" style={{display: "flex", marginTop: "5px"}}>
                                 <div className="rounded-line" style={{backgroundColor: color, width: "20%"}} />
                                 <div style={{width: "60%", position: "relative", marginRight: "4px"}}>
                                     <div className="rounded-line" style={{width: "100%", position: "absolute"}} />
@@ -172,7 +174,7 @@ export class DossierStatusComponent extends React.Component {
                             </div>
                         </div>
                         <div className="col-2">
-                            <i style={{fontSize: "24px"}} className="zmdi zmdi-caret-down" />
+                            <i style={{fontSize: "24px", marginTop: "5px"}} className="zmdi zmdi-caret-down" />
                         </div>
                     </div>
                 </div>

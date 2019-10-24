@@ -37,6 +37,9 @@ import {AddDocumentDialog} from "./components/dossiers/addDocumentDialog";
 import {DossierStore} from "../stores/dossier";
 import {RefuseDocumentDialog} from "./components/dossiers/refuseDocumentDialog";
 import {FabricatorDocumentContainer} from "./components/dossiers/fabricatorDocumentContainer";
+import {StatusCell} from "./components/customDossierGrids";
+import {hasPermission} from "../api/session";
+import {resetUserPassword} from "../actions/account";
 
 
 const entities = {
@@ -218,7 +221,25 @@ const entities = {
             title: M("adminUsersList"),
             descriptor: {
                 columns: _.union([
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
                     {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
                     {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true}
                 ], getPersonGridColumns("adminUserCategory"))
@@ -227,7 +248,7 @@ const entities = {
         form: {
             title: M("editAdmin"),
             getActions(data) {
-                return ["back", "save", "save-go-back", "revisions"];
+                return getPersonActions(data);
             },
             descriptor: {
                 onModelLoadFirstTime: (model) =>{
@@ -317,7 +338,25 @@ const entities = {
             title: M("endUsersList"),
             descriptor: {
                 columns: _.union([
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
                     {property: "lastname", header: M("lastname"), cell: TextCell, sortable: true, searchable: true},
                     {property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
                     {property: "sex", header: M("sex"), cell: TextCell, sortable: true, searchable: true}
@@ -327,7 +366,7 @@ const entities = {
         form: {
             title: M("editEndUser"),
             getActions(data) {
-                return ["back", "save", "save-go-back", "revisions"];
+                return getPersonActions(data);
             },
             descriptor: {
                 onModelLoadFirstTime: (model) =>{
@@ -418,7 +457,25 @@ const entities = {
             title: M("fabricatorList"),
             descriptor: {
                 columns: _.union([
-                    {property: "code", header: M("code"), cell: TextCell, sortable: true, searchable: true},
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
                     {property: "businessName", header: M("businessName"), cell: TextCell, sortable: true, searchable: true},
                     {
                         property: "address",
@@ -450,7 +507,7 @@ const entities = {
         form: {
             title: M("editFabricator"),
             getActions(data) {
-                return ["back", "save", "save-go-back", "revisions"];
+                return getPersonActions(data);
             },
             descriptor: {
                 onModelLoadFirstTime: (model) =>{
@@ -1246,7 +1303,7 @@ const entities = {
             title: M("dossiersEcoBonus"),
             descriptor: {
                 columns: [
-                    {property: "code", header: M("#"), cell: TextCell, sortable: true, searchable: true},
+                    {property: "code", header: M("#"), cell: TextCell, sortable: true, searchable: false},
                     {
                         property: "customer",
                         header: M("customer"),
@@ -1255,10 +1312,10 @@ const entities = {
                         searchable: true,
                         props: {
                             formatterTitle: (v) => {
-                                return v != null ? v.get("name") : "";
+                                return v != null ? v.name : "";
                             },
                             formatterSubtitle: (v) => {
-                                return v != null ? getCustomerTypeDescription(v.get("subjectType")) : "";
+                                return v != null ? getCustomerTypeDescription(v.subjectType) : "";
                             }
                         }
                     },
@@ -1282,7 +1339,7 @@ const entities = {
                         searchable: true,
                         props: {
                             formatter: v => {
-                                return v != null ? v.recommendedRetailPrice : "";
+                                return v != null ? v.recommendedRetailPrice + " €" : "";
                             }
                         }
                     },
@@ -1294,7 +1351,7 @@ const entities = {
                         searchable: true,
                         props: {
                             formatter: v => {
-                                return v != null ? v.fabricatorPayOff : "";
+                                return v != null ? v.fabricatorPayOff + " €" : "";
                             }
                         }
                     },
@@ -1311,16 +1368,23 @@ const entities = {
                         }
                     },
                     {
-                        property: "_preparatoryDocuments",
+                        property: "_preparatoryDocumentations",
                         header: M("preparatoryDocumentsShort"),
                         cell: TextCell,
                         sortable: false,
                         searchable: false,
                     },
                     {
-                        property: "_closingDocuments",
+                        property: "_closingDocumentations",
                         header: M("closingDocumentsShort"),
                         cell: TextCell,
+                        sortable: false,
+                        searchable: false,
+                    },
+                    {
+                        property: "status",
+                        header: M("status"),
+                        cell: StatusCell,
                         sortable: false,
                         searchable: false,
                     },
@@ -1797,14 +1861,14 @@ function getPersonFormAreas(){
                             placeholder: M("mailAddress"),
                             size: "col-sm-12"
                         },
-                        {
-                            property: "password",
-                            control: PasswordText,
-                            label: M("password"),
-                            placeholder: M("password"),
-                            size: "col-sm-12",
-                            sanitizer: value => sanitize(value).trim()
-                        },
+                        // {
+                        //     property: "password",
+                        //     control: PasswordText,
+                        //     label: M("password"),
+                        //     placeholder: M("password"),
+                        //     size: "col-sm-12",
+                        //     sanitizer: value => sanitize(value).trim()
+                        // },
                         {
                             property: "active",
                             control: YesNo,
@@ -1827,6 +1891,35 @@ function getPersonFormAreas(){
             ]
         }
     ]
+}
+
+function getPersonActions(data) {
+    let actions = ["back", "save", "save-go-back", "revisions"];
+    if (hasPermission("canResetPassword")) {
+        if (data && data.id) {
+            actions.push({
+                type: "button",
+                icon: "zmdi zmdi-brush",
+                tooltip: M("resetPassword"),
+                action: () => {
+
+                    swal({
+                        title: M("confirm"),
+                        text: M("confirmResetPassword"),
+                        showCancelButton: true
+                    })
+                        .then(() => {
+                            resetUserPassword({id: data.id})
+                        })
+                        .catch((e) => {
+                            logger.i(e)
+                        })
+
+                }
+            })
+        }
+    }
+    return actions
 }
 
 function getUsersCategories(gridTitle, formTitle) {

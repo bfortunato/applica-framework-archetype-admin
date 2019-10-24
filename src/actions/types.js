@@ -71,5 +71,7 @@ export const APPROVE = "APPROVE"
 export const PAY_OFF = "PAY_OFF"
 export const REFUSE = "REFUSE"
 
+export const DOSSIER_COUNT = "DOSSIER_COUNT"
+
 export const DOWNLOAD_TEMPLATE = "DOWNLOAD_TEMPLATE"
 
