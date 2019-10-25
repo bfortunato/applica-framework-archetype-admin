@@ -365,7 +365,10 @@ strings["en"] = {
     subjectType: "Typology",
     physicalperson: "Physical person",
     legalperson: "Legal person",
-    dossierManagementFee: "Dossier management fee"
+    dossierManagementFee: "Dossier management fee",
+    birthPlace: "Birth place",
+    fabricatorInformations: "Fabricator informations",
+    appEnabled: "Enabled to use the app",
 
 }
 
@@ -620,7 +623,10 @@ strings["it"] = {
     subjectType: "Tipologia",
     physicalperson: "Persona fisica",
     legalperson: "Persona giuridica",
-    dossierManagementFee: "Quota per gestione pratica"
+    dossierManagementFee: "Quota per gestione pratica",
+    birthPlace: "Luogo di nascita",
+    fabricatorInformations: "Inforazioni serramenstista",
+    appEnabled: "Abilitato all\'utilizzo dell\'app",
 
 }
 

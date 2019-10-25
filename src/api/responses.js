@@ -35,6 +35,8 @@ export const OPERATION_NOT_ALLOWED                    = 1019
 export const ERROR_DOSSIER_NOT_FOUND                    = 1020
 export const ERROR_DOCUMENT_NOT_FOUND                    = 1021
 export const ERROR_DOCUMENT_TYPE_NOT_FOUND                    = 1022
+export const ERROR_WORKFLOW                    = 1023
+export const ERROR_MAIL_REQUIRED                    = 1024
 
 
 const messages = {
@@ -70,10 +72,12 @@ messages["en"][ERROR_WAREHOUSE_NOT_FOUND]                   = "Warehouse not fou
 messages["en"][ERROR_DOCUMENT_NOT_FOUND]                    = "Document not found"
 
 messages["en"][ERROR_MAIL_AND_PASSWORD_REQUIRED]                    = "Insert mail and password"
+messages["en"][ERROR_MAIL_REQUIRED]                    = "Insert mail"
 messages["en"][ERROR_FABRICATOR_NOT_FOUND]                    = "Fabricator not found"
 messages["en"][OPERATION_NOT_ALLOWED]                    = "Operation not allowed"
 messages["en"][ERROR_DOSSIER_NOT_FOUND]                    = "Dossier not found"
 messages["en"][ERROR_DOCUMENT_TYPE_NOT_FOUND]                    = "Document type not found"
+messages["en"][ERROR_WORKFLOW]                    = "Error in dossier workflow"
 
 messages["it"][OK]											= "OK"
 messages["it"][ERROR] 										= "Si è verificato un errore"
@@ -102,10 +106,12 @@ messages["it"][ERROR_WAREHOUSE_NOT_FOUND]                   = "Magazzino non tro
 messages["it"][ERROR_DOCUMENT_NOT_FOUND]                    = "Documento non trovato"
 
 messages["it"][ERROR_MAIL_AND_PASSWORD_REQUIRED]                    = "Inserisci mail e password"
+messages["it"][ERROR_MAIL_REQUIRED]                    = "Inserisci mail"
 messages["it"][ERROR_FABRICATOR_NOT_FOUND]                    = "Serramenista non trovato"
 messages["it"][OPERATION_NOT_ALLOWED]                    = "Operazione non consentita"
 messages["it"][ERROR_DOSSIER_NOT_FOUND]                    = "Pratica non trovata"
 messages["it"][ERROR_DOCUMENT_TYPE_NOT_FOUND]                    = "Tipo documento non trovato"
+messages["it"][ERROR_WORKFLOW]                    = "Errore nel flusso della pratica"
 
 export function msg(response) {
 	let responseCode = null;

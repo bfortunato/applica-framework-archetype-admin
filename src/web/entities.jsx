@@ -542,7 +542,8 @@ const entities = {
             descriptor: {
                 onModelLoadFirstTime: (model) =>{
                     if (model.get("id") == null){
-                        model.set("active", true)
+                        model.set("active", true);
+                        model.set("appEnabled", true);
                     }
                 },
                 areas: [
@@ -704,13 +705,60 @@ const entities = {
                                                 control: Text,
                                                 label: M("phoneNumber"),
                                                 placeholder: M("phoneNumber"),
-                                                size: "col-sm-3",
+                                                size: "col-sm-4",
+                                            },
+                                            {
+                                                property: "appEnabled",
+                                                control: YesNo,
+                                                label: M("appEnabled"),
+                                                size: "col-sm-4",
                                             },
                                         ]
                                     }
                                 ]
                             }
                         ], getPersonFormAreas())
+                    },
+                    {
+                        title: M("fabricatorInformations"),
+                        subtitle: null,
+                        fields: [
+                            {
+                                property: "name",
+                                control: Text,
+                                label: M("name"),
+                                placeholder: M("name"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "lastname",
+                                control: Text,
+                                label: M("lastname"),
+                                placeholder: M("lastname"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "_birthDate",
+                                control: Text,
+                                label: M("birthDate"),
+                                placeholder: M("birthDate"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "birthPlace",
+                                control: Text,
+                                label: M("birthPlace"),
+                                placeholder: M("birthPlace"),
+                                size: "col-sm-4",
+                            },
+                            {
+                                property: "fiscalCode",
+                                control: Text,
+                                label: M("fiscalCode"),
+                                placeholder: M("fiscalCode"),
+                                size: "col-sm-4",
+                            },
+                        ]
                     },
                     {
                         component: AreaNoCard,
