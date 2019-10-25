@@ -123,7 +123,8 @@ export default class DossierForm extends EntityForm {
                 significantValue: safeGet(data, "_significantValue", null),
                 nonSignificantValue: safeGet(data, "_nonSignificantValue", null),
                 serviceValue: safeGet(data, "_serviceValue", null),
-                notes: safeGet(data, "notes", null)
+                notes: safeGet(data, "notes", null),
+                serviceFeeInvoiced: safeGet(data, "serviceFeeInvoiced", false)
             })
         } else {
             createDossier({
@@ -133,7 +134,8 @@ export default class DossierForm extends EntityForm {
                 significantValue: safeGet(data, "_significantValue", null),
                 nonSignificantValue: safeGet(data, "_nonSignificantValue", null),
                 serviceValue: safeGet(data, "_serviceValue", null),
-                notes: safeGet(data, "notes", null)
+                notes: safeGet(data, "notes", null),
+                serviceFeeInvoiced: safeGet(data, "serviceFeeInvoiced", false)
             })
         }
     }

@@ -25,7 +25,7 @@ module.exports = {
     "account.requestRecoveryCode.url": `${serviceBase}account/sendConfirmationCode`,
     "account.validateRecoveryCode.url": `${serviceBase}account/validateRecoveryCode`,
     "account.resetPassword.url": `${serviceBase}account/resetUserPassword`,
-    "account.resetUserPassword.url": `${serviceBase}account/resetPassword`,
+    "account.resetUserPassword.url": `${serviceBase}account/resetUserPassword`,
     "system.url": `${serviceBase}system`,
     "upload.url": `${serviceBase}upload/file`,
     "dossier.url": `${serviceBase}dossiers`,

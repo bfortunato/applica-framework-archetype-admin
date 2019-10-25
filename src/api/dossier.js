@@ -3,12 +3,12 @@
 import * as config from "../framework/config";
 import {post} from "./utils";
 
-export function createDossier(customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes) {
-    return post(config.get("dossier.url") + "/quotation", {customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes})
+export function createDossier(customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes, serviceFeeInvoiced) {
+    return post(config.get("dossier.url") + "/quotation", {customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes, serviceFeeInvoiced})
 }
 
-export function editDossier(dossierId, customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes) {
-    return post(config.get("dossier.url") + "/" + dossierId + "/edit", {customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes})
+export function editDossier(dossierId, customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes, serviceFeeInvoiced) {
+    return post(config.get("dossier.url") + "/" + dossierId + "/edit", {customerId, fabricatorId, significantValue, nonSignificantValue, serviceValue, notes, serviceFeeInvoiced})
 }
 
 export function attachDocument(dossierId, documentTypeId, path) {

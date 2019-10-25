@@ -26,27 +26,28 @@ export default class ChangePassword extends Screen {
     render() {
         return (
             <FullScreenLayout>
-                <div className="login-content">
-                    <div className="lc-block lc-block-alt toggled" id="l-lockscreen">
+                <div className="login">
+                    <div className="login__block active" id="l-lockscreen">
+                        <div className="login__block__header">
+                            <i className="zmdi zmdi-account-circle"></i>
+                            {M("changePasswordDescription")}
+                        </div>
                         <div className="lcb-form" ref="changePassword_form">
+                            <div className="login__block__body">
 
-                            <p>E' necessario impostare una password personale al primo accesso nel sistema</p>
-                            <div className="input-group m-b-20">
-                                <span className="input-group-addon"><i className="zmdi zmdi-lock"></i></span>
-                                <div className="fg-line">
-                                    <input type="password" onChange={this.updatePassword.bind(this)} name="password" className="form-control" placeholder={M("password")} />
+                                <div className="form-group form-group--float form-group--centered">
+                                    <input type="password" onChange={this.updatePassword.bind(this)} name="password" className="form-control" placeholder={M("password")}/>
+                                    <i className="form-group__bar"></i>
                                 </div>
-                            </div>
 
-                            <div className="input-group m-b-20">
-                                <span className="input-group-addon"><i className="zmdi zmdi-lock-outline"></i></span>
-                                <div className="fg-line">
-                                    <input type="password" name="confirmPassword"  onChange={this.updatePasswordConfirm.bind(this)} className="form-control" placeholder={M("passwordConfirm")} />
+                                <div className="form-group form-group--float form-group--centered">
+                                    <input type="password" name="confirmPassword"  onChange={this.updatePasswordConfirm.bind(this)} className="form-control" placeholder={M("passwordConfirm")}/>
+                                    <i className="form-group__bar"></i>
                                 </div>
+
+                                <a href="javascript:;" onClick={this.changePassword.bind(this)} className="btn btn-login btn-ponzio btn-float waves-effect waves-circle waves-float"><i className="zmdi zmdi-arrow-forward"></i></a>
                             </div>
                         </div>
-
-                        <a href="javascript:;" onClick={this.changePassword.bind(this)} className="btn btn-login btn-success btn-float waves-effect waves-circle waves-float"><i className="zmdi zmdi-arrow-forward"></i></a>
 
                     </div>
                 </div>

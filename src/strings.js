@@ -358,7 +358,14 @@ strings["en"] = {
     deleteNotAllowedForStatusPayOff: "Delete not allowed for status \"Pay Off\"",
     warning: "Warning",
     resetPassword: "Reset Password",
-    confirmResetPassword: "A new password will be set and sent to the user's email address"
+    confirmResetPassword: "A new password will be set and sent to the user's email address",
+    changePasswordDescription: "It is necessary to set a personal password on the first access to the system",
+    passwordConfirm: "Password confirm",
+    birthDate: "Birth date",
+    subjectType: "Typology",
+    physicalperson: "Physical person",
+    legalperson: "Legal person",
+    dossierManagementFee: "Dossier management fee"
 
 }
 
@@ -607,6 +614,13 @@ strings["it"] = {
     warning: "Attenzione",
     resetPassword: "Reset Password",
     confirmResetPassword: "Verrà impostata una nuova password ed inviata all'indirizzo mail dell'utente",
+    changePasswordDescription: "E\' necessario impostare una password personale al primo accesso nel sistema",
+    passwordConfirm: "Conferma password",
+    birthDate: "Data di nascita",
+    subjectType: "Tipologia",
+    physicalperson: "Persona fisica",
+    legalperson: "Persona giuridica",
+    dossierManagementFee: "Quota per gestione pratica"
 
 }
 

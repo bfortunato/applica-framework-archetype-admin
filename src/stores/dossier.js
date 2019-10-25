@@ -49,7 +49,8 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
             return _.assign(state, {
                 error: false,
                 completed: true,
-                documents: action.documents
+                documents: action.documents,
+                status: action.status
             });
 
         case failed(actions.ATTACH_DOCUMENT):
@@ -58,7 +59,8 @@ export const DossierStore = aj.createStore(DOSSIER, (state = {}, action) => {
             return _.assign(state, {
                 error: true,
                 completed: false,
-                documents: null
+                documents: null,
+                status: null
             });
         case completed(actions.QUOTATION):
         case completed(actions.CONFIRM_QUOTATION):

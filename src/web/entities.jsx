@@ -4,7 +4,6 @@ import {check, sanitize} from "../libs/validator";
 import {
     AreaNoCard,
     Column,
-    DateTime,
     Image,
     Mail,
     MULTI_FILE_MODE_SINGLE,
@@ -16,6 +15,7 @@ import {
     Spacer,
     Switch,
     Text,
+    TextArea,
     YesNo
 } from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
@@ -396,34 +396,64 @@ const entities = {
                                             {
                                                 property: "_avatar",
                                                 control: Image,
-                                                label: M("image")
+                                                label: M("image"),
+                                                size: "col-sm-4"
                                             },
                                             {
-                                                property: "name",
+                                                property: "c_2",
+                                                control: Column,
+                                                size: "col-sm-8",
+                                                noLateralPadding: false,
+                                                fields: [
+                                                    {
+                                                        property: "name",
+                                                        control: Text,
+                                                        label: M("name"),
+                                                        placeholder: M("name"),
+                                                        size: "col-12"
+                                                    },
+                                                    {
+                                                        property: "lastname",
+                                                        control: Text,
+                                                        label: M("lastname"),
+                                                        placeholder: M("lastname"),
+                                                        size: "col-12"
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                property: "_birthDate",
                                                 control: Text,
-                                                label: M("name"),
-                                                placeholder: M("name"),
-                                            },
-                                            {
-                                                property: "lastname",
-                                                control: Text,
-                                                label: M("lastname"),
-                                                placeholder: M("lastname"),
-                                            },
-                                            {
-                                                property: "birthDate",
-                                                control: DateTime,
                                                 label: M("birthDate"),
                                                 placeholder: M("birthDate"),
+                                                size: "col-sm-4",
+                                            },{
+                                                property: "sex",
+                                                control: Select,
+                                                size: "col-sm-4",
+                                                label: M("sex"),
+                                                placeholder: M("sex"),
+                                                props: {
+                                                    id: "sex",
+                                                    allowNull: true,
+                                                    multiple: false,
+                                                    datasource: datasource.fixed(
+                                                        [
+                                                            {label: "M", value: "M"},
+                                                            {label: "F", value: "F"},
+                                                        ]
+                                                    ),
+                                                }
                                             },
                                             {
                                                 property: "_category",
                                                 label: M("referenceToUserCategory"),
                                                 control: ValuesLookupContainer,
+                                                size: "col-sm-4",
                                                 props: {
                                                     id: "user_category",
                                                     mode: "single",
-                                                    collections: "endUserCategories",
+                                                    collection: "endUserCategories",
                                                     selectionGrid: {
                                                         columns: [
                                                             {property: "code", header: M("code"), cell: TextCell},
@@ -741,6 +771,7 @@ const entities = {
                                     control: Select,
                                     filterType: "eq",
                                     props: {
+                                        allowNull: true,
                                         datasource: CustomerTypeDatasource,
                                     },
                                 }
@@ -785,6 +816,7 @@ const entities = {
                                     control: Select,
                                     filterType: "eq",
                                     props: {
+                                        allowNull: true,
                                         datasource: datasource.fixed([
                                             {label: "Attivo", value: true},
                                             {label: "Non attivo", value: false},
@@ -1572,13 +1604,13 @@ const entities = {
                                             },
                                             {
                                                 property: "notes",
-                                                control: Text,
+                                                control: TextArea,
                                                 label: M("notes"),
                                                 placeholder: M("notes"),
                                                 size: "col-sm-12",
                                                 props: {
                                                     maxLength: 1000,
-                                                    height: "91px"
+                                                    height: "175px"
                                                 }
                                             },
                                         ]
@@ -1652,22 +1684,24 @@ const entities = {
                                                 }
                                             },
                                             {
-                                                property: "serviceCost",
+                                                property: "_dimSolDossierManagementFee",
                                                 control: ReadOnlyText,
-                                                label: M("fabricatorPayOff"),
-                                                placeholder: M("fabricatorPayOff"),
+                                                label: M("dossierManagementFee"),
+                                                placeholder: M("dossierManagementFee"),
                                                 size: "col-sm-12",
-                                                props: {
-                                                    formatter: v => {
-                                                        return v != null ? v.fabricatorPayOff : ""
-                                                    }
-                                                }
                                             },
                                             {
                                                 property: "serviceFeeInvoiced",
-                                                control: Switch,
+                                                getControl: (model) => {
+                                                    return model.get("id") == null || model.get("status") === DossierStatus.STATUS_QUOTATION.value ? Switch : ReadOnlyText
+                                                },
                                                 label: M("serviceFeeInvoiced"),
                                                 size: "col-sm-12",
+                                                props: {
+                                                    formatter: v => {
+                                                        return v != null && v ? M("yes") : M("no");
+                                                    }
+                                                }
                                             },
                                         ]
                                     }
@@ -1824,6 +1858,7 @@ function getPersonGridColumns(entityForSearch){
                         control: Select,
                         filterType: "eq",
                         props: {
+                            allowNull: true,
                             datasource: datasource.fixed([
                                 {label: "Attivo", value: true},
                                 {label: "Non attivo", value: false},
@@ -1909,7 +1944,7 @@ function getPersonActions(data) {
                         showCancelButton: true
                     })
                         .then(() => {
-                            resetUserPassword({id: data.id})
+                            resetUserPassword({id: data.userId})
                         })
                         .catch((e) => {
                             logger.i(e)

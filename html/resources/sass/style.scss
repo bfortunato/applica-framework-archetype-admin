@@ -341,8 +341,25 @@
   color: #9E9E9E;
 }
 
+.login__block__header {
+  background-color: #063868 !important;
+}
 
+.login__block__btn {
+  background-color: #063868 !important;
+}
 
+.form-group--float .form-control:focus ~ label {
+  color: #063868 !important;
+}
+
+.form-group__bar:after, .form-group__bar:before {
+  background-color: #063868 !important;
+}
+
+.header {
+  background-color: #063868 !important;
+}
 
 
 

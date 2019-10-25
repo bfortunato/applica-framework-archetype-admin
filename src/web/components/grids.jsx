@@ -896,8 +896,12 @@ export class Filter extends React.Component {
 
     render() {
         let textProperty = this.props.data.label != null ? this.props.data.label : M(this.props.data.property)
+        debugger
+        let textValue = this.props.data.value;
+        if(textValue != null)
+            textValue = M(textValue.replace("-", ""));
         return (
-            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-ponzio waves-effect m-r-10" >{textProperty} = {M(this.props.data.value)} <i className="zmdi zmdi-close"></i></button>      )
+            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-ponzio waves-effect m-r-10" >{textProperty} = {textValue} <i className="zmdi zmdi-close"></i></button>      )
     }
 }
 

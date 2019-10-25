@@ -14,7 +14,7 @@ class Secure extends React.Component {
 
     render() {
         let toPrint = this.props.children;
-        if (this.state.isLoggedIn && this.state.user && this.state.user.firstLogin) {
+        if (this.state.isLoggedIn && this.state.user && this.state.user.needToChangePassword) {
             toPrint =  <ChangePassword/>
         } else if (!this.state.isLoggedIn)  {
             toPrint =  <Login/>

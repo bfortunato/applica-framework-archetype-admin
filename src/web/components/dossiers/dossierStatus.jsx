@@ -3,7 +3,12 @@
 
 import React from "react";
 import {approve, candidate, commit, confirmQuotation, payOff, quotation, refuse} from "../../../actions/dossier";
-import {DossierStatus, getDossierStatusDescription, getDossierStatusPosition} from "../../../model/vars";
+import {
+    AssignationType,
+    DossierStatus,
+    getDossierStatusDescription,
+    getDossierStatusPosition
+} from "../../../model/vars";
 import {safeGet} from "../../../utils/lang";
 import _ from "underscore";
 import {connect} from "../../utils/aj";
@@ -126,15 +131,15 @@ export class DossierStatusComponent extends React.Component {
     }
 
     getDraftWidth(){
-        //TODO: Considerare solo quelli propedeutici
         let data = this.props.data;
         let status = safeGet(data, "status", null);
         let documents = safeGet(data, "documents", []);
+        let preparatoryDocuments = _.filter(documents, d=> d.documentType.assignationType === AssignationType.PREPARATORY_DOCUMENTATION.value);
 
         if (getDossierStatusPosition(status) > getDossierStatusPosition(DossierStatus.STATUS_DRAFT.value)){
             return "100%";
         }
-        return ((100 * _.filter(documents, d=>d.file != null && d.valid).length)/documents.length) + "%";
+        return ((100 * _.filter(preparatoryDocuments, d=> d.file != null && d.valid).length)/preparatoryDocuments.length) + "%";
     }
 
     render() {

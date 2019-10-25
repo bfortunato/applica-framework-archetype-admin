@@ -45,7 +45,7 @@ export const createDossier = createAsyncAction(CREATE_DOSSIER, data => {
     }
 
     showLoader();
-    DossierApi.createDossier(data.customerId, data.fabricatorId, data.significantValue, data.nonSignificantValue, data.serviceValue, data.notes)
+    DossierApi.createDossier(data.customerId, data.fabricatorId, data.significantValue, data.nonSignificantValue, data.serviceValue, data.notes, data.serviceFeeInvoiced)
         .then(response => {
             hideLoader();
 
@@ -79,7 +79,7 @@ export const editDossier = createAsyncAction(EDIT_DOSSIER, data => {
     }
 
     showLoader();
-    DossierApi.editDossier(data.dossierId, data.customerId, data.fabricatorId, data.significantValue, data.nonSignificantValue, data.serviceValue, data.notes)
+    DossierApi.editDossier(data.dossierId, data.customerId, data.fabricatorId, data.significantValue, data.nonSignificantValue, data.serviceValue, data.notes, data.serviceFeeInvoiced)
         .then(response => {
             hideLoader();
 
@@ -105,7 +105,7 @@ export const attachDocument = createAsyncAction(ATTACH_DOCUMENT, data => {
     DossierApi.attachDocument(data.dossierId, data.documentTypeId, data.attachment.path)
         .then(response => {
             hideLoader();
-            attachDocument.complete({documents: response.value});
+            attachDocument.complete({documents: response.value.documents, status: response.value.status});
         })
         .catch(e => {
             hideLoader()

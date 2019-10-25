@@ -9,7 +9,7 @@ import {Observable} from "../../aj/events";
 import {isControl, isDown, isEnter, isEsc, isShift, isUp} from "../utils/keyboard";
 import * as mobile from "../utils/mobile";
 import * as datasource from "../../utils/datasource";
-import {DossierStatus, getDossierStatusDescription, getDossierStatusPosition} from "../../model/vars";
+import {AssignationType, DossierStatus, getDossierStatusDescription, getDossierStatusPosition} from "../../model/vars";
 import {createCell, Filters, Pagination, ResultSummary, SearchDialog} from "./grids";
 
 const EXPAND_ANIMATION_TIME = 250
@@ -588,12 +588,12 @@ export class StatusCell extends Cell {
     }
 
     getDraftWidth(status){
-        //TODO: Considerare solo quelli propedeutici
         let documents = safeGet(this.props.row.data, "documents", [])
+        let preparatoryDocuments = _.filter(documents, d=> d.documentType.assignationType === AssignationType.PREPARATORY_DOCUMENTATION.value);
         if (getDossierStatusPosition(status) > getDossierStatusPosition(DossierStatus.STATUS_DRAFT.value)){
             return "100%";
         }
-        return ((100 * _.filter(documents, d=>d.file != null && d.valid).length)/documents.length) + "%";
+        return ((100 * _.filter(preparatoryDocuments, d=>d.file != null && d.valid).length)/preparatoryDocuments.length) + "%";
     }
 
     getColorByStatus(status){
