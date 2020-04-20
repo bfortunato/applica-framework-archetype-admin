@@ -745,3 +745,8 @@ tr.collapsible {
 
 .checkbox > input[type=checkbox]:checked ~ .checkbox__label:before, .checkbox > input[type=radio]:checked ~ .checkbox__label:before, .radio > input[type=checkbox]:checked ~ .checkbox__label:before, .radio > input[type=radio]:checked ~ .checkbox__label:before {
   background-color: #ff6b68; }
+
+.profile__img .input-image .input-image-img {
+  height: 180px !important;
+  width: 180px;
+  border-radius: 5px; }

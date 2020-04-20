@@ -79,7 +79,7 @@ class ProfileBox extends React.Component {
                 <div className="dropdown-menu">
                     <a className="dropdown-item" href="#">View Profile</a>
                     <a className="dropdown-item" href="#">Settings</a>
-                    <a className="dropdown-item" href="#" onClick={this.logout.bind(this)}><i className="zmdi zmdi-time-restore"></i> Logout</a>
+                    <a className="dropdown-item" onClick={this.logout.bind(this)}><i className="zmdi zmdi-time-restore"></i> Logout</a>
                 </div>
             </div>
         )
@@ -87,19 +87,21 @@ class ProfileBox extends React.Component {
 }
 
 class MenuLevel extends React.Component {
-    onSelect(item) {
+    onSelect(item, e) {
         if (item.href) {
             location.href = item.href
         }
 
         if (_.isFunction(this.props.onSelect)) {
-            this.props.onSelect(item)
+            this.props.onSelect(item, e)
         }
 
         let hasChildren = !_.isEmpty(item.children)
         if (hasChildren) {
             this.onExpand(item)
         }
+
+        e.preventDefault();
     }
 
     onExpand(item) {
@@ -122,7 +124,7 @@ class MenuLevel extends React.Component {
 
             return (
                 <li key={key++} className={className}>
-                    <a href="javascript:;" onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
+                    <a onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
                         <i className={i.icon}></i> {i.text}
                     </a>
 

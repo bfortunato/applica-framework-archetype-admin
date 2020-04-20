@@ -5,6 +5,10 @@ import {Image, Mail, PasswordText, Text, YesNo} from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
 import M from "../strings";
 import {getLoggedUser, hasPermission} from "../api/session";
+import { optional } from "../utils/lang";
+import moment from "moment";
+import * as query from "../framework/query";
+import ProfileArea from "./components/areas/profileArea";
 
 
 const entities = {
@@ -184,7 +188,7 @@ const entities = {
 				]
 			}
 		}
-	}
+	},
 
     // ,revisionSettings: {
     //     form: {
@@ -252,7 +256,189 @@ const entities = {
     //             ]
     //         }
     //     },
-    // }
+	// }
+	
+	profile: {
+		grid: {
+			title: M("profiles"),
+			subtitle: M("profilesListDescription"),
+			quickSearchEnabled: true,
+			descriptor: {
+				columns: [
+					{property: "firstName", header: M("firstName"), cell: TextCell, sortable: true, searchable: true},
+					{property: "lastName", header: M("lastName"), cell: TextCell, sortable: true, searchable: true},
+					{property: "fiscalCode", header: M("fiscalCode"), cell: TextCell, sortable: true, searchable: true},
+					{property: "address.municipality", header: M("city"), cell: TextCell, sortable: true, searchable: true},
+					{property: "familyMember", header: M("familyMember"), cell: CheckCell, sortable: true, searchable: true},
+	            ]
+			}
+		},
+		form: {
+			title: M("editProfile"),
+			subtitle: M("editProfileDescription"),
+			descriptor: {
+				areas: [
+					{
+						component: ProfileArea
+					},
+					{
+						title: M("generalInformations"),
+						fields: [
+							{
+								property: "firstName",
+								control: Text,
+								label: M("firstName"),
+								placeholder: M("firstName"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "lastName",
+								control: Text,
+								label: M("lastName"),
+								placeholder: M("lastName"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "phoneNumber",
+								control: Text,
+								label: M("phoneNumber"),
+								placeholder: M("phoneNumber"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+							{
+								property: "user",
+								label: M("user"),
+								placeholder: M("selectUser"),
+								control: EntitiesLookupContainer,
+									props: {
+										id: "profile_user",
+										mode: "single",
+										entity: "user",
+										initialQuery: query.create().eq("active", true),
+										selectionGrid: {
+											filtersVisible: false,
+											columns: [
+												{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+												{property: "email", header: M("email"), cell: TextCell, sortable: true, searchable: true},
+											]
+										},
+										popupGrid: {
+											columns: [
+												{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+												{property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
+											]
+										}
+									}	               
+		
+							},
+							{
+								property: "parentUser",
+								label: M("parent"),
+								placeholder: M("selectParent"),
+								control: EntitiesLookupContainer,
+								props: {
+									id: "profile_parent_user",
+									mode: "single",
+									entity: "user",
+									initialQuery: query.create().eq("active", true),
+									selectionGrid: {
+										filtersVisible: false,
+										columns: [
+											{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+											{property: "email", header: M("email"), cell: TextCell, sortable: true, searchable: true},
+										]
+									},
+									popupGrid: {
+										columns: [
+											{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+											{property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
+										]
+									}
+								}
+							},
+							{
+								property: "fiscalCode",
+								control: Text,
+								label: M("fiscalCode"),
+								placeholder: M("fiscalCode"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+							{
+								property: "familyMember",
+								control: YesNo,
+								label: M("familyMember"),
+								placeholder: M("familyMember"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+						]
+					},
+					{
+						title: M("Address"),
+						fields: [
+							{
+								property: "address.region",
+								control: Text,
+								label: M("region"),
+								placeholder: M("region"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+							{
+								property: "address.province",
+								control: Text,
+								label: M("province"),
+								placeholder: M("province"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+							{
+								property: "address.municipality",
+								control: Text,
+								label: M("municipality"),
+								placeholder: M("municipality"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+							{
+								property: "address.address",
+								control: Text,
+								label: M("address"),
+								placeholder: M("address"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty()
+							},
+						]
+					}
+				]
+			}
+		}
+	},
+
+	test: {
+		grid: {
+			title: M("tests"),
+			subtitle: M("testsListDescription"),
+			quickSearchEnabled: true,
+			descriptor: {
+				columns: [
+					{property: "date", header: M("date"), cell: TextCell, sortable: true, searchable: true, props: {formatter: v => moment(v).format("YYYY/MM/DD HH:mm")}},
+					{property: "profile.firstName", header: M("firstName"), cell: TextCell, sortable: true, searchable: true },
+					{property: "profile.lastName", header: M("lastName"), cell: TextCell, sortable: true, searchable: true },
+					{property: "profile.fiscalCode", header: M("fiscalCode"), cell: TextCell, sortable: true, searchable: true },
+					{property: "profile.address.municipality", header: M("city"), cell: TextCell, sortable: true, searchable: true },
+					{property: "type", header: M("testType"), cell: TextCell, sortable: true, searchable: true },
+					{property: "result", header: M("result"), cell: TextCell, sortable: true, searchable: true },
+	            ]
+			}
+		},
+	}
 }
 
 export default entities

@@ -2,7 +2,7 @@ let language = "it"
 
 let strings = {}
 strings["en"] = {
-    appName: "_APPNAME_",
+    appName: "Cov-ID",
     registering: "Registering...",
     ooops: "Ooops...",
     badLogin: "Cannot login! Please check your email address or password!",
@@ -255,7 +255,7 @@ strings["en"] = {
 }
 
 strings["it"] = {
-    appName: "_APPNAME_",
+    appName: "Cov-ID",
     registering: "Registrazione...",
     ooops: "Ooops...",
     badLogin: "Non riesco ad accedere! Per favore controlla il tuo indirizzo email o password!",
@@ -385,6 +385,15 @@ strings["it"] = {
     defaultTime: "Tempo predefinito",
     customer: "Cliente",
     formChangeAlert: "Tutti i dati non salvati verranno persi. Continuare?",
+    profiles: "Profili",
+    tests: "Tamponi",
+    settings: "Impostazioni",
+    profilesListDescription: "Lista dei profili inseriti dall'app. In questa lista sono presenti anche i familiari",
+    firstName: "Nome",
+    lastName: "Cognome",
+    fiscalCode: "Codice fiscale",
+    city: "Città",
+    familyMember: "Familiare"
 }
 
 export function setLanguage(language_) {

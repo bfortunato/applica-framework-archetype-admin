@@ -2,6 +2,18 @@ import M from "../strings"
 
 export default [
     {
+        icon: "zmdi zmdi-male-female",
+        text: M("profiles"),
+        roles: ["admin"],
+        href: "/#/entities/profile"
+    },
+    {
+        icon: "zmdi zmdi-hospital",
+        text: M("tests"),
+        roles: ["admin"],
+        href: "/#/entities/test"
+    },
+    {
         icon: "zmdi zmdi-shield-security",
         text: M("security"),
         roles: ["admin"],
@@ -25,5 +37,11 @@ export default [
             //     permissions: ["entityRevisionSettings:edit"]
             // }
         ]
-    }
+    },
+    {
+        icon: "zmdi zmdi-settings",
+        text: M("settings"),
+        roles: ["admin"],
+        href: "/#/"
+    },
 ]

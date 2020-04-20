@@ -15,9 +15,10 @@ export default class Login extends Screen {
         connect(this, SessionStore)
     }
 
-    login() {
+    login(e) {
         let data = forms.serialize(this.refs.login_form)
         login(data)
+        e.preventDefault();
     }
 
     componentDidMount() {
@@ -75,7 +76,7 @@ export default class Login extends Screen {
                             </div>
                         </div>
 
-                        <form action="#" className="lcb-form" onSubmit={this.login.bind(this)} ref="login_form">
+                        <form className="lcb-form" onSubmit={(e) => this.login(e)} ref="login_form">
                             <div className="login__block__body">
                                 <div className="form-group form-group--float form-group--centered">
                                     <input type="email" name="mail" className="form-control" autoComplete="username"/>

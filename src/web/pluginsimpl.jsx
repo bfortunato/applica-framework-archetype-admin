@@ -78,7 +78,7 @@ exports.Toast = {
                         '</button>' +
                         '<span data-growl="icon"></span>' +
                         '<span data-growl="message"></span>' +
-                        '<a href="javascript:;" data-growl="url"></a>' +
+                        '<a data-growl="url"></a>' +
                         '</div>'
         });
     }

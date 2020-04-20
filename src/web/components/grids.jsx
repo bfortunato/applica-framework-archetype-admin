@@ -9,6 +9,7 @@ import {Observable} from "../../aj/events";
 import {isControl, isDown, isEnter, isEsc, isShift, isUp} from "../utils/keyboard";
 import * as mobile from "../utils/mobile";
 import * as datasource from "../../utils/datasource";
+import traverse from "../../utils/traverse";
 
 const EXPAND_ANIMATION_TIME = 250
 const CELL_PADDING_TOP = 15
@@ -416,7 +417,7 @@ export class HeaderCell extends React.Component {
                 <span onClick={this.changeSort.bind(this)} className="pointer-cursor">{this.props.column.header}</span>
 
                 {this.props.column.searchable &&
-                    <a ref="search" className="btn btn-sm btn-light" href="javascript:;" onClick={this.search.bind(this)} style={{display: "none", marginTop: "-3px", position: "absolute", right: searchButtonRight}}><i className="zmdi zmdi-search"/></a>
+                    <a ref="search" className="btn btn-sm btn-light" onClick={this.search.bind(this)} style={{display: "none", marginTop: "-3px", position: "absolute", right: searchButtonRight}}><i className="zmdi zmdi-search"/></a>
                 }
 
                 {this.props.column.searchable &&
@@ -629,7 +630,7 @@ export class Cell extends React.Component {
         let property = this.props.property
         let row = this.props.row
 
-        return row.data[property]
+        return traverse(row.data).get(property);
     }
 }
 
@@ -704,7 +705,7 @@ export class TextCell extends Cell {
         let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
 
         let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
-            <a style={{marginLeft: marginLeft, marginRight: 20}} href="javascript:;" className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
+            <a style={{marginLeft: marginLeft, marginRight: 20}} className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
                 <i className={"c-black " + icon} />
             </a> : null
 
@@ -941,29 +942,29 @@ export class Pagination extends React.Component {
         }
         visiblePages.forEach(i => {
             let active = i === page ? "active" : ""
-            pages.push(<li key={i} className={active}><a href="javascript:;" onClick={this.changePage.bind(this, i)}>{i}</a></li>)
+            pages.push(<li key={i} className={active}><a onClick={this.changePage.bind(this, i)}>{i}</a></li>)
         })
 
         return (
             <ul className="pagination" hidden={!visible}>
                 <li>
-                    <a href="javascript:;" onClick={this.firstPage.bind(this)} aria-label="First">
+                    <a onClick={this.firstPage.bind(this)} aria-label="First">
                         <i className="zmdi zmdi-arrow-left"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="javascript:;" onClick={this.previousPage.bind(this)} aria-label="Previous">
+                    <a onClick={this.previousPage.bind(this)} aria-label="Previous">
                         <i className="zmdi zmdi-chevron-left"></i>
                     </a>
                 </li>
                 {pages}
                 <li>
-                    <a href="javascript:;" onClick={this.nextPage.bind(this)} aria-label="Next">
+                    <a onClick={this.nextPage.bind(this)} aria-label="Next">
                         <i className="zmdi zmdi-chevron-right"></i>
                     </a>
                 </li>
                 <li>
-                    <a href="javascript:;" onClick={this.lastPage.bind(this)} aria-label="First">
+                    <a onClick={this.lastPage.bind(this)} aria-label="First">
                         <i className="zmdi zmdi-arrow-right"></i>
                     </a>
                 </li>
@@ -1256,6 +1257,7 @@ export class Grid extends React.Component {
         let headerVisible = optional(parseBoolean(this.props.headerVisible), true)
         let footerVisible = optional(parseBoolean(this.props.footerVisible), true)
         let summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
+        let filtersVisible = optional(parseBoolean(this.props.filtersVisible), true)
         let noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
         //let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
         let paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
@@ -1263,7 +1265,7 @@ export class Grid extends React.Component {
         let noResultsText = optional(this.props.noResultsText, M("noResults"))
 
         let myQuery = optional(this.props.query, query.create())
-        let showFilters = myQuery.filters.length > 0
+        let showFilters = filtersVisible && myQuery.filters.length > 0
         let hasResults = (this.props.data && this.props.data.rows) ? this.props.data.rows.length > 0 : false
         let hasPagination = this.getTotalPages() > 1
         let Container = optional(parseBoolean(this.props.showInCard), true) ? Card : NoCard
@@ -1386,7 +1388,7 @@ export class EditCheckCell extends Cell {
 
 export function createCell(column, row, firstElement, onExpand, props = {}) {
     let key = column.property + "" + row.index
-    let value = row.data[column.property]
+    let value = traverse(row.data).get(column.property);
     let cell = _.isFunction(column.getCell) ? column.getCell(value, row) : column.cell;
     return React.createElement(cell, _.assign({key, column, property: column.property, row, value, firstElement, onExpand}, props))
     
@@ -1409,7 +1411,7 @@ export class ButtonCell extends Cell {
                 <span>{value}</span>
                 :
 
-                <a ref="button" href="javascript:;" className={className} onClick={this.onClick.bind(this)}>
+                <a ref="button" className={className} onClick={this.onClick.bind(this)}>
                     <span>{value}</span>
                 </a>
         )

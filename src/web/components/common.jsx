@@ -21,7 +21,7 @@ export class DropdownActionButton extends React.Component {
         let index = 0
         let dropdownItems = _.map(this.props.action.items, i =>             
             <li key={index++}>
-                <a role="menuitem" tabIndex="-1" href="javascript:;" onClick={this.onItemClick.bind(this, i)}>
+                <a role="menuitem" tabIndex="-1" onClick={this.onItemClick.bind(this, i)}>
                     {!_.isEmpty(i.icon) &&
                         <i className={i.icon} />
                     }
@@ -41,7 +41,7 @@ export class DropdownActionButton extends React.Component {
             <div className="dropdown">
                 <a  
                     ref="button"
-                    href="javascript:;"
+                    href="#"
                     className={this.props.className}
                     data-toggle="dropdown"
                     data-placement="bottom"
@@ -82,7 +82,7 @@ export class ActionButton extends React.Component {
         return (
             <a  
                 ref="button" 
-                href="javascript:;" 
+                
                 className={className}
                 data-toggle="tooltip" 
                 data-placement="bottom" 

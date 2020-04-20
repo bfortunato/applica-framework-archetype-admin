@@ -134,6 +134,11 @@ export class EntitiesLookupContainer extends Control  {
         this.query = query.create()
         this.query.setPage(1)
         this.query.setRowsPerPage(20)
+
+        if (props.initialQuery) {
+            this.query = query.merge(this.query, props.initialQuery);
+        }
+
         this.__queryOnChange = () => {
             getLookupResult({discriminator: this.discriminator, entity: this.props.entity, query: this.query})
         }

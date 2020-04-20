@@ -46,7 +46,7 @@ export default class ChangePassword extends Screen {
                             </div>
                         </div>
 
-                        <a href="javascript:;" onClick={this.changePassword.bind(this)} className="btn btn-login btn-success btn-float waves-effect waves-circle waves-float"><i className="zmdi zmdi-arrow-forward"></i></a>
+                        <a onClick={this.changePassword.bind(this)} className="btn btn-login btn-success btn-float waves-effect waves-circle waves-float"><i className="zmdi zmdi-arrow-forward"></i></a>
 
                     </div>
                 </div>

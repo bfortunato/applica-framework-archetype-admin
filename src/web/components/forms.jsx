@@ -11,6 +11,7 @@ import * as inputfile from "../utils/inputfile"
 import * as datasource from "../../utils/datasource"
 import {parseBoolean} from "../../utils/lang"
 import _ from "underscore"
+import traverse from "../../utils/traverse"
 
 export const VALIDATION_ERROR = {}
 
@@ -142,8 +143,8 @@ export class Model extends Observable {
     }
 
     set(property, value) {
-        let initialValue = this.data[property]
-        this.data[property] = value 
+        const initialValue = traverse(this.data).get(property);
+        traverse(this.data).set(property, value);
 
         if (!this.changesTrackingDisabled) {
             this.invoke("property:change", property, value)
@@ -156,15 +157,12 @@ export class Model extends Observable {
     }
 
     get(property) {
-        if (_.has(this.data, property)) {
-            return this.data[property]
-        } else {
-            return null
-        }
+        const value = traverse(this.data).get(property);
+        return value !== undefined ? value : null;
     }
 
     validateField(validationResult, field) {
-        let value = this.data[field.property]
+        let value = this.get(field.property);
         try {
             if (_.isFunction(field.validator)) {
                 field.validator(value)
@@ -186,8 +184,8 @@ export class Model extends Observable {
         let sanitized = {}
 
         _.each(_.keys(this.data), property => {
-            let value = this.data[property]
-            let field = this.findField(property)
+            let value = this.get(property);
+            let field = this.findField(property);
             if (field) {
                 if (_.isFunction(field.sanitizer)) {
                     value = field.sanitizer(value)
@@ -301,9 +299,9 @@ export class Area extends React.Component {
             <Card title={area.title} subtitle={area.subtitle} actions={area.actions}>
                 {tabs}
                 <div className="row">
-                    <div className="col-md-12">
+                    
                         {fields}
-                    </div>
+                    
                 </div>
                 <div className="clearfix"></div>
 
@@ -1520,8 +1518,8 @@ export class Lookup extends Control {
                 <div className="lookup">
                     <div className="lookup-header" onClick={this.showEntities.bind(this)}>
                         <div className="actions">
-                            <a href="javascript:;" className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
-                            <a href="javascript:;" className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
+                            <a className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
+                            <a className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
                         </div>
                         <span className="lookup-current-value">{this.getHeaderText()}</span>
                         <div className="clearfix"></div>
@@ -1539,6 +1537,7 @@ export class Lookup extends Control {
                             summaryVisible="false"
                             noResultsVisible="false"
                             paginationEnabled="false"
+                            filtersVisible="false"
                             tableClassName="table table-condensed table-hover"
                             onKeyDown={this.onGridKeyDown.bind(this)}
                         />
@@ -1562,6 +1561,7 @@ export class Lookup extends Control {
                                     footerVisible="true"
                                     summaryVisible="true"
                                     paginationEnabled="true"
+                                    filtersVisible="false"
                                     tableClassName="table table-condensed table-striped table-hover"
                                     onRowDoubleClick={this.select.bind(this)}
                                 />
@@ -1625,14 +1625,14 @@ export class File extends Control {
                     {!hasValue ?
                         <div>
                             <div className="actions pull-right">
-                                <a href="javascript:;" title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i className="zmdi zmdi-search" /></a>
+                                <a title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i className="zmdi zmdi-search" /></a>
                             </div>
                             <span className="placeholder">{field.placeholder}</span>
                         </div>
                     : 
                         <div>
                             <div className="actions pull-right">
-                                <a href="javascript:;" title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i className="zmdi zmdi-close" /></a>
+                                <a title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i className="zmdi zmdi-close" /></a>
                             </div>
                             <span className="input-file-name"><span className="zmdi zmdi-file"></span> {this.state.filename}</span>
                         </div>
@@ -1708,12 +1708,12 @@ export class Image extends Control {
                     {!_.isEmpty(imageData) ?
                         <div className="input-image-container">
                             <div className="actions">
-                                <a href="javascript:;" onClick={this.delete.bind(this)} className="delete-button"><i className="zmdi zmdi-close"></i></a>
+                                <a onClick={this.delete.bind(this)} className="delete-button"><i className="zmdi zmdi-close"></i></a>
                             </div>
-                            <div className="input-image" style={_.assign(imgStyle, {"backgroundImage": `url("${imageData}")`})}></div>
+                            <div className="input-image-img" style={_.assign(imgStyle, {"backgroundImage": `url("${imageData}")`})}></div>
                         </div>
                     :
-                        <div className="input-image" style={_.assign(imgStyle, {"backgroundImage": `url("resources/images/noimage.png")`})}></div>
+                        <div className="input-image-img" style={_.assign(imgStyle, {"backgroundImage": `url("resources/images/noimage.png")`})}></div>
                     }
                 </div>
                 <input type="file" accept={accept} onChange={this.onFileSelected.bind(this)} />
@@ -1961,7 +1961,7 @@ export class SingleImage extends Control {
                     {!_.isEmpty(imageData) ?
                         <div className="input-image-container">
                             <div className="actions">
-                                <a href="javascript:;" onClick={this.delete.bind(this)} className="delete-button"><i
+                                <a onClick={this.delete.bind(this)} className="delete-button"><i
                                     className="zmdi zmdi-close"></i></a>
                             </div>
                             <div className="input-image"
@@ -2065,7 +2065,7 @@ export class SingleFile extends Control {
             component = (
                 <div>
                     <div className="actions pull-right">
-                        <a href="javascript:;" title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i
+                        <a title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i
                             className="zmdi zmdi-search"/></a>
                     </div>
                     <span className="placeholder"></span>
@@ -2075,9 +2075,9 @@ export class SingleFile extends Control {
             component = (
                 <div>
                     <div className="actions pull-right">
-                        {readOnly && <a href="javascript:;" title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i
+                        {readOnly && <a title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i
                             className="zmdi zmdi-close"/></a>}
-                        {canDownload && <a href="javascript:;" title={M("download")} onClick={this.download.bind(this)}
+                        {canDownload && <a title={M("download")} onClick={this.download.bind(this)}
                                            className="m-r-0"><i className="zmdi zmdi-download"/></a>}
                     </div>
                     <span className="input-file-name"><span className="zmdi zmdi-file"/> {this.state.filename} </span>
