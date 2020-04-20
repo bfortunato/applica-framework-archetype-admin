@@ -1,11 +1,11 @@
-var serviceBase = "http://localhost:8080/";
+var serviceBase = require("./service-url");
 
 function getVersion() {
     return "1.0";
 }
 
 function getCopyright() {
-    return "Applica SRL, 2019";
+    return "Applica SRL, 2020";
 }
 
 module.exports = {

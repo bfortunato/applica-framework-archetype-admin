@@ -250,7 +250,8 @@ strings["en"] = {
     city: "City",
     coverOptionColorConfiguration: "Cover option color configuration",
     addComplementaryArticleForColor: "Add complementary article for {0}",
-    addAnalogousArticleForColor: "Add analogous article for {0}"
+    addAnalogousArticleForColor: "Add analogous article for {0}",
+    formChangeAlert: "All unsaved data will be lost. Continue?",
 }
 
 strings["it"] = {
@@ -383,6 +384,7 @@ strings["it"] = {
     city: "Città",
     defaultTime: "Tempo predefinito",
     customer: "Cliente",
+    formChangeAlert: "Tutti i dati non salvati verranno persi. Continuare?",
 }
 
 export function setLanguage(language_) {

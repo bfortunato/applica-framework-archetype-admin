@@ -28,7 +28,7 @@ class Header extends React.Component {
     render() {
         return (
             <header id="header" className="header clearfix">
-                <div className="navigation-trigger" data-ma-action="aside-open" data-ma-target=".sidebar">
+                <div className="navigation-trigger hidden-xl-up" data-ma-action="aside-open" data-ma-target=".sidebar">
                     <div className="navigation-trigger__inner">
                         <i className="navigation-trigger__line"></i>
                         <i className="navigation-trigger__line"></i>
@@ -179,8 +179,8 @@ class MainMenu extends React.Component {
 class SideBar extends React.Component {
     render() {
         return (
-            <aside id="sidebar" className="sidebar sidebar--hidden">
-                <div className="scrollbar-inner">
+            <aside id="sidebar" className="sidebar">
+                <div className="scroll-wrapper scrollbar-inner">
                     <ProfileBox />
                     <MainMenuContainer />
                 </div>
@@ -220,7 +220,7 @@ class Footer extends React.Component {
     }
 
     componentDidMount() {
-        systemInformation()
+        //systemInformation()
     }
 
     render() {
@@ -249,7 +249,7 @@ class Layout extends React.Component {
                 <Header/>
                 <SideBar/>
 
-                <section className="content content--full">
+                <section className="content">
                     {this.props.children}
                 </section>
 
