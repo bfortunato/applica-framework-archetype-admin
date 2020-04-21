@@ -11,7 +11,7 @@ export default [
         icon: "zmdi zmdi-hospital",
         text: M("tests"),
         roles: ["admin"],
-        href: "/#/entities/test"
+        href: "/#/tests"
     },
     {
         icon: "zmdi zmdi-shield-security",

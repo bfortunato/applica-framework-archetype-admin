@@ -92,7 +92,7 @@ export function createAction(type, fn) {
             logger.i("Running action", type);
             logger.i(data);
         }
-        fn(data);
+        return fn(data);
     };
 
     logger.i("Action created:", type);

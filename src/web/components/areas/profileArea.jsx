@@ -1,8 +1,16 @@
 import React from "react"
 import {Area, Image} from "../forms"
-import M from "../../../strings";
+import M from "../../../strings"
+import * as ui from "../../utils/ui"
 
 class ProfileArea extends Area {
+    onRequestCT() {
+        const model = this.props.model;
+        const id = model.get("id");
+
+        ui.navigate("/ct/" + id);
+    }
+
     render() {
         const field = {
             property: "_picture",
@@ -25,6 +33,10 @@ class ProfileArea extends Area {
                         <li><i className="zmdi zmdi-home"></i>{model.get("address.address")}</li>
                         <li><i className="zmdi zmdi-my-location"></i>{model.get("address.municipality")}</li>
                     </ul>
+                </div>
+
+                <div className="card-buttons">
+                    <button className="btn btn-primary" type="button" onClick={this.onRequestCT.bind(this)}><i className="zmdi zmdi-link" /> Ricostruisci catena dei contatti</button>
                 </div>
             </div>
         )

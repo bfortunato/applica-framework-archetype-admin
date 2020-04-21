@@ -66,6 +66,8 @@ function _connectPropsOf(component) {
                 stores.push(storeOrStores);
             }
 
+            const actions = actionMapper ? actionMapper() : {};
+
             return class ConnectedComponent extends React.Component {
 
                 constructor(props) {
@@ -77,23 +79,32 @@ function _connectPropsOf(component) {
                     })
 
                     this.state = mergedState;
-                }
-            
-                componentDidMount() {
+
                     stores.forEach(store => store.subscribe(this, (state) => {
                         this.setState(state);
                     }));
                 }
             
+                componentDidMount() {
+                    if (_.isFunction(actions.onInit)) {
+                        actions.onInit(this.props, this.state);
+                    }
+                }
+            
                 componentWillUnmount() {
                     stores.forEach(store => store.unsubscribe(this));
+
+                    if (_.isFunction(actions.onDestroy)) {
+                        actions.onDestroy(this.props, this.state);
+                    }
                 }
             
                 render() {
                     const Component = component;
                     const props = _.assign(stateMapper(this.state), this.props);
+                    const actions = actionMapper ? actionMapper() : {};
             
-                    return <Component {...props} actions={actionMapper ? actionMapper() : {}} />
+                    return <Component {...props} {...actions} />
                 }
             
             }

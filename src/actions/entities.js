@@ -109,27 +109,34 @@ export const deleteEntities = createAsyncAction(DELETE_ENTITIES, data => {
         throw new Error("Discriminator is required")
     }
 
-    showLoader()
-    aj.dispatch({
-        type: DELETE_ENTITIES,
-        discriminator: data.discriminator
-    })
-
-    EntitiesApi.delete_(data.entity, data.ids)
-        .then(() => {
-            hideLoader()
-            deleteEntities.complete({discriminator: data.discriminator})
-
-            if (_.has(queries, data.entity)) {
-                loadEntities({discriminator: data.discriminator, entity: data.entity, query: queries[data.entity]})
-            }
+    return new Promise((resolve, reject) => {
+        showLoader()
+        aj.dispatch({
+            type: DELETE_ENTITIES,
+            discriminator: data.discriminator
         })
-        .catch(e => {
-            hideLoader()
-            alert(M("ooops"), responses.msg(e), "error")
+    
+        EntitiesApi.delete_(data.entity, data.ids)
+            .then(() => {
+                hideLoader()
+                deleteEntities.complete({discriminator: data.discriminator})
+    
+                if (_.has(queries, data.entity)) {
+                    loadEntities({discriminator: data.discriminator, entity: data.entity, query: queries[data.entity]})
+                }
 
-            deleteEntities.fail({discriminator: data.discriminator})
-        })
+                resolve();
+            })
+            .catch(e => {
+                hideLoader()
+                alert(M("ooops"), responses.msg(e), "error")
+    
+                deleteEntities.fail({discriminator: data.discriminator})
+
+                reject();
+            })
+    });
+    
 })
 
 export const saveEntity = createAsyncAction(SAVE_ENTITY, data => {
@@ -147,40 +154,46 @@ export const saveEntity = createAsyncAction(SAVE_ENTITY, data => {
         throw new Error("Discriminator is required")
     }
 
-    showLoader()
-    aj.dispatch({
-        type: SAVE_ENTITY,
-        discriminator: data.discriminator
-    })
+    return new Promise((resolve, reject) => {
+        showLoader()
+        aj.dispatch({
+            type: SAVE_ENTITY,
+            discriminator: data.discriminator
+        })
 
-    EntitiesApi.save(data.entity, data.data)
-        .then(response => {
-            hideLoader()
-            toast(M("saveComplete"))
+        EntitiesApi.save(data.entity, data.data)
+            .then(response => {
+                hideLoader()
+                toast(M("saveComplete"))
 
-            saveEntity.complete({discriminator: data.discriminator, data: data.data})
+                saveEntity.complete({discriminator: data.discriminator, data: data.data})
 
-            if (data.reload) {
-                getEntity({discriminator: data.discriminator, entity: data.entity, id: response.value.id})
-            }
-
-            if (data.entity == "user") {
-                if (SessionApi.getLoggedUser() != null && SessionApi.getLoggedUser().id == data.data.id) {
-                    getUserProfileImage()
+                if (data.reload) {
+                    getEntity({discriminator: data.discriminator, entity: data.entity, id: response.value.id})
                 }
-            }
-        })
-        .catch(r => {
-            hideLoader()
 
-            if (r.responseCode === responses.ERROR_VALIDATION) {
-                saveEntity.fail({discriminator: data.discriminator, data: data.data, validationError: true, validationResult: r.result})
-            } else {
-                alert(M("ooops"), responses.msg(r.responseCode), "error")
+                if (data.entity == "user") {
+                    if (SessionApi.getLoggedUser() != null && SessionApi.getLoggedUser().id == data.data.id) {
+                        getUserProfileImage()
+                    }
+                }
 
-                saveEntity.fail({discriminator: data.discriminator, data: data.data, validationError: false, validationResult: null})
-            }
-        })
+                resolve(data.data.id);
+            })
+            .catch(r => {
+                hideLoader()
+
+                if (r.responseCode === responses.ERROR_VALIDATION) {
+                    saveEntity.fail({discriminator: data.discriminator, data: data.data, validationError: true, validationResult: r.result})
+                } else {
+                    alert(M("ooops"), responses.msg(r.responseCode), "error")
+
+                    saveEntity.fail({discriminator: data.discriminator, data: data.data, validationError: false, validationResult: null})
+                }
+
+                reject();
+            })
+        });
 });
 
 export const newEntity = aj.createAction(NEW_ENTITY, data => {

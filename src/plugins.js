@@ -9,7 +9,7 @@ export function alert(title, message, type) {
     return aj.exec("Alert", "alert", {title, message, type}, function() {}).then(() => {}).catch(() => {})
 }
 
-export function confirm() {
+export function confirm(title, message) {
     return new Promise((resolve, reject) => {
         let callback = (confirmed) => {
             if (confirmed) {
@@ -19,7 +19,9 @@ export function confirm() {
             }
         }
 
-        aj.exec("Alert", "confirm", {}, callback).then(() => {}).catch(() => reject())
+        aj.exec("Alert", "confirm", {title, message}, callback)
+            .then(() => callback(true))
+            .catch(() => callback(false))
     })
 }
 

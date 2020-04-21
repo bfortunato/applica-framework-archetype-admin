@@ -393,7 +393,11 @@ strings["it"] = {
     lastName: "Cognome",
     fiscalCode: "Codice fiscale",
     city: "Città",
-    familyMember: "Familiare"
+    familyMember: "Familiare",
+    resultUnknown: "Tampone non effettuato",
+    resultPositive: "Positivo al Covid-19",
+    resultNegative: "Negativo al Covid-19",
+    deferred: "differito",
 }
 
 export function setLanguage(language_) {

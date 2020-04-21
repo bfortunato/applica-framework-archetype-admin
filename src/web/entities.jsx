@@ -9,6 +9,7 @@ import { optional } from "../utils/lang";
 import moment from "moment";
 import * as query from "../framework/query";
 import ProfileArea from "./components/areas/profileArea";
+import FamilyArea from "./components/areas/familyArea";
 
 
 const entities = {
@@ -308,12 +309,23 @@ const entities = {
 								label: M("phoneNumber"),
 								placeholder: M("phoneNumber"),
 								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "fiscalCode",
+								control: Text,
+								label: M("fiscalCode"),
+								placeholder: M("fiscalCode"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
 							},
 							{
 								property: "user",
 								label: M("user"),
 								placeholder: M("selectUser"),
+								size: "col-sm-6",
 								control: EntitiesLookupContainer,
 									props: {
 										id: "profile_user",
@@ -339,6 +351,7 @@ const entities = {
 							{
 								property: "parentUser",
 								label: M("parent"),
+								size: "col-sm-6",
 								placeholder: M("selectParent"),
 								control: EntitiesLookupContainer,
 								props: {
@@ -362,20 +375,10 @@ const entities = {
 								}
 							},
 							{
-								property: "fiscalCode",
-								control: Text,
-								label: M("fiscalCode"),
-								placeholder: M("fiscalCode"),
-								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
-							},
-							{
 								property: "familyMember",
 								control: YesNo,
 								label: M("familyMember"),
 								placeholder: M("familyMember"),
-								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
 							},
 						]
 					},
@@ -388,7 +391,8 @@ const entities = {
 								label: M("region"),
 								placeholder: M("region"),
 								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
 							},
 							{
 								property: "address.province",
@@ -396,7 +400,8 @@ const entities = {
 								label: M("province"),
 								placeholder: M("province"),
 								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
 							},
 							{
 								property: "address.municipality",
@@ -404,7 +409,8 @@ const entities = {
 								label: M("municipality"),
 								placeholder: M("municipality"),
 								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
 							},
 							{
 								property: "address.address",
@@ -412,10 +418,16 @@ const entities = {
 								label: M("address"),
 								placeholder: M("address"),
 								sanitizer: value => sanitize(value).trim(),
-								validator: value => check(value).notEmpty()
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
 							},
 						]
-					}
+					},
+					{
+						title: M("family"),
+						component: FamilyArea,
+					},
+
 				]
 			}
 		}
@@ -438,6 +450,163 @@ const entities = {
 	            ]
 			}
 		},
+		form: {
+			title: M("editProfile"),
+			subtitle: M("editProfileDescription"),
+			descriptor: {
+				areas: [
+					{
+						component: ProfileArea
+					},
+					{
+						title: M("generalInformations"),
+						fields: [
+							{
+								property: "firstName",
+								control: Text,
+								label: M("firstName"),
+								placeholder: M("firstName"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "lastName",
+								control: Text,
+								label: M("lastName"),
+								placeholder: M("lastName"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "phoneNumber",
+								control: Text,
+								label: M("phoneNumber"),
+								placeholder: M("phoneNumber"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "fiscalCode",
+								control: Text,
+								label: M("fiscalCode"),
+								placeholder: M("fiscalCode"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "user",
+								label: M("user"),
+								placeholder: M("selectUser"),
+								size: "col-sm-6",
+								control: EntitiesLookupContainer,
+									props: {
+										id: "profile_user",
+										mode: "single",
+										entity: "user",
+										initialQuery: query.create().eq("active", true),
+										selectionGrid: {
+											filtersVisible: false,
+											columns: [
+												{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+												{property: "email", header: M("email"), cell: TextCell, sortable: true, searchable: true},
+											]
+										},
+										popupGrid: {
+											columns: [
+												{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+												{property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
+											]
+										}
+									}	               
+		
+							},
+							{
+								property: "parentUser",
+								label: M("parent"),
+								size: "col-sm-6",
+								placeholder: M("selectParent"),
+								control: EntitiesLookupContainer,
+								props: {
+									id: "profile_parent_user",
+									mode: "single",
+									entity: "user",
+									initialQuery: query.create().eq("active", true),
+									selectionGrid: {
+										filtersVisible: false,
+										columns: [
+											{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+											{property: "email", header: M("email"), cell: TextCell, sortable: true, searchable: true},
+										]
+									},
+									popupGrid: {
+										columns: [
+											{property: "name", header: M("name"), cell: TextCell, sortable: true, searchable: true},
+											{property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
+										]
+									}
+								}
+							},
+							{
+								property: "familyMember",
+								control: YesNo,
+								label: M("familyMember"),
+								placeholder: M("familyMember"),
+							},
+						]
+					},
+					{
+						title: M("Address"),
+						fields: [
+							{
+								property: "address.region",
+								control: Text,
+								label: M("region"),
+								placeholder: M("region"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "address.province",
+								control: Text,
+								label: M("province"),
+								placeholder: M("province"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "address.municipality",
+								control: Text,
+								label: M("municipality"),
+								placeholder: M("municipality"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+							{
+								property: "address.address",
+								control: Text,
+								label: M("address"),
+								placeholder: M("address"),
+								sanitizer: value => sanitize(value).trim(),
+								validator: value => check(value).notEmpty(),
+								size: "col-sm-6",
+							},
+						]
+					},
+					{
+						title: M("family"),
+						component: FamilyArea,
+					},
+
+				]
+			}
+		}
 	}
 }
 

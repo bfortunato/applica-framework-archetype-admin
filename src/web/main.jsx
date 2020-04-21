@@ -16,11 +16,16 @@ import {EntitiesGrid, EntityForm, RevisionGrid} from "./screens/entities";
 import { getUserProfileImage } from "../actions/ui";
 import { setupMenu } from "../actions/menu";
 import * as NotificationCenter from "../utils/notificationCenter";
+import TestsScreen from "./screens/tests";
+import ContactTracing from "./screens/contactTracing";
 
 
 export default function main() {
 	/* Register plugins */
 	plugins.register()
+
+	ui.addRoute("/tests", params => ui.changeScreen(<TestsScreen activationCode={params.activationCode}/>))
+	ui.addRoute("/ct/:profileId", params => ui.changeScreen(<ContactTracing profileId={params.profileId} />))
 
 	/* Admin routes */
 	ui.addRoute("/entities/:entity", params => ui.changeScreen(<EntitiesGrid key={params.entity} entity={params.entity} />))

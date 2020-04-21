@@ -11,7 +11,7 @@ exports.Alert = {
     confirm(data, callback) {
         let {title, message} = data;
         let _callback = (v) => { if (_.isFunction(callback)) {  callback(v) } }
-        swal({title, text: message, showCancelButton: true}).then((res) => _callback(res.value))
+        swal({title, text: message, showCancelButton: true}).then((res) => _callback(false)).catch(() => _callback(true));
     }
 }
 
