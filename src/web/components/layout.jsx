@@ -37,7 +37,7 @@ class Header extends React.Component {
                 </div>
 
                 <div className="header__logo hidden-sm-down">
-                    <h1><a href="#">{M("appName")}</a></h1>
+                    <h1><a href="#"><img src="resources/images/logo_brand_white.png" style={{height: 36, paddingTop: 4}} /></a></h1>
                 </div>
 
                 <HeaderExtra />
@@ -196,8 +196,6 @@ class MainMenuContainer extends React.Component {
         super(props)
 
         connect(this, MenuStore, {menu: []})
-
-        logger.i("Menu created")
     }
 
     onSelect(item) {
