@@ -1,98 +1,80 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom";
 const { Screen, Layout } = require("../components/layout")
 const Secure = require("../components/secure")
-import Services from "../../api/genericApi"
-import Colors from "../../model/colors";
-import { optional } from "../../utils/lang";
 
 const Widgets = (props) => {
-    const [counters, setCounters] = useState({});
-
     useEffect(() => {
+        const me = ReactDOM.findDOMNode(this);
 
-        Services.get("dashboard/data")
-            .then((response) => {
-                const me = ReactDOM.findDOMNode(this);
-                const counters = response.value;
+        $('.sparkline-bar-stats').sparkline('html', {
+            type: 'bar',
+            height: 36,
+            barWidth: 3,
+            barColor: '#fff',
+            barSpacing: 2
+        });
 
-                $('.sparkline-bar-stats').sparkline('html', {
-                    type: 'bar',
-                    height: 36,
-                    barWidth: 3,
-                    barColor: '#fff',
-                    barSpacing: 2
-                });
+        // Make some sample data
+    var pieData = [
+        {data: 1, color: '#ff6b68', label: 'Toyota'},
+        {data: 2, color: '#03A9F4', label: 'Nissan'},
+        {data: 3, color: '#32c787', label: 'Hyundai'},
+        {data: 4, color: '#f5c942', label: 'Scion'},
+        {data: 5, color: '#d066e2', label: 'Daihatsu'}
+    ];
 
-                var testsData = [
-                    {data: counters.positiveTests, color: Colors.error, label: "Positivi"},
-                    {data: counters.negativeTests, color: Colors.success, label: "Negativi"},
-                    {data: counters.unknownTests, color: Colors.warning, label: "Non effettuati"},
-                ];
-
-                var profilesData = [
-                    {data: counters.familyMembers, color: "#03A9F4", label: "Familiari"},
-                    {data: counters.parents, color: "#f5c942", label: "Utenti"},
-                ];
-                
-                // Pie Chart
-                if($('.flot-pie')[0]){
-                    $.plot('.flot-pie', testsData, {
-                        series: {
-                            pie: {
-                                show: true,
-                                stroke: {
-                                    width: 2
-                                }
-                            }
-                        },
-                        legend: {
-                            container: '.flot-chart-legend--pie',
-                            backgroundOpacity: 0.5,
-                            noColumns: 0,
-                            backgroundColor: "white",
-                            lineWidth: 0,
-                            labelBoxBorderColor: '#fff'
-                        }
-                    });
+    // Pie Chart
+    if($('.flot-pie')[0]){
+        $.plot('.flot-pie', pieData, {
+            series: {
+                pie: {
+                    show: true,
+                    stroke: {
+                        width: 2
+                    }
                 }
-                
-                // Donut Chart
-                if($('.flot-donut')[0]){
-                    $.plot('.flot-donut', profilesData, {
-                        series: {
-                            pie: {
-                                innerRadius: 0.5,
-                                show: true,
-                                stroke: { 
-                                    width: 2
-                                }
-                            }
-                        },
-                        legend: {
-                            container: '.flot-chart-legend--donut',
-                            backgroundOpacity: 0.5,
-                            noColumns: 0,
-                            backgroundColor: "white",
-                            lineWidth: 0,
-                            labelBoxBorderColor: '#fff'
-                        }
-                    });
+            },
+            legend: {
+                container: '.flot-chart-legend--pie',
+                backgroundOpacity: 0.5,
+                noColumns: 0,
+                backgroundColor: "white",
+                lineWidth: 0,
+                labelBoxBorderColor: '#fff'
+            }
+        });
+    }
+
+    // Donut Chart
+    if($('.flot-donut')[0]){
+        $.plot('.flot-donut', pieData, {
+            series: {
+                pie: {
+                    innerRadius: 0.5,
+                    show: true,
+                    stroke: { 
+                        width: 2
+                    }
                 }
-
-                setCounters(counters);
-            })
-            .catch(e => console.error(e));
-
-
-    
+            },
+            legend: {
+                container: '.flot-chart-legend--donut',
+                backgroundOpacity: 0.5,
+                noColumns: 0,
+                backgroundColor: "white",
+                lineWidth: 0,
+                labelBoxBorderColor: '#fff'
+            }
+        });
+    }
 
     }, []);
 
     return <>
         <header className="content__title">
-            <h1>Cov-ID</h1>
-            <small>Dashboard di gestione e consultazione attività Cov-ID</small>
+            <h1>Dashboard</h1>
+            <small>Sample dashboard for framework</small>
 
             <div className="actions">
                 <a href="" className="actions__item zmdi zmdi-trending-up"></a>
@@ -113,8 +95,8 @@ const Widgets = (props) => {
             <div className="col-sm-6 col-md-3">
                 <div className="quick-stats__item bg-blue">
                     <div className="quick-stats__info">
-                        <h2>{optional(counters.parents, 0)}</h2>
-                        <small>Utenti registrati</small>
+                        <h2>1546</h2>
+                        <small>Stat 1</small>
                     </div>
 
                     <div className="quick-stats__chart sparkline-bar-stats">6,4,8,6,5,6,7,8,3,5,9,5</div>
@@ -124,8 +106,8 @@ const Widgets = (props) => {
             <div className="col-sm-6 col-md-3">
                 <div className="quick-stats__item bg-amber">
                     <div className="quick-stats__info">
-                        <h2>{optional(counters.familyMembers, 0)}</h2>
-                        <small>Familiari censiti</small>
+                        <h2>2194</h2>
+                        <small>Stat 2</small>
                     </div>
 
                     <div className="quick-stats__chart sparkline-bar-stats">6,4,8,6,5,6,7,8,3,5,9,5</div>
@@ -135,8 +117,8 @@ const Widgets = (props) => {
             <div className="col-sm-6 col-md-3">
                 <div className="quick-stats__item bg-purple">
                     <div className="quick-stats__info">
-                        <h2>{optional(counters.contacts, 0)}</h2>
-                        <small>Contatti registrati</small>
+                        <h2>$58,778</h2>
+                        <small>Stat 3</small>
                     </div>
 
                     <div className="quick-stats__chart sparkline-bar-stats">6,4,8,6,5,6,7,8,3,5,9,5</div>
@@ -146,8 +128,8 @@ const Widgets = (props) => {
             <div className="col-sm-6 col-md-3">
                 <div className="quick-stats__item bg-red">
                     <div className="quick-stats__info">
-                        <h2>{optional(counters.positiveTests, 0)}</h2>
-                        <small>Tamponi positivi</small>
+                        <h2>214</h2>
+                        <small>Stat 4</small>
                     </div>
 
                     <div className="quick-stats__chart sparkline-bar-stats">6,4,8,6,5,6,7,8,3,5,9,5</div>
@@ -159,7 +141,7 @@ const Widgets = (props) => {
             <div className="col-sm-6">
                 <div className="card">
                     <div className="card-body">
-                        <h4 className="card-title">Grafico tamponi</h4>
+                        <h4 className="card-title">Sales</h4>
 
                         <div className="flot-chart flot-pie"></div>
                         <div className="flot-chart-legends flot-chart-legend--pie"></div>
@@ -170,7 +152,7 @@ const Widgets = (props) => {
             <div className="col-sm-6">
                 <div className="card">
                     <div className="card-body">
-                        <h4 className="card-title">Grafico utenti</h4>
+                        <h4 className="card-title">Orders</h4>
 
                         <div className="flot-chart flot-donut"></div>
                         <div className="flot-chart-legends flot-chart-legend--donut"></div>
@@ -179,9 +161,9 @@ const Widgets = (props) => {
             </div>
         </div>
 
-        
 
-                        
+
+
     </>
 }
 
@@ -199,4 +181,6 @@ export default class Home extends Screen {
         )
     }
 }
+
+
 

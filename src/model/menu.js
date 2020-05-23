@@ -1,17 +1,10 @@
 import M from "../strings"
 
-export default [
+export default [    
     {
-        icon: "zmdi zmdi-male-female",
-        text: M("profiles"),
-        roles: ["admin"],
-        href: "/#/entities/profile"
-    },
-    {
-        icon: "zmdi zmdi-hospital",
-        text: M("tests"),
-        roles: ["admin"],
-        href: "/#/tests"
+        icon: "zmdi zmdi-home",
+        text: "Home",
+        href: "/#/",
     },
     {
         icon: "zmdi zmdi-shield-security",

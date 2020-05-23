@@ -189,7 +189,7 @@ export class FloatingButton extends React.Component {
 
     render() {
         return (
-            <button type="button" className="btn btn--action btn-danger" onClick={this.onClick.bind(this)}><i className={this.props.icon}></i></button>
+            <button type="button" className="btn btn--action btn-primary" onClick={this.onClick.bind(this)}><i className={this.props.icon}></i></button>
         )
     }
 }

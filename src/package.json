@@ -17,7 +17,6 @@
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "route-recognizer": "^0.3.4",
-    "underscore": "^1.9.1",
-    "vis": "^4.21.0-EOL"
+    "underscore": "^1.9.1"
   }
 }

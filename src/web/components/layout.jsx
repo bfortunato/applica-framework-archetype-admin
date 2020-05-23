@@ -37,7 +37,7 @@ class Header extends React.Component {
                 </div>
 
                 <div className="header__logo hidden-sm-down">
-                    <h1><a href="#"><img src="resources/images/logo_brand_white.png" style={{height: 36, paddingTop: 4}} /></a></h1>
+                    <h1><a href="#"><img src="resources/images/logo.png" style={{height: 36, paddingTop: 4}} /></a></h1>
                 </div>
 
                 <HeaderExtra />
@@ -242,6 +242,37 @@ class Footer extends React.Component {
     }
 }
 
+let GlobalTransitionTimer = null;
+
+class LayoutTransition extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            __screen_animating: true
+        }
+    }
+
+    componentDidMount() {
+        if (GlobalTransitionTimer) {
+            clearTimeout(GlobalTransitionTimer);
+        }
+
+        GlobalTransitionTimer = setTimeout(() => this.setState({__screen_animating: false}), 250);
+    }
+
+    render() {
+        const transition = "animated animated-fast " + (this.props.transition || "fadeIn");
+        let className = (this.props.className || "") + " " + (this.state.__screen_animating ? transition : "");
+
+        return (
+            <div className={className}>
+                {this.props.children}
+            </div>
+        );
+    }
+}
+
 class Layout extends React.Component {
     render() {
         return (
@@ -250,7 +281,9 @@ class Layout extends React.Component {
                 <SideBar/>
 
                 <section className="content">
-                    {this.props.children}
+                    <LayoutTransition className={this.props.layoutTransitionClassName}>
+                        {this.props.children}
+                    </LayoutTransition>                    
                 </section>
 
                 <Footer />

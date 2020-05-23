@@ -158,10 +158,10 @@ export default class EntityForm extends Screen {
                     tooltip: M("save"),
                     permissions: this.getEntitySavePermissions(),
                     action: () => {
-                        this.submit(false)
+                        this.submit(true)
                     }
                 },
-                {
+                /*{
                     id: "save-go-back",
                     type: "button",
                     icon: "zmdi zmdi-rotate-ccw",
@@ -170,7 +170,7 @@ export default class EntityForm extends Screen {
                     action: () => {
                         this.submit(true)
                     }
-                }
+                }*/
             )
         }
 
