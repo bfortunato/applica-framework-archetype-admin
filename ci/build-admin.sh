@@ -5,7 +5,7 @@ export CURRENT_DIR=$(pwd)
 export SOURCE=${CURRENT_DIR}/..
 export PROJECT_ID={project-id}
 export MODULE=hsc-admin
-export VERSION=1.0.1
+export VERSION=1.0.0
 export SERVICE_URL=http://{serviceurl}/api/
 
 if [ -z ${APPLICA_CI_HOME+x} ]; then
