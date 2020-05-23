@@ -3,10 +3,10 @@
 
 export CURRENT_DIR=$(pwd)
 export SOURCE=${CURRENT_DIR}/..
-export PROJECT_ID=applica-cov-id
+export PROJECT_ID={project-id}
 export MODULE=hsc-admin
 export VERSION=1.0.1
-export SERVICE_URL=http://34.107.251.231/api/
+export SERVICE_URL=http://{serviceurl}/api/
 
 if [ -z ${APPLICA_CI_HOME+x} ]; then
     echo "[ERROR] Please set APPLICA_CI_HOME environment variable";
