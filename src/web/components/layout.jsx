@@ -117,7 +117,7 @@ class MenuLevel extends React.Component {
         let key = 1
         let items = menu.map(i => {
             let className = ""
-            if (i.active) { className += "active" }
+            if (i.active) { className += "navigation__active" }
             let hasChildren = !_.isEmpty(i.children)
             if (hasChildren) { className += " navigation__sub" }
             if (i.expanded) { className += " toggled" }
