@@ -942,33 +942,31 @@ export class Pagination extends React.Component {
         }
         visiblePages.forEach(i => {
             let active = i === page ? "active" : ""
-            pages.push(<li key={i} className={active}><a onClick={this.changePage.bind(this, i)}>{i}</a></li>)
+            pages.push(<li key={i} className={"page-item " + active}><a  className="page-link" onClick={this.changePage.bind(this, i)}>{i}</a></li>)
         })
 
         return (
-            <ul className="pagination" hidden={!visible}>
-                <li>
-                    <a onClick={this.firstPage.bind(this)} aria-label="First">
-                        <i className="zmdi zmdi-arrow-left"></i>
-                    </a>
-                </li>
-                <li>
-                    <a onClick={this.previousPage.bind(this)} aria-label="Previous">
-                        <i className="zmdi zmdi-chevron-left"></i>
-                    </a>
-                </li>
-                {pages}
-                <li>
-                    <a onClick={this.nextPage.bind(this)} aria-label="Next">
-                        <i className="zmdi zmdi-chevron-right"></i>
-                    </a>
-                </li>
-                <li>
-                    <a onClick={this.lastPage.bind(this)} aria-label="First">
-                        <i className="zmdi zmdi-arrow-right"></i>
-                    </a>
-                </li>
-            </ul>
+            <nav>
+                <ul className="pagination" hidden={!visible}>
+                    <li className="page-item pagination-first">
+                        <a onClick={this.firstPage.bind(this)} aria-label="First" className="page-link" >
+                        </a>
+                    </li>
+                    <li className="page-item pagination-prev">
+                        <a onClick={this.previousPage.bind(this)} aria-label="Previous" className="page-link" >
+                        </a>
+                    </li>
+                    {pages}
+                    <li className="page-item pagination-next">
+                        <a onClick={this.nextPage.bind(this)} aria-label="Next" className="page-link" >
+                        </a>
+                    </li>
+                    <li className="page-item pagination-last">
+                        <a onClick={this.lastPage.bind(this)} aria-label="First" className="page-link" >
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         )
     }
 }
