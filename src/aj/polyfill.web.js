@@ -1,5 +1,9 @@
 import _ from "underscore";
 
+
+var xsrfHeaderName = 'X-CSRF-TOKEN';
+var xsrfCookieName = 'CSRF-TOKEN';
+
 function bootstrap(global) {
 
     global.DEBUG = true;
@@ -10,6 +14,7 @@ function bootstrap(global) {
     global.LOG_LEVEL_DISABLED = 0;
 
     global.LOG_LEVEL = LOG_LEVEL_INFO;
+
 
 
     /**
@@ -363,8 +368,49 @@ function bootstrap(global) {
      * Http
      */
 
+
+    /**
+     * Http
+     */
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS)$/.test(method));
+    }
+
+
+    function setCookie(cname, cvalue, exdays) {
+        var d = new Date();
+        d.setTime(d.getTime() + (exdays*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=";
+    }
+
+    function getCookie(cname) {
+        var name = cname + "=";
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+
     global.__httpClient = {
         request: function(url, method, data, headers, accept, contentType, rawResponse, cb) {
+
+            if (!csrfSafeMethod(method)) {
+                let token = b();
+                setCookie(xsrfCookieName, token, 100)
+            }
+
+
             $.ajax({
                 url: url,
                 method: method,
@@ -375,6 +421,9 @@ function bootstrap(global) {
                             request.setRequestHeader(k, headers[k])
                         })
                     }
+
+                    if (!csrfSafeMethod(method))
+                        request.setRequestHeader(xsrfHeaderName, getCookie(xsrfCookieName))
                 },
                 headers: headers,
                 data: data,

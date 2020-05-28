@@ -25,7 +25,12 @@ export class Dialog extends React.Component {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
-                } 
+                }else {
+                    this.opened = false
+                    if (_.isFunction(this.props.onClose)) {
+                        this.props.onClose(this.dialogResult)
+                    }
+                }
             })
             .on("hidden.bs.modal", e => {
                 this.opened = false

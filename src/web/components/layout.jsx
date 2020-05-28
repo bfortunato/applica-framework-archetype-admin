@@ -220,7 +220,7 @@ class Footer extends React.Component {
     }
 
     componentDidMount() {
-        //systemInformation()
+        systemInformation()
     }
 
     render() {

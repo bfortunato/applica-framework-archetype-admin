@@ -288,7 +288,8 @@ export class EntitiesSelectContainer extends Control {
             throw new Error("Please specify an entity for select")
         }
 
-        this.discriminator = `entity_select_${this.props.entity}`
+        this.id = this.props.id || this.props.entity
+        this.discriminator = 'entity_select_${this.id}'
         this.datasource = datasource.create()
         this.query = null
     }

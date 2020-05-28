@@ -409,3 +409,33 @@ export const checkRevisionEnableStatus =  createAsyncAction(CHECK_REVISION_ENABL
         })
 });
 
+
+export const updateFormData = aj.createAction(UPDATE_FORM_DATA, data => {
+    aj.dispatch({
+        type: UPDATE_FORM_DATA,
+        discriminator: data.discriminator,
+        data: data.data
+    })
+})
+
+
+export const updateQuery = createAsyncAction(UPDATE_QUERY, data => {
+
+    aj.dispatch({
+        type: UPDATE_QUERY,
+        query: data.query,
+        params: data.params,
+        discriminator: data.discriminator
+
+    })
+})
+
+
+export const getQuery = createAsyncAction(GET_QUERY, data => {
+
+    aj.dispatch({
+        type: GET_QUERY,
+        discriminator: data.discriminator
+
+    })
+})

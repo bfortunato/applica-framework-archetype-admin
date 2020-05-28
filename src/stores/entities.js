@@ -20,6 +20,15 @@ export const GridsStore = aj.createStore(GRIDS, (state = {grid: null}, action) =
 
 })
 
+export const SearchStore = aj.createStore(SEARCH, (state = {}, action) => {
+    switch (action.type) {
+        case actions.UPDATE_QUERY:
+            return discriminate(state, action.discriminator, {query: action.query, params: action.params})
+        case actions.GET_QUERY:
+            return discriminate(state, action.discriminator)
+    }
+});
+
 export const EntitiesStore = aj.createStore(ENTITIES, (state = {}, action) => {
 
     switch (action.type) {

@@ -47,7 +47,7 @@ export const resumeSession = createAsyncAction(RESUME_SESSION, data => {
     SessionApi.resume()
         .then(user => {
             hideLoader()
-            toast(M("welcome") + " " + user.name);
+            toast(M("welcome") + " " + JQuery(user.name).text());
 
             resumeSession.complete({user})
             
