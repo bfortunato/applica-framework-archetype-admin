@@ -1001,44 +1001,32 @@ export class Mail extends Control {
     }
 }
 
-
+//https://flatpickr.js.org/options/
 export class DateTime extends Control {
 
     getDefaultFormat() {
-        return "DD/MM/YYYY";
+        return "d/m/Y";
     }
 
     componentDidMount() {
 
-        let self = this;
-
-        let me = ReactDOM.findDOMNode(this)
-
-        let field = this.props.field
-        let model = this.props.model
-
-        $(me).on("dp.change", (e) => {
-            if (e.date) {
-                let date = e.date.toDate()
-                let time = date.getTime()
-                model.set(field.property, time)
-            }else {
-                model.set(field.property, null)
-            }
-        });
     }
 
     componentWillUpdate(props,state) {
-        if (props.model){
-            this.setData()
-        }
+        this.setData();
+    }
+
+    onDateChanged(value) {
+        let field = this.props.field;
+        let model = this.props.model;
+        model.set(field.property, value)
     }
 
     setData(){
-        let self = this;
         let options = {
-            locale: this.props.locale,
-            format: this.props.format ? this.props.format : self.getDefaultFormat()
+            //TODO: default locale dalle impo
+            locale: this.props.locale || getLanguage(),
+            dateFormat: this.props.format ? this.props.format : this.getDefaultFormat()
         };
 
         let minDate = this.props.getMinDate && this.props.getMinDate(this.props.model);
@@ -1056,35 +1044,58 @@ export class DateTime extends Control {
         if(disabledDates) {
             options["disabledDates"] = disabledDates
         }
-        let field = this.props.field;
-        let model = this.props.model;
-        let me = ReactDOM.findDOMNode(this);
-        let value = model.get(field.property);
 
-        if ($(me).data('DateTimePicker'))
-            $(me).data('DateTimePicker').destroy()
-        $(me).datetimepicker(options);
-        $(me).data("DateTimePicker").date(value ? new Date(value) : null)
+        let me = ReactDOM.findDOMNode(this);
+        let value = this.getItemValue();
+
+
+        if (value)
+            options["defaultDate"] = value
+
+        options["onChange"] = (selectedDates, dateStr, instance) => {
+            let date = flatpickr.parseDate(dateStr, options.dateFormat)
+            this.onDateChanged(date.getTime())
+        };
+
+        $(me).find("#" + this.getItemId()).flatpickr(options);
     }
 
+    getItemValue() {
+        let field = this.props.field;
+        let model = this.props.model;
+        return model.get(field.property)
+    }
 
+    getItemId() {
+        let field = this.props.field;
+        return field.property;
+    }
+
+    getItemProperty() {
+        let field = this.props.field;
+        return field.property;
+    }
+
+    getItemPlaceHolder() {
+        return this.props.field.placeholder;
+    }
     isDisabled() {
         return _.isFunction(this.props.isDisabled) ?  this.props.isDisabled(this.props.model) : false
     }
 
     render() {
         let disabled = this.isDisabled();
-        let field = this.props.field
 
         return (
-            <div className="input-group">
+            <div className="input-group" style={{marginBottom: "0px"}}>
                 <input
+                    style={{paddingLeft: "0px"}}
                     disabled={disabled}
                     type="text"
                     className="form-control input-sm"
-                    id={field.property}
-                    data-property={field.property}
-                    placeholder={field.placeholder} />
+                    id={this.getItemId()}
+                    data-property={this.getItemProperty()}
+                    placeholder={this.getItemPlaceHolder()} />
                 <div className="input-group-addon">
                     <span className="zmdi zmdi-calendar" />
                 </div>
@@ -1092,7 +1103,6 @@ export class DateTime extends Control {
         )
     }
 }
-
 
 
 export class YesNo extends Control {
