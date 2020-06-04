@@ -22,7 +22,7 @@ export default class EntityForm extends Screen {
 
         this.discriminator = "entity_form_" + props.entity
         this.initialEntity = null
-        this.willGoBack = true
+        this.willGoBack = false
 
         connectDiscriminated(this.discriminator, this, EntitiesStore, {data: null})
     }
@@ -37,12 +37,12 @@ export default class EntityForm extends Screen {
             }
         }
 
-        window.onbeforeunload = this.onBeforeUnload
-        ui.addOnBeforeChangeListener(this.onBeforeUnload)
+        //window.onbeforeunload = this.onBeforeUnload
+        //ui.addOnBeforeChangeListener(this.onBeforeUnload)
 
         this.setState({isCreation: this.props.entityId == "new"});
         getEntity({discriminator: this.discriminator, entity: this.props.entity, id: this.props.entityId, params: this.props.params})
-        //checkRevisionEnableStatus({discriminator: this.discriminator, entity: this.props.entity})
+        checkRevisionEnableStatus({discriminator: this.discriminator, entity: this.props.entity})
     }
 
     goToRevision() {
@@ -222,8 +222,9 @@ export default class EntityForm extends Screen {
 
 
     getTitle() {
-        let form = entities[this.getEntity()].form
-        return optional(form.title, "Edit")
+        debugger
+        let form = entities[this.getEntity()].form;
+        return _.isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params): optional(form.title, "Edit");
     }
 
     getSubtitle() {

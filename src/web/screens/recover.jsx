@@ -5,7 +5,7 @@ import M from "../../strings";
 import {connect} from "../utils/aj";
 import {FullScreenLayout, Screen} from "../components/layout";
 import * as ui from "../utils/ui";
-import {requestRecoveryCode, resetPassword, validateRecoveryCode} from "../../actions/account";
+import {requestRecoveryCode, resetPassword, resetPasswordChange, validateRecoveryCode} from "../../actions/account";
 import * as forms from "../utils/forms";
 import {safeGet} from "../../utils/lang";
 import _ from "underscore";
@@ -19,6 +19,7 @@ export default class Recover extends Screen {
 
     requestCode(data) {
         requestRecoveryCode(data);
+        return false;
     }
 
     requestNewCode() {
@@ -26,16 +27,19 @@ export default class Recover extends Screen {
             mail: this.state.mail,
         };
         this.requestCode(data);
+        return false;
     }
 
     validateCode(data) {
         data.mail = this.state.mail;
         validateRecoveryCode(data);
+        return false;
     }
 
     resetPassword(data) {
         _.assign(data,{mail: this.state.mail, code: this.state.code});
         resetPassword(data);
+        return false;
     }
 
     componentDidMount() {
@@ -57,8 +61,8 @@ export default class Recover extends Screen {
             else {
                 $(this).addClass("form-control--active");
             }
-        });     
-        
+        });
+
     }
 
     componentWillUpdate(props, state) {
@@ -66,6 +70,11 @@ export default class Recover extends Screen {
             // ui.navigate("/")
         }
     }
+
+    componentWillUnmount(props, state) {
+        resetPasswordChange();
+    }
+
 
     getContent(){
         let recoveryStep = safeGet(this.state,"recoveryStep", 1);
@@ -99,15 +108,14 @@ export default class Recover extends Screen {
                     <div class="login__block active" id="l-forget-password">
                         <div class="login__block__header palette-Purple bg">
                             <i class="zmdi zmdi-account-circle"></i>
-                            Forgot Password?
+                            Recupera password
 
                             <div class="actions actions--inverse login__block__actions">
                                 <div class="dropdown">
                                     <i data-toggle="dropdown" class="zmdi zmdi-more-vert actions__item"></i>
 
                                     <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="/#/login">Already have an account?</a>
-                                        <a class="dropdown-item" href="/#/register">Create an account</a>
+                                        <a class="dropdown-item" href="/#/login">Torna a login</a>
                                     </div>
                                 </div>
                             </div>
@@ -138,17 +146,17 @@ class CodeRequestForm extends React.Component {
 
     render() {
         return (
-            <form action="" className="lcb-form" onSubmit={this.onSubmit.bind(this)}
-                  ref="recover_form">
+            <form onSubmit={this.onSubmit.bind(this)} action="javascript:;" className="lcb-form" ref="recover_form">
                 <p className="text-left">{M("accountRecoverText")}</p>
 
                 <div class="form-group form-group--float form-group--centered">
                     <input type="text" name="mail" class="form-control" />
-                    <label>Email Address</label>
+                    <label>Email</label>
                     <i class="form-group__bar"></i>
                 </div>
 
-                <button type="submit" className="btn btn--icon login__block__btn"><i className="zmdi zmdi-check"></i></button>
+                <button title="Conferma" type="submit" className="btn btn--icon login__block__btn"><i
+                    className="zmdi zmdi-check"></i></button>
             </form>
         )
 
@@ -175,26 +183,25 @@ class CodeValidationForm extends React.Component {
 
     render(){
         return(
-            <form action="" className="lcb-form" onSubmit={this.onSubmit.bind(this)}
+            <form action="javascript:;" className="lcb-form" onSubmit={this.onSubmit.bind(this)}
                   ref="validate_code_form">
                 <p className="text-left">{M("codeValidationText")}</p>
 
-               <div class="form-group form-group--float form-group--centered">
+                <div class="form-group form-group--float form-group--centered">
                     <input type="text" name="code" class="form-control" />
-                    <label>Validation code</label>
+                    <label>Codice di validazione</label>
                     <i class="form-group__bar"></i>
                 </div>
 
                 <button
                     type="button"
                     className = "btn btn--icon login__block__btn"
-                    onClick = {this.onTryAgain.bind(this)}
-                >
-                    <i className = "zmdi zmdi-refresh"/>
-                    {M("requestNew")}
+                    onClick = {this.onTryAgain.bind(this)}>
+                    <i title="Invia nuovo codice" className = "zmdi zmdi-refresh"/>
+
                 </button>
 
-                <button type="submit" className="btn btn--icon login__block__btn"><i
+                <button title="Conferma" type="submit" className="btn btn--icon login__block__btn"><i
                     className="zmdi zmdi-check"></i></button>
 
 
@@ -230,37 +237,23 @@ class PasswordChangeForm extends React.Component {
 
     render(){
         return(
-            <form action="" className="lcb-form" onSubmit={this.onSubmit.bind(this)}
+            <form action="javascript:;" className="lcb-form" onSubmit={this.onSubmit.bind(this)}
                   ref="validate_code_form">
                 <p className="text-left">{M("newPasswordText")}</p>
 
-                <div className="input-group m-b-20">
-                    <span className="input-group-addon"><i className="zmdi zmdi-lock"></i></span>
-                    <div className="fg-line">
-                        <input
-                            type="password"
-                            name="password"
-                            className="form-control"
-                            placeholder={M("password")}
-                            onChange={this.updatePassword.bind(this)}
-                        />
-                    </div>
+
+                <div className="form-group form-group--float form-group--centered">
+                    <input type="password" name="password" className="form-control" onChange={this.updatePassword.bind(this)}/>
+                    <label>Password</label>
+                    <i className="form-group__bar"></i>
+                </div>
+                <div className="form-group form-group--float form-group--centered">
+                    <input type="password" name="passwordConfirm" className="form-control" onChange={this.updatePasswordConfirm.bind(this)}/>
+                    <label>Conferma password</label>
+                    <i className="form-group__bar"></i>
                 </div>
 
-                <div className="input-group m-b-20">
-                    <span className="input-group-addon"><i className="zmdi zmdi-lock-outline"></i></span>
-                    <div className="fg-line">
-                        <input
-                            type="password"
-                            name="passwordConfirm"
-                            className="form-control"
-                            placeholder={M("passwordConfirm")}
-                            onChange={this.updatePasswordConfirm.bind(this)}
-                        />
-                    </div>
-                </div>
-
-                <button type="submit" className="btn btn-login btn-success btn-float animated fadeInLeft"><i
+                <button title="Conferma" type="submit" className="btn btn--icon login__block__btn"><i
                     className="zmdi zmdi-check"></i></button>
 
             </form>

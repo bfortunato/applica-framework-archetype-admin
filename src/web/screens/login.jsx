@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 import {FullScreenLayout, Screen} from "../components/layout";
 import {login} from "../../actions/session";
 import * as forms from "../utils/forms";
-import M from "../../strings";
 import {SessionStore} from "../../stores/session";
 import {connect} from "../utils/aj";
 
@@ -16,12 +15,13 @@ export default class Login extends Screen {
     }
 
     login(e) {
+        e.preventDefault()
         let data = forms.serialize(this.refs.login_form)
         login(data)
-        e.preventDefault();
     }
 
     componentDidMount() {
+
         const me = ReactDOM.findDOMNode(this)
         $(me).find(".form-control").change(function () {
             var x = $(this).val();
@@ -40,14 +40,14 @@ export default class Login extends Screen {
             else {
                 $(this).addClass("form-control--active");
             }
-        });     
-        
+        });
+
     }
 
     componentDidUpdate() {
         if (this.state.isLoggedIn) {
-            if (location.href.indexOf("login") != -1) {
-                location.href = "/#/"
+            if (location.href.indexOf("login") !== -1) {
+                location.href =  "/#/"
             }
         }
 
@@ -62,25 +62,24 @@ export default class Login extends Screen {
                     <div className="login__block active" id="l-login">
                         <div className="login__block__header">
                             <i className="zmdi zmdi-account-circle"></i>
-                            Hi there! Please Sign in
+                            Benvenuto, si prega di inserire le credenziali
 
                             <div className="actions actions--inverse login__block__actions">
                                 <div className="dropdown">
                                     <i data-toggle="dropdown" className="zmdi zmdi-more-vert actions__item"></i>
 
                                     <div className="dropdown-menu dropdown-menu-right">
-                                        <a className="dropdown-item" href="/#/register">Create an account</a>
-                                        <a className="dropdown-item" href="/#/recover">Forgot password?</a>
+                                        <a className="dropdown-item" href="/#/recover">Recupera password</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <form className="lcb-form" onSubmit={(e) => this.login(e)} ref="login_form">
+                        <form action="" className="lcb-form" onSubmit={this.login.bind(this)} ref="login_form">
                             <div className="login__block__body">
                                 <div className="form-group form-group--float form-group--centered">
                                     <input type="email" name="mail" className="form-control" autoComplete="username"/>
-                                    <label>Email Address</label>
+                                    <label>Email</label>
                                     <i className="form-group__bar"></i>
                                 </div>
 

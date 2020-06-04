@@ -11,8 +11,9 @@ export default class ChangePassword extends Screen {
         this.state = {};
     }
 
-    changePassword() {
-        changePassword({password: this.state.password, passwordConfirm: this.state.passwordConfirm})
+    changePassword(e) {
+        e.preventDefault()
+        changePassword({password: this.state.password, passwordConfirm: this.state.passwordConfirm, currentPassword: this.state.currentPassword})
     }
 
     updatePassword(value) {
@@ -23,37 +24,46 @@ export default class ChangePassword extends Screen {
         this.state.passwordConfirm = value.target.value;
     }
 
+    updateCurrentPassword(value) {
+        this.state.currentPassword = value.target.value;
+    }
+
     render() {
         return (
             <FullScreenLayout>
-                <div className="login-content">
-                    <div className="lc-block lc-block-alt toggled" id="l-lockscreen">
-                        <div className="lcb-form" ref="changePassword_form">
-
-                            <p>E' necessario impostare una password personale al primo accesso nel sistema</p>
-                            <div className="input-group m-b-20">
-                                <span className="input-group-addon"><i className="zmdi zmdi-lock"></i></span>
-                                <div className="fg-line">
-                                    <input type="password" onChange={this.updatePassword.bind(this)} name="password" className="form-control" placeholder={M("password")} />
-                                </div>
-                            </div>
-
-                            <div className="input-group m-b-20">
-                                <span className="input-group-addon"><i className="zmdi zmdi-lock-outline"></i></span>
-                                <div className="fg-line">
-                                    <input type="password" name="confirmPassword"  onChange={this.updatePasswordConfirm.bind(this)} className="form-control" placeholder={M("passwordConfirm")} />
-                                </div>
-                            </div>
+                <div className="login">
+                    <div className="login__block active" id="l-login">
+                        <div className="login__block__header">
+                            <i className="zmdi zmdi-account-circle"></i>
+                            {M("changePasswordDescription")}
                         </div>
 
-                        <a onClick={this.changePassword.bind(this)} className="btn btn-login btn-success btn-float waves-effect waves-circle waves-float"><i className="zmdi zmdi-arrow-forward"></i></a>
+                        <form action="" className="lcb-form"  onSubmit={this.changePassword.bind(this)} ref="changePassword_form">
+                            <div className="login__block__body">
+                                <div className="form-group form-group--float form-group--centered">
+                                    <input type="password" onChange={this.updateCurrentPassword.bind(this)} name="password" className="form-control" placeholder={M("currentPassword")}/>
+                                    <i className="form-group__bar"></i>
+                                </div>
+                                <div className="form-group form-group--float form-group--centered">
+                                    <input type="password" onChange={this.updatePassword.bind(this)} name="password" className="form-control" placeholder={M("password")}/>
+                                    <i className="form-group__bar"></i>
+                                </div>
 
+                                <div className="form-group form-group--float form-group--centered">
+                                    <input type="password" name="confirmPassword"  onChange={this.updatePasswordConfirm.bind(this)} className="form-control" placeholder={M("passwordConfirm")}/>
+                                    <i className="form-group__bar"></i>
+                                </div>
+
+
+                                <button type="submit" className="btn btn--icon login__block__btn"><i className="zmdi zmdi-long-arrow-right"></i></button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-
             </FullScreenLayout>
         )
     }
+
 
 }
 

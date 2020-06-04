@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import M from "../../strings"
 import {Actions, Card} from "./common"
-import {format, optional, diff} from "../../utils/lang"
+import {format, optional, diff, forceBoolean} from "../../utils/lang"
 import {Observable} from "../../aj/events"
 import {ActionsCell, Grid, resultToGridData} from "./grids"
 import * as query from "../../framework/query"
@@ -11,6 +11,8 @@ import * as inputfile from "../utils/inputfile"
 import * as datasource from "../../utils/datasource"
 import {parseBoolean} from "../../utils/lang"
 import _ from "underscore"
+import {clearTabState, setSelectedTab} from "../../actions/tabs";
+import * as ui from "../utils/ui";
 import traverse from "../../utils/traverse"
 
 export const VALIDATION_ERROR = {}
@@ -299,9 +301,9 @@ export class Area extends React.Component {
             <Card title={area.title} subtitle={area.subtitle} actions={area.actions}>
                 {tabs}
                 <div className="row">
-                    
+
                         {fields}
-                    
+
                 </div>
                 <div className="clearfix"></div>
 
@@ -349,18 +351,30 @@ export class AreaNoCard extends React.Component {
     }
 }
 
-
 export class Tabs extends React.Component {
 
+    constructor(props) {
+        super(props)
+    }
+
     componentDidMount() {
-        let me = ReactDOM.findDOMNode(this)
-        $(me).find(".tab-button").click((e) => {
-            e.preventDefault()
-            $(this).tab("show")
+        let self = this
+        TabsStore.subscribe(this, state => {
+            self.forceUpdate()
         })
     }
 
+    componentWillUnmount() {
+        if (this.canClearTabState()) {
+            clearTabState({
+                discriminator: this.getDiscriminator()
+            })
+        }
+        TabsStore.unsubscribe(this)
+    }
+
     isFieldVisible(field) {
+
         let descriptor = this.props.descriptor
         let model = this.props.model
 
@@ -369,48 +383,101 @@ export class Tabs extends React.Component {
         }
 
         return true
+
+    }
+
+    canClearTabState() {
+        return false;
+    }
+
+    getDiscriminator() {
+        return this.props.areaId + (this.props.model.get("id") ? this.props.model.get("id") : "")
+    }
+
+    getTabClass(selectedTab, key, firstTabKey) {
+        if ((selectedTab && key === selectedTab) || (!selectedTab && key === firstTabKey)) {
+            return "active"
+        }
+        return "";
+    }
+
+    onClick(selectedTabId) {
+        setSelectedTab({
+            selectedTab: selectedTabId,
+            discriminator: this.getDiscriminator()
+        })
     }
 
     render() {
+
+        let self = this
         let descriptor = this.props.descriptor
-        let first = true
         let tabs = this.props.tabs
-        let nav = tabs.map(n => {
-            let el = (
-                <li key={"nav_" + n.key} className={first ? "active" : ""}><a className="tab-button" role="tab" data-toggle="tab" href={`#${n.key}`}>{n.title}</a></li>
-            )
-            first = false
-            return el
-        })
-        first = true
-        let panes = tabs.map(c => {
-            let inline = optional(descriptor.inline, false)
-            inline = optional(c.inline, inline)
-            let defaultFieldClass = inline ? InlineField : Field
-            let fields = !_.isEmpty(c.fields) && _.filter(c.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldClass), {key: f.property, model: this.props.model, field: f, onCancel: this.props.onCancel, canSave: this.props.canSave}))
+        let state = optional(discriminated(optional(TabsStore.state, {}), this.getDiscriminator()), {})
+        let selectedTab = state.selectedTab;
+
+        let firstTabId = tabs[0].id
+        var nav = tabs.map(n => {
+            let key = "nav_" + n.key;
             return (
-                <div key={key} role="tabpanel" className={"tab-pane " + (this.getTabClass(selectedTab, c.id, firstTabId))} id={`${c.key}`}>
+                <li key={key} className={this.getTabClass(selectedTab, n.id, firstTabId)}
+                    onClick={this.onClick.bind(this, n.id)}><a className="tab-button"
+                                                               role="tab" data-key={n.id}
+                                                               data-toggle="tab"
+                                                               href={`#${n.key}`}>{n.title}</a>
+                </li>
+            )
+        })
+
+        let panes = tabs.map(c => {
+
+            let key = "pane_" + c.key;
+
+            let inline = optional(descriptor.inline, false)
+
+            inline = optional(c.inline, inline)
+
+            let defaultFieldClass = inline ? InlineField : Field
+
+            let fields = !_.isEmpty(c.fields) && _.filter(c.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldClass), {
+                key: f.property,
+                model: this.props.model,
+                field: f,
+                onCancel: this.props.onCancel,
+                canSave: this.props.canSave
+            }))
+
+            return (
+                <div key={key} role="tabpanel"
+                     className={"tab-pane " + (this.getTabClass(selectedTab, c.id, firstTabId))} id={`${c.key}`}>
                     <div className="row">{fields}</div>
                     <div className="clearfix"></div>
                 </div>
             )
-            first = false
-            return el
         })
 
 
-
         return (
+
             <div>
+
                 <ul className="tab-nav" style={{textAlign: "center"}} role="tablist">
+
                     {nav}
+
                 </ul>
 
+
                 <div className="tab-content">
+
                     {panes}
+
                 </div>
+
             </div>
+
         )
+
     }
 }
 
@@ -488,7 +555,7 @@ export class FormBody extends React.Component {
         let showInCard = optional(descriptor.showInCard, true)
 
         return (
-            <div className="form-body">
+            <div className="form-body col-sm-12 zero-padding">
                 {areas}
                 {(tabs.length > 0 || fields.length > 0) &&
                     (showInCard
@@ -1182,7 +1249,7 @@ export class Select extends Control {
     }
 
     componentDidMount() {
-        if (!_.isEmpty(this.props.datasource)) {
+        if (!_.isEmpty(this.props.datasource)) {
             this.props.datasource.on("change", this.__dataSourceOnChange)
         }
 
@@ -1200,10 +1267,10 @@ export class Select extends Control {
             })
 
         $(me).find("select")
-            .select2({
+            .selectpicker({
                 liveSearch: optional(this.props.searchEnabled, false)
             })
-            .on("loaded.bs.select", function() {
+            .on("loaded.bs.select", function () {
                 if (_.isEmpty(model.get(field.property))) {
                     let value = $(this).val()
 
@@ -1226,36 +1293,48 @@ export class Select extends Control {
         let me = ReactDOM.findDOMNode(this)
         let multiple = optional(this.props.multiple, false)
 
-        $(me).find("select").select2()
+        $(me).find("select").selectpicker("refresh")
     }
 
     componentWillUnmount() {
-        if (!_.isEmpty(this.props.datasource)) {
+        if (!_.isEmpty(this.props.datasource)) {
             this.props.datasource.off("change", this.__dataSourceOnChange)
         }
     }
 
-    render() {
+    getSingleItemValue(value) {
+        return _.isFunction(this.props.getSingleItemValue) ? this.props.getSingleItemValue(value) : value.value
+    }
+
+    getSingleItemLabel(value) {
+        return _.isFunction(this.props.getSingleItemLabel) ? this.props.getSingleItemLabel(value) : value.label
+    }
+
+    render() {
         let model = this.props.model
         let field = this.props.field
         let datasource = this.props.datasource
-        let options = optional(() => datasource.data.rows, []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)
+        let options = optional(() => datasource.data.rows, []).map(o => <option key={this.getSingleItemValue(o)}
+                                                                                value={this.getSingleItemValue(o)}>{this.getSingleItemLabel(o)}</option>)
         let multiple = optional(this.props.multiple, false)
 
         return (
-            <select
-                id={field.property}
-                className="form-control"
-                data-property={field.property}
-                onChange={this.onValueChange.bind(this)}
-                title={field.placeholder}
-                value={optional(model.get(field.property), multiple ? [] : "")}
-                multiple={multiple}>
-                {this.props.allowNull &&
-                    <option key="empty" value="" style={{color: "#999999"}}>{optional(this.props.nullText, "(none)")}</option>
-                }
-                {options}
-            </select>
+            <div className="fg-line">
+                <select
+                    id={field.property}
+                    className="form-control"
+                    data-property={field.property}
+                    onChange={this.onValueChange.bind(this)}
+                    title={field.placeholder}
+                    value={optional(model.get(field.property), multiple ? [] : "")}
+                    multiple={multiple}>
+                    {this.props.allowNull &&
+                    <option key="empty" value=""
+                            style={{color: "#999999"}}>{optional(this.props.nullText, M("noSelection"))}</option>
+                    }
+                    {options}
+                </select>
+            </div>
         )
     }
 }
@@ -1279,7 +1358,25 @@ export class Lookup extends Control {
         }
     }
 
-    componentDidMount() {        
+    openEntity(e) {
+        e.stopPropagation()
+
+        let enabled = optional(parseBoolean(this.props.enable), true)
+        if (!enabled){
+            return;
+        }
+
+        let model = this.props.model
+        let field = this.props.field
+        let current = optional(model.get(field.property), [])
+
+        if (!_.isEmpty(current)) {
+            ui.navigate("/entities/"+this.props.entity+"/" + current.id, true)
+        }
+    }
+
+
+    componentDidMount() {
         this.datasource.on("change", this.__dataSourceOnChange)
         this.query.on("change", this.__queryChange)
 
@@ -1513,13 +1610,16 @@ export class Lookup extends Control {
             addClassName = "zmdi zmdi-plus"
         }
 
+        let openEntity = optional(this.props.openEntity, true) && mode == "single" && !_.isEmpty(this.props.entity)
+
         return (
             <div className="fg-line" tabIndex="0">
                 <div className="lookup">
                     <div className="lookup-header" onClick={this.showEntities.bind(this)}>
                         <div className="actions">
-                            <a className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
-                            <a className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
+                            <a href="javascript:;" className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
+                            <a href="javascript:;" className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
+                            {openEntity && <a href="javascript:;" title={M("openEntity")} onClick={this.openEntity.bind(this)} className="m-r-0"><i className="zmdi zmdi-open-in-new" /></a>}
                         </div>
                         <span className="lookup-current-value">{this.getHeaderText()}</span>
                         <div className="clearfix"></div>

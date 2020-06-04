@@ -242,8 +242,9 @@ const STANDARD_SEARCH_FORM_DESCRIPTOR = (column) => _.assign({}, {
             props: {
                 allowNull: false,
                 datasource: datasource.fixed([
-                    {label: "Equals", value: "eq"},
-                    {label: "Like", value: "like"}
+                    {label: "Contenuto in", value: "like"},
+                    {label: "Uguale a", value: "eq"}
+
                 ])
             }
         }
@@ -842,7 +843,7 @@ export class Filter extends React.Component {
 
     render() {
         return (
-            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-10" >{M(this.props.data.property)}={this.props.data.value} <i className="zmdi zmdi-close"></i></button>      )
+            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-5" >{M(this.props.data.property)}={this.props.data.value} <i className="zmdi zmdi-close"></i></button>      )
     }
 }
 
@@ -1255,7 +1256,6 @@ export class Grid extends React.Component {
         let headerVisible = optional(parseBoolean(this.props.headerVisible), true)
         let footerVisible = optional(parseBoolean(this.props.footerVisible), true)
         let summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
-        let filtersVisible = optional(parseBoolean(this.props.filtersVisible), true)
         let noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
         //let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
         let paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
@@ -1263,7 +1263,7 @@ export class Grid extends React.Component {
         let noResultsText = optional(this.props.noResultsText, M("noResults"))
 
         let myQuery = optional(this.props.query, query.create())
-        let showFilters = filtersVisible && myQuery.filters.length > 0
+        let showFilters = myQuery.filters.length > 0 && !this.props.hideFilters
         let hasResults = (this.props.data && this.props.data.rows) ? this.props.data.rows.length > 0 : false
         let hasPagination = this.getTotalPages() > 1
         let Container = optional(parseBoolean(this.props.showInCard), true) ? Card : NoCard
@@ -1382,6 +1382,26 @@ export class EditCheckCell extends Cell {
     }
 }
 
+export class MultiTextCell extends Cell {
+
+    render() {
+        let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
+        let values = _.map(formatter(this.props.value), (v, i) => {
+
+            let item = _.isFunction(this.props.singleItemFormatter) ? this.props.singleItemFormatter(v) : v
+            let spanClass = _.isFunction(this.props.itemClass) ? this.props.itemClass(i) : "";
+
+            return (
+                <li key={v + Math.random()}><span className={spanClass}>{item}</span></li>
+            )
+        })
+
+        let bulletStyle = this.props.hideBullets? "none" : "disc";
+        return (
+            <ul style={{paddingLeft: "0px", listStyleType: bulletStyle}}>{values}</ul>
+        )
+    }
+}
 
 
 export function createCell(column, row, firstElement, onExpand, props = {}) {

@@ -4,7 +4,7 @@ import * as datasource from "../../utils/datasource";
 import {LookupStore, MultiValueSettingsStore, SelectStore} from "../../stores/entities";
 import {
     freeLookup,
-    freeSelect,
+    freeSelect, freeSettingValues,
     getLookupResult,
     getLookupValues,
     getSelectEntities,
@@ -293,7 +293,8 @@ export class EntitiesSelectContainer extends Control {
             throw new Error("Please specify an entity for select")
         }
 
-        this.discriminator = `entity_select_${this.props.entity}`
+        this.id = this.props.id || this.props.entity
+        this.discriminator = 'entity_select_${this.id}'
         this.datasource = datasource.create()
         this.query = null
     }

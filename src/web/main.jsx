@@ -16,8 +16,6 @@ import {EntitiesGrid, EntityForm, RevisionGrid} from "./screens/entities";
 import { getUserProfileImage } from "../actions/ui";
 import { setupMenu } from "../actions/menu";
 import * as NotificationCenter from "../utils/notificationCenter";
-import TestsScreen from "./screens/tests";
-import ContactTracing from "./screens/contactTracing";
 
 
 export default function main() {
@@ -50,8 +48,11 @@ export default function main() {
 
 	/** session actions catching */
 	NotificationCenter.addObserver("login", (user) => {
-		getUserProfileImage();
-		setupMenu({user});
+		if (!user.needToChangePassword) {
+			getUserProfileImage();
+			setupMenu({user});
+		}
+
 	})
 
 	/* Avoid going in screens that require login before trying session resume */

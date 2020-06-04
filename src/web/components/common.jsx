@@ -309,21 +309,21 @@ export class HeaderBlockWithBreadcrumbs extends React.Component {
             title = this.props.title.map((item, i) => <BreadcrumbItem key={Math.random()} title={item.title} url={item.url} first={i == 0} last={i < this.props.title.length -1} />);
 
         } else {
-            title = this.props.title
+            title = <span dangerouslySetInnerHTML={{__html: this.props.title}}></span>
         }
 
         return (
             <header className="content__title">
                 {(!_.isEmpty(title)) &&
-                    <h1>{title}</h1>
+                <h1>{title}</h1>
                 }
 
                 {!_.isEmpty(this.props.subtitle) &&
-                    <small>{this.props.subtitle}</small>
+                <small>{this.props.subtitle}</small>
                 }
 
                 {(!_.isEmpty(this.props.actions)) &&
-                    <Actions actions={this.props.actions} />
+                <Actions actions={this.props.actions} />
                 }
             </header>
         )

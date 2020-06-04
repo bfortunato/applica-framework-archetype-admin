@@ -14,11 +14,12 @@ import {
     RECOVER_ACCOUNT,
     REGISTER,
     REQUEST_RECOVERY_CODE,
-    RESET_PASSWORD,
+    RESET_PASSWORD, RESET_PASSWORD_CHANGE,
     RESET_USER_PASSWORD,
     SET_ACTIVATION_CODE,
     VALIDATE_RECOVERY_CODE
 } from "./types";
+import * as ui from "../web/utils/ui";
 
 export const register = createAsyncAction(REGISTER, data => {
     if (_.isEmpty(data.name) || _.isEmpty(data.mail) || _.isEmpty(data.password)) {
@@ -143,11 +144,7 @@ export const validateRecoveryCode = createAsyncAction(VALIDATE_RECOVERY_CODE, da
         alert(M("problemOccoured"), M("validationCodeRequired"), "warning");
         return;
     }
-    let codeSize = 5;
-    if (data.code.length !== codeSize) {
-        alert(M("problemOccoured"), format(M("validationCodeLengthMismatch"),codeSize), "warning");
-        return;
-    }
+
     showLoader();
     AccountApi.validateRecoveryCode(data.mail,data.code)
         .then(resp => {
@@ -174,23 +171,7 @@ export const resetPassword = createAsyncAction(RESET_PASSWORD, data => {
         alert(M("problemOccoured"), M("validationCodeRequired"), "warning");
         return;
     }
-    let codeSize = 5;
-    if (data.code.length !== codeSize) {
-        alert(M("problemOccoured"), format(M("validationCodeLengthMismatch"),codeSize), "warning");
-        return;
-    }
-    if (_.isEmpty(data.password) | _.isUndefined(data.password) | _.isNull(data.password)) {
-        alert(M("problemOccoured"), M("passwordRequired"), "warning")
-        return;
-    }
-    if (_.isEmpty(data.passwordConfirm) | _.isUndefined(data.passwordConfirm) | _.isNull(data.passwordConfirm)) {
-        alert(M("problemOccoured"), M("passwordConfirmRequired"), "warning")
-        return;
-    }
-    if (data.password !== data.passwordConfirm) {
-        alert(M("problemOccoured"), M("passwordConfirmMismatch"), "warning")
-        return;
-    }
+
     showLoader();
     AccountApi.resetPassword(data.mail, data.code, data.password, data.passwordConfirm)
         .then(resp => {
@@ -233,7 +214,7 @@ export const changePassword = createAsyncAction(CHANGE_PASSWORD, data => {
     });
 
     showLoader();
-    AccountApi.changePassword(data.password, data.passwordConfirm)
+    AccountApi.changePassword(data.currentPassword, data.password, data.passwordConfirm)
         .then(response => {
             hideLoader();
             SessionApi.updateUserPassword(data.password)
@@ -241,10 +222,20 @@ export const changePassword = createAsyncAction(CHANGE_PASSWORD, data => {
             SessionApi.updateSessionToken(response.value.token);
             toast(M("passwordSuccessfulChanged"));
             changePassword.complete({firstLogin: false, user: response.value.user})
+            ui.navigate("/login")
         })
         .catch(e => {
             hideLoader()
             alert("Attenzione!", responses.msg(e));
             changePassword.fail({firstLogin: null})
         })
+});
+
+
+
+export const resetPasswordChange = createAsyncAction(RESET_PASSWORD_CHANGE, data => {
+
+    aj.dispatch({
+        type: RESET_PASSWORD_CHANGE
+    });
 });

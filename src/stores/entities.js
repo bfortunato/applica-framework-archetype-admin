@@ -2,7 +2,7 @@ import * as aj from "../aj/index";
 import {completed, discriminate, failed} from "../utils/ajex";
 import * as actions from "../actions/types";
 import _ from "underscore";
-import {ENTITIES, GRIDS, LOOKUP, MULTIVALUE_SETTINGS, SELECT} from "./types";
+import {ENTITIES, GRIDS, LOOKUP, MULTIVALUE_SETTINGS, SEARCH, SELECT} from "./types";
 
 
 export const GridsStore = aj.createStore(GRIDS, (state = {grid: null}, action) => {
@@ -19,6 +19,15 @@ export const GridsStore = aj.createStore(GRIDS, (state = {grid: null}, action) =
     }
 
 })
+
+export const SearchStore = aj.createStore(SEARCH, (state = {}, action) => {
+    switch (action.type) {
+        case actions.UPDATE_QUERY:
+            return discriminate(state, action.discriminator, {query: action.query, params: action.params})
+        case actions.GET_QUERY:
+            return discriminate(state, action.discriminator)
+    }
+});
 
 export const EntitiesStore = aj.createStore(ENTITIES, (state = {}, action) => {
 
@@ -149,7 +158,6 @@ export const MultiValueSettingsStore = aj.createStore(MULTIVALUE_SETTINGS, (stat
     switch (action.type) {
 
 case actions.SET_MULTIVALUE_SETTINGS:
-    debugger
     return discriminate(state, action.discriminator, {items: action.items})
 case actions.UPDATE_MULTIVALUE_SETTINGS:
     list = updatedList(

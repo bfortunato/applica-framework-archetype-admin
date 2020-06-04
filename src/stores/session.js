@@ -19,6 +19,9 @@ const defaultState = function() {
 export const SessionStore = aj.createStore(SESSION, (state = defaultState(), action) => {
 
     switch (action.type) {
+        case actions.RESET_PASSWORD_CHANGE:
+            return _.assign(state, defaultState());
+
         case actions.LOGIN:
             return _.assign(state, { isLoggedIn: false });
 

@@ -24,14 +24,14 @@ import {
     GET_ENTITY,
     GET_GRID,
     GET_LOOKUP_RESULT,
-    GET_LOOKUP_VALUES,
+    GET_LOOKUP_VALUES, GET_QUERY,
     GET_SELECT_ENTITIES,
     GET_SELECT_VALUES,
     LOAD_ENTITIES,
     NEW_ENTITY,
     SAVE_ENTITY,
-    SET_MULTIVALUE_SETTINGS,
-    UPDATE_MULTIVALUE_SETTINGS
+    SET_MULTIVALUE_SETTINGS, UPDATE_FORM_DATA,
+    UPDATE_MULTIVALUE_SETTINGS, UPDATE_QUERY
 } from "./types";
 
 export const getGrid = createAsyncAction(GET_GRID, data => {
@@ -422,3 +422,34 @@ export const checkRevisionEnableStatus =  createAsyncAction(CHECK_REVISION_ENABL
         })
 });
 
+
+export const updateFormData = aj.createAction(UPDATE_FORM_DATA, data => {
+    aj.dispatch({
+        type: UPDATE_FORM_DATA,
+        discriminator: data.discriminator,
+        data: data.data
+    })
+})
+
+
+export const updateQuery = createAsyncAction(UPDATE_QUERY, data => {
+
+    debugger
+    aj.dispatch({
+        type: UPDATE_QUERY,
+        query: data.query,
+        params: data.params,
+        discriminator: data.discriminator
+
+    })
+})
+
+
+export const getQuery = createAsyncAction(GET_QUERY, data => {
+
+    aj.dispatch({
+        type: GET_QUERY,
+        discriminator: data.discriminator
+
+    })
+})

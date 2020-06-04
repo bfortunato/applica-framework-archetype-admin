@@ -23,8 +23,8 @@ export function getProfileImage(userId) {
     return get(`${config.get("account.url")}/${userId}/profile/image`)
 }
 
-export function changePassword(password, passwordConfirm) {
-    return post(config.get("account.url") + "/changePassword", {password: password ? password: "", passwordConfirm: passwordConfirm ? passwordConfirm : ""});
+export function changePassword(currentPassword, password, passwordConfirm) {
+    return post(config.get("account.url") + "/changePassword", {currentPassword: currentPassword? currentPassword: "", password: password ? password: "", passwordConfirm: passwordConfirm ? passwordConfirm : ""});
 }
 
 export function resetUserPassword(id) {

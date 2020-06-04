@@ -39,8 +39,7 @@ class Header extends React.Component {
                 <div className="header__logo hidden-sm-down">
                     <h1><a href="#"><img src="resources/images/logo.png" style={{height: 36, paddingTop: 4}} /></a></h1>
                 </div>
-
-                <HeaderExtra />
+                {/*<HeaderExtra />*/}
             </header>
         )
     }
@@ -220,7 +219,7 @@ class Footer extends React.Component {
     }
 
     componentDidMount() {
-        //systemInformation()
+        systemInformation()
     }
 
     render() {
