@@ -36,7 +36,7 @@ export function getUrlParameter(sParam) {
 function _handleRoute(fragment) {
 	let route = router.recognize(fragment);
 	if (route) {
-		let params = _.extend(route[0].params, route.queryParams || {});
+		let params = _.extend({}, route[0].params, route.queryParams || {});
 		route[0].handler(params);
 	}
 }
