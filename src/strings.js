@@ -401,6 +401,7 @@ strings["it"] = {
     deferred: "differito",
     codeValidationText: "Per favore inserisci il il codice di verifica che hai ricevuto",
     recoveryCodeSent: "Codice di verifica inviato",
+    validationCodeRequired: "Codice di validazione obbligatorio",
     newPasswordText: "Inserisci una nuova password",
     changePasswordDescription: "Devi impostare una nuova password prima di poter continuare",
     passwordConfirm: "Conferma password",

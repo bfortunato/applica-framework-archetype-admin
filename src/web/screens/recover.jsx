@@ -105,23 +105,23 @@ export default class Recover extends Screen {
         return (
             <FullScreenLayout>
                 <div className="login">
-                    <div class="login__block active" id="l-forget-password">
-                        <div class="login__block__header palette-Purple bg">
-                            <i class="zmdi zmdi-account-circle"></i>
+                    <div className="login__block active" id="l-forget-password">
+                        <div className="login__block__header palette-Purple bg">
+                            <i className="zmdi zmdi-account-circle"></i>
                             Recupera password
 
-                            <div class="actions actions--inverse login__block__actions">
-                                <div class="dropdown">
-                                    <i data-toggle="dropdown" class="zmdi zmdi-more-vert actions__item"></i>
+                            <div className="actions actions--inverse login__block__actions">
+                                <div className="dropdown">
+                                    <i data-toggle="dropdown" className="zmdi zmdi-more-vert actions__item"></i>
 
-                                    <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="/#/login">Torna a login</a>
+                                    <div className="dropdown-menu dropdown-menu-right">
+                                        <a className="dropdown-item" href="/#/login">Torna a login</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="login__block__body">
+                        <div className="login__block__body">
                             {content}
                         </div>
                     </div>
@@ -149,10 +149,10 @@ class CodeRequestForm extends React.Component {
             <form onSubmit={this.onSubmit.bind(this)} action="javascript:;" className="lcb-form" ref="recover_form">
                 <p className="text-left">{M("accountRecoverText")}</p>
 
-                <div class="form-group form-group--float form-group--centered">
-                    <input type="text" name="mail" class="form-control" />
+                <div className="form-group form-group--float form-group--centered">
+                    <input type="text" name="mail" className="form-control" />
                     <label>Email</label>
-                    <i class="form-group__bar"></i>
+                    <i className="form-group__bar"></i>
                 </div>
 
                 <button title="Conferma" type="submit" className="btn btn--icon login__block__btn"><i
@@ -187,10 +187,10 @@ class CodeValidationForm extends React.Component {
                   ref="validate_code_form">
                 <p className="text-left">{M("codeValidationText")}</p>
 
-                <div class="form-group form-group--float form-group--centered">
-                    <input type="text" name="code" class="form-control" />
+                <div className="form-group form-group--float form-group--centered">
+                    <input type="text" name="code" className="form-control" />
                     <label>Codice di validazione</label>
-                    <i class="form-group__bar"></i>
+                    <i className="form-group__bar"></i>
                 </div>
 
                 <button
