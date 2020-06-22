@@ -721,6 +721,31 @@ export class TextCell extends Cell {
     }
 }
 
+export class DateCell extends Cell {
+
+    getValue() {
+        if (_.isFunction(this.props.formatter))
+            this.props.formatter(this.props.value);
+        else
+            return this.props.value;
+    }
+
+    render() {
+        let value = this.getValue();
+
+        if(!value)
+            return "-";
+
+        let dateFormat = optional(this.props.format,M("dateFormat"));
+        let formattedDate = moment(value).format(dateFormat);
+
+        return (
+            <div>{formattedDate}</div>
+        )
+    }
+
+}
+
 export class CheckCell extends Cell {
     render() {
         let checked = this.props.value === true || this.props.value === "true" || parseInt(this.props.value) > 0
