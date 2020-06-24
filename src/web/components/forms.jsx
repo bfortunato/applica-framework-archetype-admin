@@ -1644,7 +1644,7 @@ export class Lookup extends Control {
                         <div className="actions">
                             <a href="javascript:;" className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
                             <a href="javascript:;" className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
-                            {openEntity && <a href="javascript:;" title={M("openEntity")} onClick={this.openEntity.bind(this)} className="m-r-0"><i className="zmdi zmdi-open-in-new" /></a>}
+                            {openEntity && <a href="javascript:;" className="actions__item m-r-0" title={M("openEntity")} onClick={this.openEntity.bind(this)}><i className="zmdi zmdi-open-in-new" /></a>}
                         </div>
                         <span className="lookup-current-value">{this.getHeaderText()}</span>
                         <div className="clearfix"></div>

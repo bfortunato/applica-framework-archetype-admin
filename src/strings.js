@@ -410,7 +410,8 @@ strings["it"] = {
     passwordConfirm: "Conferma password",
     currentPassword: "Password attuale",
     passwordSuccessfulChanged: "Password cambiata con successo",
-    showRevisions: "Mostra revisioni"
+    showRevisions: "Mostra revisioni",
+    noSelection: "Nessuna selezione"
 }
 
 export function setLanguage(language_) {
