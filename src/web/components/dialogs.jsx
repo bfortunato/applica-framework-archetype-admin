@@ -19,7 +19,12 @@ export class Dialog extends React.Component {
         let me = ReactDOM.findDOMNode(this)
         $(me)
             .modal({show: false})
-            .on("show.bs.modal", () => this.opened = true)
+            .on("show.bs.modal", () => {
+                this.opened = true
+                if (_.isFunction(this.props.onShow)) {
+                    this.props.onShow()
+                }
+            })
             .on("hide.bs.modal", (e) => {
                 if (forceBoolean(this.props.notHide)) {
                     e.preventDefault();
@@ -32,13 +37,7 @@ export class Dialog extends React.Component {
                     }
                 }
             })
-            .on("hidden.bs.modal", e => {
-                this.opened = false
-                if (_.isFunction(this.props.onClose)) {
-                    this.props.onClose(this.dialogResult)
-                }
-            })
-
+            
         if (!this.props.hidden) {
             if (!this.opened) {
                 this.opened = true

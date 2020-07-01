@@ -677,6 +677,10 @@ export class Form extends React.Component {
     }
 
     showFormFooter() {
+        if (_.isFunction(this.props.descriptor.showFormFooter)) {
+            return this.props.descriptor.showFormFooter(this.model)
+        }
+
         return optional(this.props.descriptor.showFormFooter, true)
     }
 
