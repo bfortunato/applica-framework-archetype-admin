@@ -917,19 +917,26 @@ export class ReadOnlyText extends Control {
 
     render() {
         let field = this.props.field
-        
 
         return (
-            <input
-                disabled="disabled"
-                readOnly="readOnly"
-                type="text"
-                className="form-control input-sm"
-                id={field.property}
-                data-property={field.property}
-                placeholder={field.placeholder}
-                value={this.getText()}
-                onChange={this.onValueChange.bind(this)} />
+
+            <div className="input-group m-b-0">
+                <input
+                    style={{opacity: "1"}}
+                    disabled="disabled"
+                    readOnly="readOnly"
+                    type="text"
+                    className="form-control input-sm"
+                    id={field.property}
+                    data-property={field.property}
+                    placeholder={field.placeholder}
+                    value={this.getText()}
+                    onChange={this.onValueChange.bind(this)} />
+
+                <div className="input-icon-container">
+                    <i className="zmdi zmdi-lock zmdi-hc-fw"/>
+                </div>
+            </div>
         )
     }
 }

@@ -138,6 +138,12 @@ html.ismobile .global-loader {
         margin: 0px 0px 0px 10px
       }
     }
+
+    .input-icon-container {
+      border-bottom: 1px solid $border-color;
+      font-size: 20px;
+      color: $color-gray;
+    }
   }
 
   .has-error {

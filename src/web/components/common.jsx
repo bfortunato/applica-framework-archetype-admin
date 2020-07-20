@@ -145,7 +145,7 @@ export class HeaderBlock extends React.Component {
 export class Card extends React.Component {
     render() {
         let actionKey = 1
-        let cardClass = optional(this.props.className, "card")
+        let cardClass = optional(this.props.className, "card");
         let bodyClass = "card-body"
         if (this.props.padding) {
             bodyClass += " card-padding"
@@ -154,9 +154,9 @@ export class Card extends React.Component {
         if (this.props.inverseHeader) {
             titleClass += " card-title-inverse"
         }
-        let subtitleClass = "card-title"
+        let subtitleClass = "card-subtitle"
         if (this.props.inverseHeader) {
-            subtitleClass += " card-title-inverse"
+            subtitleClass += " card-subtitle-inverse"
         }
         return (
             <div className={cardClass}>
@@ -166,10 +166,10 @@ export class Card extends React.Component {
                     }
 
                     {!_.isEmpty(this.props.subtitle) &&
-                        <h6 className={headerClass}>{this.props.subtitle}</h6>
+                        <h6 className={subtitleClass}>{this.props.subtitle}</h6>
                     }
 
-                    {!_.isEmpty(this.props.actions) && 
+                    {!_.isEmpty(this.props.actions) &&
                         <Actions actions={this.props.actions} />
                     }
 
