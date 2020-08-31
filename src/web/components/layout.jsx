@@ -15,6 +15,7 @@ import {SystemStore} from "../../stores/system";
 import {systemInformation} from "../../actions/system";
 import HeaderExtra from "./extra/headerExtra"
 import globalComponents from "./extra/globalComponents"
+import { isControlPressed } from "../utils/keyboard";
 
 function showPageLoader() {
     $(".page-loader").show()
@@ -88,7 +89,11 @@ class ProfileBox extends React.Component {
 class MenuLevel extends React.Component {
     onSelect(item, e) {
         if (item.href) {
-            location.href = item.href
+            if (isControlPressed()) {
+                window.open(item.href)
+            }else {
+                location.href = item.href
+            }
         }
 
         if (_.isFunction(this.props.onSelect)) {
@@ -123,7 +128,7 @@ class MenuLevel extends React.Component {
 
             return (
                 <li key={key++} className={className}>
-                    <a onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
+                    <a href="javascript:;" onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
                         <i className={i.icon}></i> {i.text}
                     </a>
 
