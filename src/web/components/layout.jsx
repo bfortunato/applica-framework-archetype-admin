@@ -128,7 +128,7 @@ class MenuLevel extends React.Component {
 
             return (
                 <li key={key++} className={className}>
-                    <a href="javascript:;" onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
+                    <a onClick={this.onSelect.bind(this, i)} data-ma-action={hasChildren ? "submenu-toggle" : undefined} >
                         <i className={i.icon}></i> {i.text}
                     </a>
 
