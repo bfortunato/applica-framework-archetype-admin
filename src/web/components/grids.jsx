@@ -4,12 +4,16 @@ import ReactDOM from "react-dom";
 import * as query from "../../framework/query";
 import M from "../../strings";
 import {Actions, Card} from "./common";
-import {format, optional, parseBoolean} from "../../utils/lang";
+import {forceBoolean, format, optional, parseBoolean, safeGet, uuid} from "../../utils/lang";
 import {Observable} from "../../aj/events";
 import {isControl, isDown, isEnter, isEsc, isShift, isUp} from "../utils/keyboard";
 import * as mobile from "../utils/mobile";
 import * as datasource from "../../utils/datasource";
 import traverse from "../../utils/traverse";
+import { SearchStore } from "../../stores/entities";
+import { FilterTypeMap } from "../../model/enums";
+import { discriminated } from "../../utils/ajex";
+import { Dialog, DIALOG_RESULT_CANCEL, DIALOG_RESULT_OK } from "./dialogs";
 
 const EXPAND_ANIMATION_TIME = 250
 const CELL_PADDING_TOP = 15
@@ -226,33 +230,6 @@ class Selection extends Observable {
     }
 }
 
-const STANDARD_SEARCH_FORM_DESCRIPTOR = (column) => _.assign({}, {
-    showInCard: false,
-    fields: [
-        {
-            property: column.property,
-            label: M("value"),
-            placeholder: M("value"),
-            control: forms().Text
-        },
-        {
-            property: "_filterType",
-            label: M("filterType"),
-            control: forms().Select,
-            props: {
-                allowNull: false,
-                datasource: datasource.fixed([
-                    {label: "Contenuto in", value: "like"},
-                    {label: "Uguale a", value: "eq"}
-
-                ])
-            }
-        }
-    ]
-})
-
-
-
 export class SearchDialog extends React.Component {
     constructor(props) {
         super(props)
@@ -261,6 +238,10 @@ export class SearchDialog extends React.Component {
     }
 
     componentDidMount() {
+        let me = ReactDOM.findDOMNode(this)
+        $(me).on('shown.bs.modal', function(){
+            $(me).find(".modal-body").find("input").first().focus()
+        });
     }
 
     onChangeValue(e) {
@@ -274,8 +255,9 @@ export class SearchDialog extends React.Component {
     }
 
     close() {
-        let me = ReactDOM.findDOMNode(this)
-        $(me).modal("hide")
+        // let me = ReactDOM.findDOMNode(this)
+        // $(me).modal("hide")
+        this.onClose(DIALOG_RESULT_OK)
     }
 
     getFieldFilterType(property) {
@@ -289,6 +271,10 @@ export class SearchDialog extends React.Component {
             return filterType
     }
 
+    getFilterLabel(property) {
+        const propName = property+"__label"
+        return this.model.get(propName)
+    }
 
     filter() {
         if (this.props.query && this.props.column && this.props.column.property) {
@@ -298,7 +284,8 @@ export class SearchDialog extends React.Component {
             _.each(_.keys(data), k => {
                 if (k !== "_filterType") {
                     const filterType = optional(this.getFieldFilterType(k), manualFilterType)
-                    this.props.query.filter(filterType, k, data[k])
+                    const label = this.getFilterLabel(k)
+                    this.props.query.filter(filterType, k, data[k], label)
                 }
             })
             this.props.query.page = 1
@@ -309,9 +296,69 @@ export class SearchDialog extends React.Component {
         }
     }
 
+    getStandardSearchForm(column) {
+        return {
+            showInCard: false,
+            fields: [
+                {
+                    property: column.property,
+                    label: M("value"),
+                    placeholder: M("insertValueAndPressEnter"),
+                    control: forms().Text,
+                    props: {
+                        onKeyDown: (model, e) => {
+                            if (isEnter(e.which)) { 
+                                e.preventDefault()
+                                this.filter()
+                            }
+                        }
+                    }
+                },
+                {
+                    property: "_filterType",
+                    label: M("filterType"),
+                    control: forms().Select,
+                    props: {
+                        allowNull: false,
+                        datasource: datasource.fixed([
+                            {label: M("FILTER_LIKE"), value: query.LIKE},
+                            {label: M("FILTER_EQ"), value: query.EQ},
+                        ])
+                    }
+                }
+            ]
+        }
+    }
+
+    onClose(dialogResult) {
+        if (_.isFunction(this.props.onClose)) {
+            this.props.onClose(dialogResult)
+        }
+    }
+
+    getButtons() {
+        return [
+            {
+                text: M("search"),
+                action: (dialog) => {
+                    dialog.hide()
+                    this.filter()
+                },
+                dialogResult: DIALOG_RESULT_OK
+            },
+            {
+                text: M("close"),
+                action: (dialog) => {
+                    dialog.hide()
+                },
+                dialogResult: DIALOG_RESULT_CANCEL
+            }
+        ]
+    }
+
     render() {
         let column = this.props.column
-        let searchForm = STANDARD_SEARCH_FORM_DESCRIPTOR(column)
+        let searchForm = this.getStandardSearchForm(column)
         if (!_.isEmpty(column.searchForm)) {
             searchForm = column.searchForm
         }
@@ -320,25 +367,33 @@ export class SearchDialog extends React.Component {
         const FormBody = forms().FormBody
 
         return (
-            <div className="search-dialog modal fade" role="dialog" tabIndex="-1" style={{display: "none", zIndex: 1500}}>
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h4 className="modal-title">{this.props.column.header}</h4>
-                        </div>
-                        <div className="modal-body">
-                            <div className="row">
-                                <FormBody model={this.model} descriptor={searchForm} />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
-                            <button type="button" className="btn btn-link waves-effect" data-dismiss="modal">{M("close")}</button>
-                        </div>
-                    </div>
+            <Dialog title={this.props.column.header} hidden={this.props.hidden} onClose={this.onClose.bind(this)} buttons={this.getButtons()}>
+                <div className="row search-dialog">
+                    <FormBody model={this.model} descriptor={searchForm} />
                 </div>
-            </div>
+            </Dialog>
         )
+
+        // return (
+        //     <div className=" modal fade" role="dialog" tabIndex="-1" style={{display: "none", zIndex: 1500}}>
+        //         <div className="modal-dialog">
+        //             <div className="modal-content">
+        //                 <div className="modal-header">
+        //                     <h4 className="modal-title">{this.props.column.header}</h4>
+        //                 </div>
+        //                 <div className="modal-body">
+        //                     <div className="row seartc">
+        //                         <FormBody model={this.model} descriptor={searchForm} />
+        //                     </div>
+        //                 </div>
+        //                 <div className="modal-footer">
+        //                     <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
+        //                     <button type="button" className="btn btn-link waves-effect" data-dismiss="modal">{M("close")}</button>
+        //                 </div>
+        //             </div>
+        //         </div>
+        //     </div>
+        // )
     }
 }
 
@@ -349,7 +404,11 @@ export class HeaderCell extends React.Component {
     constructor(props) {
         super(props)
 
-        this.state = {sorting: false, sortDescending: false}
+        this.state = {
+            sorting: false, 
+            sortDescending: false,
+            searchDialogHidden: true
+        }
     }
 
     componentDidMount() {
@@ -396,8 +455,15 @@ export class HeaderCell extends React.Component {
     }
 
     search() {
-        let me = ReactDOM.findDOMNode(this)
-        $(me).find(".search-dialog").modal()
+        // let me = ReactDOM.findDOMNode(this)
+        // $(me).find(".search-dialog").modal()
+        _.assign(this.state, {searchDialogHidden: false})
+        this.forceUpdate()
+    }
+
+    onSearchDialogClose() {
+        _.assign(this.state, {searchDialogHidden: true})
+        this.forceUpdate()
     }
 
     render() {
@@ -422,7 +488,7 @@ export class HeaderCell extends React.Component {
                 }
 
                 {this.props.column.searchable &&
-                    <SearchDialog column={this.props.column} query={this.props.query}/>
+                    <SearchDialog column={this.props.column} query={this.props.query} hidden={this.state.searchDialogHidden} onClose={this.onSearchDialogClose.bind(this)}/>
                 }
             </th>
         )
@@ -866,9 +932,28 @@ export class Filter extends React.Component {
         this.props.query.unfilter(this.props.data.property)
     }
 
+    getColumn() {
+        return _.find(this.props.descriptor.columns, c => c.property == this.props.data.property)
+    }
+
+    isHiddenInFilters() {
+        return _.any(this.props.descriptor.hiddenFilters, h => h == this.props.data.property)
+    }
+
     render() {
+        const column = this.getColumn()
+        const hiddenInFilters = this.isHiddenInFilters()
+        const name = column ? column.header : this.props.data.property
+        const value = this.props.data.label ? this.props.data.label : this.props.data.value
+        const type = FilterTypeMap.get(this.props.data.type) 
+        
+        if (hiddenInFilters) {
+            return null
+        }
+
         return (
-            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-5" >{M(this.props.data.property)}={this.props.data.value} <i className="zmdi zmdi-close"></i></button>      )
+            <button onClick={this.unfilter.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-10" >{name} {type} {value} <i className="zmdi zmdi-close"></i></button>
+        )
     }
 }
 
@@ -884,7 +969,7 @@ export class Filters extends React.Component {
     render() {
         let filters = []
         if (this.props.query) {
-            filters = this.props.query.filters.map(f => <Filter key={f.property + f.type + f.value} data={f} query={this.props.query} />)
+            filters = this.props.query.filters.map(f => <Filter key={f.property + f.type + f.value} data={f} query={this.props.query} descriptor={this.props.descriptor}  />)
         }
 
         let actions = [
@@ -892,7 +977,7 @@ export class Filters extends React.Component {
         ]
 
         return (
-            <div className="filters p-30">
+            <div className="search-filters">
                 <button type="button" onClick={this.clearFilters.bind(this)} className="btn btn-no-shadow btn-primary waves-effect m-r-10"><i className="zmdi zmdi-delete" /></button>
                 {filters}
             </div>
@@ -1031,14 +1116,26 @@ export class QuickSearch extends React.Component {
     constructor(props) {
         super(props)
 
+        this.state = {value: ""}
         this._onChange = _.debounce((keyword) => {
             if (!_.isEmpty(this.props.query)) {
                 this.props.query.setKeyword(keyword)
             }
-        }, 250)
+        }, 500)
+        this.initialValue = this.getInitialValue()
+    }
+
+    getInitialValue() {
+        let state = optional(discriminated(optional(SearchStore.state, {}), this.props.discriminator), {});
+        if (state) {
+            return safeGet(state.query, "keyword", "");
+        }
+
+        return "";
     }
 
     componentDidMount() {
+        this.setState({value: this.initialValue})
         const me = ReactDOM.findDOMNode(this);
 
         $(me).find("input[type=search]")
@@ -1048,14 +1145,11 @@ export class QuickSearch extends React.Component {
             .blur(() => {
                 $(me).find(".quick-search").removeClass("quick-search__active");
             })
-        
-    }
-
-    componentWillUnmount() {
-
+    
     }
 
     onChange(e) {
+        this.setState({value: e.target.value})
         this._onChange(e.target.value)
     }
 
@@ -1064,14 +1158,21 @@ export class QuickSearch extends React.Component {
             e.preventDefault()
         }
     }
+    
+    onDelete() {
+        this.setState({value: ""})
+        this._onChange("")
+    }
 
     render() {
+        const placeholder = !_.isEmpty(this.props.placeholder) ? this.props.placeholder : M("search")
+
         return (
             <div className="quick-search-container">
                 <div className="quick-search">
                     <i className="zmdi zmdi-search pull-left" />
                     <div className="quick-search-input-container">
-                        <input type="search" onKeyDown={this.onKeyDown.bind(this)} onChange={this.onChange.bind(this)} placeholder={M("search")} />
+                        <input type="search" value={this.state.value} onKeyDown={this.onKeyDown.bind(this)} onChange={this.onChange.bind(this)} placeholder={placeholder} />
                         <div className="form-control__bar"/>
                     </div>
                 </div>
@@ -1088,11 +1189,39 @@ export class Grid extends React.Component {
         this.state = {rows: null}
 
         this.initSelection(props)
+        this.initQuery(props)
+    }
+
+    componentDidMount() {
+        this.initQuery(this.props)
+    }
+
+    static getDerivedStateFromProps(props, state){
+        let rows = props.data && props.data.rows
+        return _.assign(state, {rows})
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        this.initSelection(this.props)
+    }
+
+    componentWillUnmount() {
+        if (this.props.query && this.isClientSideQuerying()) {
+            this.props.query.off("change", this.onQueryChange)
+        }
+    }
+
+    isClientSideQuerying() {
+        return forceBoolean(this.props.clientSideQuerying)
     }
 
     getTotalRows() {
         let totalRows = parseInt(this.props.data.totalRows)
         return totalRows
+    }
+
+    isAllSelected() {
+        return this.selection.isAllSelected()
     }
 
     onKeyPress(e) {
@@ -1204,10 +1333,9 @@ export class Grid extends React.Component {
         if (!selectionEnabled) {
             return
         }
-
-
+        
         let rows = props.data && props.data.rows
-        if (rows) {
+        if (!this.selection && _.isEmpty(rows)) {
             this.selection = new Selection(rows)
             this.selection.single = props.selectionMode === "single"
             this.selection.on("change", () => {
@@ -1219,11 +1347,31 @@ export class Grid extends React.Component {
         }
     }
 
-    componentWillReceiveProps(nextProps) {
-        this.initSelection(nextProps)
+    initQuery(props) {
+        if (!this.queryInitialized) {
+            this.queryInitialized = true
 
-        let rows = nextProps.data && nextProps.data.rows
-        this.setState(_.assign(this.state, {rows}))
+            if (!props.query) {
+                this.standardQuery = query.create()
+
+                if (forceBoolean(props.clientSideQuerying)) {
+                    this.standardQuery.on("change", () => {
+                        query.apply(this.standardQuery, props.data)
+
+                        this.forceUpdate()
+                    })
+                }
+            } else {
+                if (forceBoolean(props.clientSideQuerying)) {
+                    props.query.on("change", this.onQueryChange = () => {
+                        query.apply(props.query, props.data)
+
+                        this.forceUpdate()
+                    })
+
+                }
+            }
+        }
     }
 
     toggleSelectAll() {
@@ -1231,7 +1379,6 @@ export class Grid extends React.Component {
         if (!selectionEnabled) {
             return
         }
-
 
         if (this.selection) {
             this.selection.toggleAll()
@@ -1271,89 +1418,180 @@ export class Grid extends React.Component {
         return totalPages
     }
 
+    getQuery() {
+        return optional(this.props.query, this.standardQuery)
+    }
+
+    getData() {
+        let result = null;
+        if (this.isClientSideQuerying()) {
+            result = query.apply(this.getQuery(), optional(this.props.data, {rows: [], totalRows: 0}))
+        } else {
+            result = optional(this.props.data, {rows: [], totalRows: 0})
+        }
+
+        if (_.isFunction(this.props.descriptor.resultTransformer)) {
+            result = this.props.descriptor.resultTransformer(result)
+        }
+
+        return result;
+    }
+
+    onSelectWithCheck(column, data, value, row) {
+        const selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+
+        if (selectionEnabled) {
+            this.selection.handle(row, true)
+        }
+    }
+
+    getDescriptor() {
+        const original = this.props.descriptor;
+
+        let descriptor = original;
+
+        if (mobile.isMobile()) {
+            descriptor = _.assign({}, original, {
+                columns: _.union(original.columns, [{
+                    cell: ActionsCell,
+                    tdClassName: "grid-actions",
+                    actions: [
+                        {
+                            icon: "zmdi zmdi-edit", action: (row) => {
+                            if (_.isFunction(this.props.onRowDoubleClick)) {
+                                this.props.onRowDoubleClick(row)
+                            }
+                        }
+                        }
+                    ],
+                    props: {
+                        showAlways: true
+                    }
+                }])
+            })
+        }
+
+        const selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
+        const selectWithCheck = optional(parseBoolean(this.props.selectWithCheck), false)
+
+        if (selectWithCheck && selectionEnabled) {
+            descriptor =  _.assign({}, original, {columns: _.union([
+                {
+                    property: "selected",
+                    header: "selectAllBtn",
+                    cell: EditCheckCell,
+                    props: {
+                        width: "65px",
+                        onValueChange: this.onSelectWithCheck.bind(this),
+                        valueSupplier: (data, row) => row.selected
+                    }
+                }], original.columns)});
+        }
+
+        return descriptor;
+    }
+
     render() {
         if (_.isEmpty(this.props.descriptor)) {
             return null
         }
+        
+        const data = this.getData()
+        const myQuery = this.getQuery()
 
         //customization properties
-        let quickSearchEnabled = optional(parseBoolean(this.props.quickSearchEnabled), false)
-        let headerVisible = optional(parseBoolean(this.props.headerVisible), true)
-        let footerVisible = optional(parseBoolean(this.props.footerVisible), true)
-        let summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
-        let noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
-        //let selectionEnabled = optional(parseBoolean(this.props.selectionEnabled), true)
-        let paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
+        const showFilters = myQuery.filters.length > 0 && !this.props.hideFilter
+        const quickSearchEnabled = optional(parseBoolean(this.props.quickSearchEnabled), false)
+        const quickSearchPlaceholder = optional(this.props.quickSearchPlaceholder, "")
+        const headerVisible = optional(parseBoolean(this.props.headerVisible), true)
+        const headerVisibleNoResults = optional(parseBoolean(this.props.headerVisibleNoResults), true)
+        const footerVisible = optional(parseBoolean(this.props.footerVisible), true)
+        const summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
+        const noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
+        const filtersVisible = optional(parseBoolean(this.props.filtersVisible), true)
+        const paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
         let tableClassName = optional(this.props.tableClassName, "table table-striped table-hover")
-        let noResultsText = optional(this.props.noResultsText, M("noResults"))
-
-        let myQuery = optional(this.props.query, query.create())
-        let showFilters = myQuery.filters.length > 0 && !this.props.hideFilters
-        let hasResults = (this.props.data && this.props.data.rows) ? this.props.data.rows.length > 0 : false
-        let hasPagination = this.getTotalPages() > 1
+        if (showFilters) {
+            tableClassName += " br-t"
+        }
+        const tableId= optional(this.props.tableId, uuid())
+        const noResultsText = optional(this.props.noResultsText, M("noResults"))
+        const className = "grid " + optional(this.props.className, "")
+        const hasResults = (data && data.rows) ? data.rows.length > 0 : false
+        const hasPagination = this.getTotalPages() > 1
+        const anchorHeader = optional(parseBoolean(this.props.anchorHeader), false)
+        const scrollHorizontal = optional(parseBoolean(this.props.scrollHorizontal), false)
         let Container = optional(parseBoolean(this.props.showInCard), true) ? Card : NoCard
-        let descriptor = mobile.isMobile()
-            ? _.assign({}, this.props.descriptor, {columns: _.union(this.props.descriptor.columns, [{
-                cell: ActionsCell,
-                tdClassName: "grid-actions",
-                actions: [
-                    {icon: "zmdi zmdi-edit", action: (row) => {
-                        if (_.isFunction(this.props.onRowDoubleClick)) {
-                            this.props.onRowDoubleClick(row)
-                        }
-                    }}
-                ],
-                props: {
-                    showAlways: true
-                }
-            }])})
-            : this.props.descriptor
+        let descriptor = this.getDescriptor()
+        
+        let parentTableClass = optional(this.props.parentTableClass, "parent-table")
+        if (scrollHorizontal) {
+            parentTableClass += " grid-scroll-horizontal"
+            if (!anchorHeader) {
+                parentTableClass += " nowrap"
+            }
+        }
 
         return (
             <div className="grid" tabIndex="0" onBlur={this.onBlur.bind(this)} onKeyPress={this.onKeyPress.bind(this)} onKeyUp={this.onKeyUp.bind(this)} onKeyDown={this.onKeyDown.bind(this)}>
                 <Container>
                     <div>
                         {quickSearchEnabled &&
-                            <QuickSearch query={myQuery} />
+                            <QuickSearch discriminator={this.props.discriminator} query={myQuery} placeholder={quickSearchPlaceholder}/>
                         }
 
-                        {showFilters &&
-                            <Filters query={myQuery} />
+                        {showFilters && filtersVisible &&
+                            <Filters query={myQuery} descriptor={descriptor} />
                         }
 
                         <div className="clearfix"></div>
 
-                        {hasResults ?
-                            <div className="with-result">
-                                <table className={tableClassName}>
-                                    {headerVisible && 
-                                        <GridHeader descriptor={descriptor} query={myQuery}/>
-                                    }
-                                    <GridBody descriptor={descriptor} data={this.props.data} query={myQuery} onRowExpand={this.onRowExpand.bind(this)} onRowMouseDown={this.onRowMouseDown.bind(this)} onRowDoubleClick={this.onRowDoubleClick.bind(this)} />
-                                    {footerVisible &&
-                                        <GridFooter descriptor={descriptor} />
-                                    }
-                                </table>
-
-                                {hasPagination && paginationEnabled &&
-                                    <div className="pull-right m-20">
-                                        <Pagination data={this.props.data} query={myQuery} />
-                                    </div>
+                        <div className="with-result">
+                            <div className={parentTableClass}>
+                                {
+                                    anchorHeader &&
+                                    <table className="table table-fixed">
+                                        <GridHeader descriptor={descriptor} query={myQuery} allSelected={this.isAllSelected()}  onSelectAll={this.toggleSelectAll.bind(this)} onDeselectAll={this.clearSelection.bind(this)}/>
+                                    </table>
                                 }
-
-                                {summaryVisible && 
-                                    <ResultSummary query={myQuery} data={this.props.data} />
-                                }
-
-                                <div className="clearfix"></div>
+                                <div className="parent-table-content">
+                                    <table id={tableId} className={tableClassName}>
+                                        {headerVisible && (hasResults || !hasResults && headerVisibleNoResults) &&
+                                            <GridHeader descriptor={descriptor} query={myQuery} onSelectAll={this.toggleSelectAll.bind(this)} onDeselectAll={this.clearSelection.bind(this)}/>
+                                        }
+                                        
+                                        {hasResults &&
+                                            <GridBody descriptor={descriptor} data={data} query={myQuery} onRowExpand={this.onRowExpand.bind(this)} onRowMouseDown={this.onRowMouseDown.bind(this)} onRowDoubleClick={this.onRowDoubleClick.bind(this)} />
+                                        }
+                                        
+                                        {hasResults && footerVisible &&
+                                            <GridFooter descriptor={descriptor} />
+                                        }
+                                    </table>
+                                </div>
                             </div>
-                            : //no results
-                            noResultsVisible &&
-                            <div className="no-results text-center p-30">
-                                <h1><i className="zmdi zmdi-info-outline" /></h1>
-                                <h4>{noResultsText}</h4>
-                            </div>
-                        }
+                                
+
+                            {hasResults && hasPagination && paginationEnabled &&
+                                <div className="pull-right m-20">
+                                    <Pagination data={this.props.data} query={myQuery} />
+                                </div>
+                            }
+
+                            {hasResults && summaryVisible &&
+                                <ResultSummary query={myQuery} data={this.props.data} />
+                            }
+
+                            {!hasResults && noResultsVisible &&
+                                <div className="no-results text-center p-30">
+                                    <h1><i className="zmdi zmdi-info-outline" /></h1>
+                                    <h4>{noResultsText}</h4>
+                                </div>
+                            }
+
+                            <div className="clearfix"></div>
+
+                        </div>
                     </div>
                 </Container>
             </div>

@@ -15,13 +15,13 @@ export default [
                 icon: "zmdi zmdi-accounts-alt",
                 text: M("users"),
                 href: "/#/entities/user?grid=users",
-                permissions: ["user:list"]
+                // permissions: ["user:list"]
             },
             {
                 icon: "zmdi zmdi-key",
                 text: M("roles"),
                 href: "/#/entities/role?grid=roles",
-                permissions: ["role:list"]
+                // permissions: ["role:list"]
             }
             // ,{
             //     icon: "zmdi zmdi-accounts-alt",
@@ -30,6 +30,13 @@ export default [
             //     permissions: ["entityRevisionSettings:edit"]
             // }
         ]
+    },
+    {
+        id: "customers",
+        icon: "zmdi zmdi-accounts-list-alt",
+        text: M("customers"),
+        href: "/#/entities/customer?grid=customers",
+        // permissions: ["customer:list"],
     },
     {
         icon: "zmdi zmdi-settings",

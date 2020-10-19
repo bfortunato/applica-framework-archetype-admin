@@ -222,7 +222,6 @@ export default class EntityForm extends Screen {
 
 
     getTitle() {
-        debugger
         let form = entities[this.getEntity()].form;
         return _.isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params): optional(form.title, "Edit");
     }

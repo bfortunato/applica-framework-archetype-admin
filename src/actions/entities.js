@@ -433,8 +433,6 @@ export const updateFormData = aj.createAction(UPDATE_FORM_DATA, data => {
 
 
 export const updateQuery = createAsyncAction(UPDATE_QUERY, data => {
-
-    debugger
     aj.dispatch({
         type: UPDATE_QUERY,
         query: data.query,

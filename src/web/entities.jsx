@@ -1,5 +1,5 @@
 import {CheckCell, MultiTextCell, TextCell} from "./components/grids";
-import {Image, Mail, PasswordText, ReadOnlyText, Text, YesNo} from "./components/forms";
+import {Autocomplete, Image, Mail, PasswordText, ReadOnlyText, Text, YesNo} from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer} from "./components/containers";
 import M, {M_Multiple} from "../strings";
 import {getLoggedUser, hasPermission} from "../api/session";
@@ -36,7 +36,6 @@ const entities = {
 		},
 		form: {
 			getTitle(data, params) {
-				debugger
 				return !data || !data.id ? M(["create", "user"]) : M(["edit", "user"]) + " <b>" + " <b>" + data.fullDescription + "</b>" + "</b>"
 			},
 			getActions(data) {
@@ -215,7 +214,16 @@ const entities = {
 	                        }
                     	}
 
-                    }
+					},
+					{
+						property: "fabricatorId",
+						label: M("fabricator"),
+						control: Autocomplete,
+						props: {
+							id: "dossier_fabricator",
+							entity: "fabricator",
+						}
+					},
 				]
 			}
 		}
@@ -252,7 +260,6 @@ const entities = {
                         searchable: false,
                         props: {
                             singleItemFormatter(v) {
-                                debugger
                                 let previousValueString = "";
                                 let newValueString = "";
                                 previousValueString = M("previousValue") + ": " + (v.previousValueDescription? v.previousValueDescription : " null ") + ", ";
@@ -265,6 +272,118 @@ const entities = {
                 ]
             }
         },
+	},
+
+
+	customer: {
+        grid: {
+            title: M("customerList"),
+            quickSearchEnabled: true,
+            descriptor: {
+                columns: [
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "subjectType",
+                        header: M("type"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                    },
+                    {
+                        property: "name",
+                        header: M("name"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "name",
+                                    label: M("name"),
+                                    control: Text,
+                                    filterType: "like"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "fabricator",
+                        header: M("fabricator"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                // {
+                                //     property: "fabricatorId",
+                                //     label: M("fabricator"),
+                                //     control: ValuesSelectContainer,
+                                //     filterType: "eq",
+                                //     props: {
+                                //         id: "dossier_fabricator",
+                                //         mode: "single",
+                                //         allowNull: true,
+                                //         searchEnabled: true,
+                                //         collection: "fabricators",
+                                //         getSingleItemLabel: (value) => {
+                                //             return value.businessName
+                                //         },
+                                //         getSingleItemValue: (value) => {
+                                //             return value.id
+                                //         },
+                                //         formatter: v => {
+                                //             return v != null ? v.businessName : "";
+                                //         }
+                                //     }
+								// },
+								{
+                                    property: "fabricatorId",
+                                    label: M("fabricator"),
+                                    control: Autocomplete,
+                                    filterType: "eq",
+                                    props: {
+                                        id: "dossier_fabricator",
+                                        entity: "fabricator",
+                                    }
+                                },
+                            ]
+                        },
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.businessName : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "active",
+                        header: M("active"),
+                        cell: CheckCell,
+                        sortable: true,
+                        searchable: false,
+                    },
+                ]
+            }
+		},
 	}
 }
 

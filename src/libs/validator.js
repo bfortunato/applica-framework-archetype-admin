@@ -21,6 +21,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+const { default: M } = require("../strings");
+const { format } = require("../utils/lang");
+
 (function(exports) {
 
     var entities = {
@@ -536,7 +539,7 @@
 
     Validator.prototype.isEmail = function() {
         if (!this.str.match(/^(?:[\w\!\#\$\%\&\'\*\+\-\/\=\?\^\`\{\|\}\~]+\.)*[\w\!\#\$\%\&\'\*\+\-\/\=\?\^\`\{\|\}\~]+@(?:(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-](?!\.)){0,61}[a-zA-Z0-9]?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9\-](?!$)){0,61}[a-zA-Z0-9]?)|(?:\[(?:(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\.){3}(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\]))$/)) {
-            return this.error(this.msg || 'Invalid email');
+            return this.error(this.msg || M('invalidEmail'));
         }
         return this;
     }
@@ -545,70 +548,70 @@
     Validator.prototype.isCreditCard = function() {
         this.str.replace(/[^0-9]+/g, ''); //remove all dashes, spaces, etc.
         if (!this.str.match(/^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/)) {
-            return this.error(this.msg || 'Invalid credit card');
+            return this.error(this.msg || M("invalidCreditCard"));
         }
         return this;
     }
 
     Validator.prototype.isUrl = function() {
         if (!this.str.match(/^(?:(?:ht|f)tp(?:s?)\:\/\/|~\/|\/)?(?:\w+:\w+@)?((?:(?:[-\w\d{1-3}]+\.)+(?:com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|edu|co\.uk|ac\.uk|it|fr|tv|museum|asia|local|travel|[a-z]{2}))|((\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)(\.(\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)){3}))(?::[\d]{1,5})?(?:(?:(?:\/(?:[-\w~!$+|.,=]|%[a-f\d]{2})+)+|\/)+|\?|#)?(?:(?:\?(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)(?:&(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)*)*(?:#(?:[-\w~!$ |\/.,*:;=]|%[a-f\d]{2})*)?$/)) {
-            return this.error(this.msg || 'Invalid URL');
+            return this.error(this.msg || M("invalidUrl"));
         }
         return this;
     }
 
     Validator.prototype.isIP = function() {
         if (!this.str.match(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/)) {
-            return this.error(this.msg || 'Invalid IP');
+            return this.error(this.msg || M("invalidIP"));
         }
         return this;
     }
 
     Validator.prototype.isAlpha = function() {
         if (!this.str.match(/^[a-zA-Z]+$/)) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.isAlphanumeric = function() {
         if (!this.str.match(/^[a-zA-Z0-9]+$/)) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.isNumeric = function() {
         if (!this.str.match(/^-?[0-9]+$/)) {
-            return this.error(this.msg || 'Invalid number');
+            return this.error(this.msg || M("enterNumber"));
         }
         return this;
     }
 
     Validator.prototype.isLowercase = function() {
         if (!this.str.match(/^[a-z0-9]+$/)) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.isUppercase = function() {
         if (!this.str.match(/^[A-Z0-9]+$/)) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.isInt = function() {
         if (!this.str.match(/^(?:-?(?:0|[1-9][0-9]*))$/)) {
-            return this.error(this.msg || 'Invalid integer');
+            return this.error(this.msg || M("enterInteger"));
         }
         return this;
     }
 
     Validator.prototype.isDecimal = function() {
         if (!this.str.match(/^(?:-?(?:0|[1-9][0-9]*))?(?:\.[0-9]*)?$/)) {
-            return this.error(this.msg || 'Invalid decimal');
+            return this.error(this.msg || M("enterDecimal"));
         }
         return this;
     }
@@ -619,21 +622,21 @@
 
     Validator.prototype.notNull = function() {
         if (this.str === '') {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.isNull = function() {
         if (this.str !== '') {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.notEmpty = function() {
         if (this.str.match(/^[\s\t\r\n]*$/)) {
-            return this.error(this.msg || 'String is whitespace');
+            return this.error(this.msg || M("requiredField"));
         }
         return this;
     }
@@ -648,14 +651,14 @@
     Validator.prototype.isFiscalCode = function(fiscalCode) {
 
         if(!fiscalCode || fiscalCode == "")
-            return this.error(this.msg || 'Not fiscal code');
+            return this.error(this.msg || M("enterFiscalCode"));
 
         var cf = fiscalCode.toUpperCase();
 
         var cfReg = /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
 
         if (!cfReg.test(cf))
-            return this.error(this.msg || 'Not fiscal code');
+            return this.error(this.msg || M("enterFiscalCode"));
 
         var set1 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         var set2 = "ABCDEFGHIJABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -671,7 +674,7 @@
             s += setdisp.indexOf( set2.charAt( set1.indexOf( cf.charAt(i) )));
 
         if ( s%26 != cf.charCodeAt(15)-'A'.charCodeAt(0) )
-            return this.error(this.msg || 'Not fiscal code');
+            return this.error(this.msg || M("enterFiscalCode"));
 
         return this;
 
@@ -679,14 +682,14 @@
 
     Validator.prototype.contains = function(str) {
         if (this.str.indexOf(str) === -1) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
 
     Validator.prototype.notContains = function(str) {
         if (this.str.indexOf(str) >= 0) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
@@ -696,7 +699,7 @@
             pattern = new RegExp(pattern, modifiers);
         }
         if (! this.str.match(pattern)) {
-            return this.error(this.msg || 'Invalid characters');
+            return this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
@@ -706,7 +709,7 @@
             pattern = new RegExp(pattern, modifiers);
         }
         if (this.str.match(pattern)) {
-            this.error(this.msg || 'Invalid characters');
+            this.error(this.msg || M("invalidCharacters"));
         }
         return this;
     }
@@ -739,7 +742,7 @@
     Validator.prototype.isDate = function() {
         var intDate = Date.parse(this.str);
         if (isNaN(intDate)) {
-            return this.error(this.msg || 'Not a date');
+            return this.error(this.msg || M("enterDate"));
         }
         return this;
     }
@@ -770,7 +773,7 @@
         var number = parseFloat(this.str);
 
         if (!isNaN(number) && number < val) {
-            return this.error(this.msg || 'Invalid number');
+            return this.error(this.msg || format(M("enterNumberMax"), val));
         }
 
         return this;
@@ -779,7 +782,7 @@
     Validator.prototype.max = function(val) {
         var number = parseFloat(this.str);
         if (!isNaN(number) && number > val) {
-            return this.error(this.msg || 'Invalid number');
+            return this.error(this.msg || format(M("enterNumberMin"), val));
         }
         return this;
     }

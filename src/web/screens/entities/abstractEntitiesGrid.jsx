@@ -209,6 +209,16 @@ export default class AbstractEntitiesGrid extends Screen {
         return optional(grid.quickSearchEnabled, false)
     }
 
+    getQuickSearchPlaceholder() {
+        let grid = entities[this.getEntity()].grid
+        return optional(grid.quickSearchPlaceholder, "")
+    }
+    
+    getHeaderVisibleNoResults() {
+        let grid = entities[this.getEntity()].grid
+        return optional(grid.headerVisibleNoResults, true)
+    }
+
     canEdit() {
         let grid = entities[this.getEntity()].grid
         return optional(grid.canEdit, true)
@@ -228,13 +238,16 @@ export default class AbstractEntitiesGrid extends Screen {
         return false;
     }
 
-
     generateHeaderBlock() {
 
         let title = this.getTitle()
         let subtitle = this.getSubtitle()
         let actions = this.getActions()
         return <HeaderBlock title={title} subtitle={subtitle} actions={actions}/>
+    }
+
+    renderExtra() {
+        return null
     }
 
     render() {
@@ -249,15 +262,20 @@ export default class AbstractEntitiesGrid extends Screen {
                 <Grid
                     ref="grid"
                     descriptor={descriptor}
+                    discriminator={this.discriminator}
                     data={data}
-                    hideFilters={this.hideFilters()}
                     query={this.state.query}
-                    //onKeyDown={this.onGridKeyDown.bind(this)}
+                    hideFilters={this.hideFilters()}
                     onRowDoubleClick={this.onGridRowDoubleClick.bind(this)}
                     quickSearchEnabled={this.isQuickSearchEnabled()}
+                    quickSearchPlaceholder={this.getQuickSearchPlaceholder()}
+                    headerVisibleNoResults={this.getHeaderVisibleNoResults()}
                 />
+
+                {this.renderExtra()}
+
                 {this.canCreate() &&
-                <FloatingButton icon="zmdi zmdi-plus" onClick={this.createEntity.bind(this)} />
+                    <FloatingButton icon="zmdi zmdi-plus" onClick={this.createEntity.bind(this)} />
                 }
             </Layout>
         )

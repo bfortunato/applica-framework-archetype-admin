@@ -36,6 +36,24 @@ export function optional(val, def) {
 }
 
 /**
+ * Get true if the keyword is matched in the string
+ * @param keyword
+ * @param string
+ */
+export function isMatched(keyword, string) {
+    if (_.isEmpty(keyword))
+        return true
+
+    let split = _.map(keyword.split(" "), k => k.trim());
+    let expression = new RegExp(split.join("|"),"ig");
+    let result = string.toLowerCase().match(expression)
+
+    return !_.isEmpty(result) && result.length === split.length;
+}
+
+
+
+/**
  * safely get a property from object, returning default if not present)
  */
 export function safeGet(target, prop, def = null) {

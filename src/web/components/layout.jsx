@@ -133,7 +133,7 @@ class MenuLevel extends React.Component {
                     </a>
 
                     {hasChildren &&
-                        <MenuLevel parent={i} menu={i.children} onExpand={this.onExpand.bind(this, i)} onSelect={this.onSelect.bind(this)} />
+                        <MenuLevel parent={i} menu={i.children} onExpand={this.onExpand.bind(this, i)}  />
                     }
                 </li>
             )

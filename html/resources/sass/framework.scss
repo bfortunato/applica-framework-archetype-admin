@@ -142,7 +142,7 @@ html.ismobile .global-loader {
     .input-icon-container {
       border-bottom: 1px solid $border-color;
       font-size: 20px;
-      color: $color-gray;
+      color: $border-color;
     }
   }
 
@@ -180,6 +180,26 @@ $darken-value: 10%;
   .table-hover > tbody > tr.level-#{$i}.selected {
     background-color: darken($primary-color, $i * $darken-value);
     color: white;
+  }
+}
+
+.grid-scroll-horizontal {
+  overflow-x: auto;
+  width: 100%;
+  display: block;
+
+  &.nowrap {
+    white-space: nowrap;
+  }
+}
+
+.table-fixed {
+  table-layout: fixed;
+  word-wrap: break-word;
+
+  th, td {
+    overflow: hidden;
+    width: 100px;
   }
 }
 
@@ -319,6 +339,14 @@ tr.collapsible {
   }
 }
 
+.search-filters {
+  padding: 10px;
+  display: inline-block;
+  button {
+    margin-bottom: 5px;
+  }
+}
+
 .modal {
   .quick-search {
     margin-right: 0px !important;
@@ -415,6 +443,7 @@ tr.collapsible {
   border: 0;
   top: 0;
   border-radius: 2px;
+  z-index: 1501;
 }
 
 /*-------------------------
@@ -844,6 +873,22 @@ tr.collapsible {
     background-color: $primary-color;
 }
 
+//Borders
+.br-t {
+  border-top: 1px solid $border-color;
+}
+.br-b {
+  border-bottom: 1px solid $border-color;
+}
+.br-l {
+  border-left: 1px solid $border-color;
+}
+.br-r {
+  border-right: 1px solid $border-color;
+}
+.br {
+  border: 1px solid $border-color;
+}
 
 $max: 50;
 $offset: 5;
@@ -875,5 +920,4 @@ $unit: 'px';
 //Fonts
 $offset: 1;
 @include list-loop('.fs-', 'font-size')
-
 

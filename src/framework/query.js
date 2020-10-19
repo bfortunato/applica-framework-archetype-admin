@@ -42,7 +42,7 @@ export class Query extends Observable {
         this.invokationEnabled = false
     }
 
-    filter(type, property, value) {
+    filter(type, property, value, label = null) {
         if ((value === null || value === undefined) && _.any(this.filters, f => f.property === property)) {
             this.unfilter(property)
             return this
@@ -52,8 +52,9 @@ export class Query extends Observable {
         if (current) {
             current.value = value
             current.type = type
+            current.label = label
         } else {
-            this.filters.push({property, type, value})
+            this.filters.push({property, type, value, label})
         }
 
         this.invokeChange()
