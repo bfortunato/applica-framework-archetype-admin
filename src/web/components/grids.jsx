@@ -256,8 +256,6 @@ export class SearchDialog extends React.Component {
     }
 
     close() {
-        // let me = ReactDOM.findDOMNode(this)
-        // $(me).modal("hide")
         this.onClose(DIALOG_RESULT_OK)
     }
 
@@ -374,27 +372,6 @@ export class SearchDialog extends React.Component {
                 </div>
             </Dialog>
         )
-
-        // return (
-        //     <div className=" modal fade" role="dialog" tabIndex="-1" style={{display: "none", zIndex: 1500}}>
-        //         <div className="modal-dialog">
-        //             <div className="modal-content">
-        //                 <div className="modal-header">
-        //                     <h4 className="modal-title">{this.props.column.header}</h4>
-        //                 </div>
-        //                 <div className="modal-body">
-        //                     <div className="row seartc">
-        //                         <FormBody model={this.model} descriptor={searchForm} />
-        //                     </div>
-        //                 </div>
-        //                 <div className="modal-footer">
-        //                     <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
-        //                     <button type="button" className="btn btn-link waves-effect" data-dismiss="modal">{M("close")}</button>
-        //                 </div>
-        //             </div>
-        //         </div>
-        //     </div>
-        // )
     }
 }
 
@@ -456,8 +433,6 @@ export class HeaderCell extends React.Component {
     }
 
     search() {
-        // let me = ReactDOM.findDOMNode(this)
-        // $(me).find(".search-dialog").modal()
         _.assign(this.state, {searchDialogHidden: false})
         this.forceUpdate()
     }
