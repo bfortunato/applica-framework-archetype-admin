@@ -447,6 +447,7 @@ strings["it"] = {
     insertValueAndPressEnter: "Inserisci il valore e premi invio oppure clicca su ricerca",
     typeForSearching: "Inizia a scrivere per cercare",
     searching: "Sto cercando ...",
+    registrationDate: "Data registrazione"
 }
 
 export function setLanguage(language_) {

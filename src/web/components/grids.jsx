@@ -14,6 +14,7 @@ import { SearchStore } from "../../stores/entities";
 import { FilterTypeMap } from "../../model/enums";
 import { discriminated } from "../../utils/ajex";
 import { Dialog, DIALOG_RESULT_CANCEL, DIALOG_RESULT_OK } from "./dialogs";
+import moment from "moment";
 
 const EXPAND_ANIMATION_TIME = 250
 const CELL_PADDING_TOP = 15
@@ -802,7 +803,7 @@ export class DateCell extends Cell {
         if(!value)
             return "-";
 
-        let dateFormat = optional(this.props.format,M("dateFormat"));
+        let dateFormat = optional(this.props.format, M("dateFormat"));
         let formattedDate = moment(value).format(dateFormat);
 
         return (

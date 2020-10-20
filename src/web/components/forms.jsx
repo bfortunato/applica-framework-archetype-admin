@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import M from "../../strings"
+import M, { getLanguage } from "../../strings"
 import {Actions, Card} from "./common"
 import {diff, format, optional, parseBoolean} from "../../utils/lang"
 import {Observable} from "../../aj/events"
@@ -15,6 +15,7 @@ import * as ui from "../utils/ui";
 import traverse from "../../utils/traverse"
 import * as config from "../../framework/config";
 import { loadEntities } from "../../api/values";
+import moment from "moment";
 
 export const VALIDATION_ERROR = {}
 
@@ -1062,7 +1063,7 @@ export class DateTime extends LabelPropertyGenerationControl {
     }
 
     getFormat() {
-        return this.props.format ? this.props.format : self.getDefaultFormat() 
+        return this.props.format ? this.props.format : this.getDefaultFormat() 
     }
 
     componentDidMount() {
@@ -1081,7 +1082,6 @@ export class DateTime extends LabelPropertyGenerationControl {
 
     setData(){
         let options = {
-            //TODO: default locale dalle impo
             locale: this.props.locale || getLanguage(),
             dateFormat: this.getFormat()
         };
@@ -1110,7 +1110,7 @@ export class DateTime extends LabelPropertyGenerationControl {
 
         options["onChange"] = (selectedDates, dateStr, instance) => {
             let date = flatpickr.parseDate(dateStr, options.dateFormat)
-            this.setLabelProperty(moment(time).format(this.getFormat()))
+            this.setLabelProperty(moment(date.getTime()).format(M("dateFormat")))
             this.onDateChanged(date.getTime())
         };
 
@@ -1323,7 +1323,7 @@ export class Autocomplete extends LabelPropertyGenerationControl {
         let valueInModel = model.get(field.property)
 
         const modalParent = $(".modal-dialog").has(me)
-        const dropdownParent = modalParent.length ? modalParent : $(document.body)
+        const dropdownParent = modalParent.length > 0 ? $(modalParent).children() : $(document.body)
         
         this.select2Element = $(me).find("select").select2({
             placeholder: placeholder,
