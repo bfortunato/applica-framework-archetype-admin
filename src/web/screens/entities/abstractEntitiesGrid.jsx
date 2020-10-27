@@ -159,36 +159,45 @@ export default class AbstractEntitiesGrid extends Screen {
                 tooltip: M("refresh"),
                 permissions: [this.getEntity() + ":" + Permission.LIST],
                 action: () => { loadEntities({discriminator: this.discriminator, entity: this.getEntity(), query: this.state.query}) }
-            },
-            {
-                id: "create",
-                type: "button",
-                icon: "zmdi zmdi-plus",
-                tooltip: M("create"),
-                permissions: [this.getEntity() + ":" + Permission.NEW],
-                action: () => { this.createEntity() }
-            },
-            {
+            }
+
+        ]
+
+        if(this.canCreate()){
+            defaultActions.push(
+                {
+                    id: "create",
+                    type: "button",
+                    icon: "zmdi zmdi-plus",
+                    tooltip: M("create"),
+                    permissions: [this.getEntity() + ":" + Permission.NEW],
+                    action: () => { this.createEntity() }
+                },
+            )
+        }
+
+        if(this.canDelete()){
+            defaultActions.push({
                 id: "delete",
                 type: "button",
                 icon: "zmdi zmdi-delete",
                 tooltip: M("delete"),
                 permissions: [this.getEntity() + ":" + Permission.DELETE],
                 action: () => { this.deleteEntities() }
-            },
-            {
-                id: "selectAll",
-                type: "button",
-                icon: "zmdi zmdi-select-all",
-                tooltip: M("selectAll"),
-                action: () => { this.refs.grid.toggleSelectAll() }
-            }
+            })
+        }
 
-        ]
+        defaultActions.push({
+            id: "selectAll",
+            type: "button",
+            icon: "zmdi zmdi-select-all",
+            tooltip: M("selectAll"),
+            action: () => { this.refs.grid.toggleSelectAll() }
+        });
 
         let grid = entities[this.getEntity()].grid
         let matcher = new ActionsMatcher(defaultActions)
-        return matcher.match(grid.actions)
+        return matcher.match(_.isFunction(grid.getActions) ? grid.getActions()  : grid.actions)
     }
 
     getGrid() {

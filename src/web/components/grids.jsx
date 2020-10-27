@@ -6,22 +6,23 @@ import M from "../../strings";
 import {Actions, Card} from "./common";
 import {forceBoolean, format, optional, parseBoolean, safeGet, uuid} from "../../utils/lang";
 import {Observable} from "../../aj/events";
-import {isControl, isDown, isEnter, isEsc, isShift, isUp} from "../utils/keyboard";
+import {isControl, isControlPressed, isDown, isEnter, isEsc, isShift, isShiftPressed, isUp} from "../utils/keyboard";
 import * as mobile from "../utils/mobile";
 import * as datasource from "../../utils/datasource";
-import traverse from "../../utils/traverse";
 import { SearchStore } from "../../stores/entities";
-import { FilterTypeMap } from "../../model/enums";
 import { discriminated } from "../../utils/ajex";
 import { Dialog, DIALOG_RESULT_CANCEL, DIALOG_RESULT_OK } from "./dialogs";
 import moment from "moment";
+import traverse from "../../utils/traverse";
+import {FilterTypeMap} from "../../model/enums";
+import {getVisibleFilters} from "../../framework/query";
 
 const EXPAND_ANIMATION_TIME = 250
 const CELL_PADDING_TOP = 15
 const CELL_PADDING_BOTTOM = 15
 
-/* 
- * hack to load forms when is useful but prevent circular references of modules. forms.jsx uses grids.jsx 
+/*
+ * hack to load forms when is useful but prevent circular references of modules. forms.jsx uses grids.jsx
  */
 
 let _forms = null
@@ -132,10 +133,10 @@ class Selection extends Observable {
         return flatRows
     }
 
-    handle(row) {
+    handle(row, selectWithCheck) {
         let flatRows = this.flatRows()
-        
-        if (this.shiftPressed && !this.single) {
+
+        if (isShiftPressed() && !this.single) {
             flatRows.forEach(r => r.selected = false)
             if (this.rangeStartRow == null) {
                 this.rangeStartRow = this.lastSelected
@@ -154,7 +155,7 @@ class Selection extends Observable {
                 })
                 this.lastSelected = row
             }
-        } else if (this.controlPressed && !this.single) {
+        } else if ((isControlPressed() || selectWithCheck) && !this.single) {
             row.selected = !row.selected
             this.rangeStartRow = row
             this.lastSelected = row
@@ -192,7 +193,7 @@ class Selection extends Observable {
 
     down() {
         let flatRows = this.flatRows()
-        
+
         if (!flatRows || flatRows.length == 0) {
             return
         }
@@ -212,7 +213,7 @@ class Selection extends Observable {
 
     up() {
         let flatRows = this.flatRows()
-        
+
         if (!flatRows || flatRows.length == 0) {
             return
         }
@@ -306,7 +307,7 @@ export class SearchDialog extends React.Component {
                     control: forms().Text,
                     props: {
                         onKeyDown: (model, e) => {
-                            if (isEnter(e.which)) { 
+                            if (isEnter(e.which)) {
                                 e.preventDefault()
                                 this.filter()
                             }
@@ -383,7 +384,7 @@ export class HeaderCell extends React.Component {
         super(props)
 
         this.state = {
-            sorting: false, 
+            sorting: false,
             sortDescending: false,
             searchDialogHidden: true
         }
@@ -460,11 +461,11 @@ export class HeaderCell extends React.Component {
                 <span onClick={this.changeSort.bind(this)} className="pointer-cursor">{this.props.column.header}</span>
 
                 {this.props.column.searchable &&
-                    <a ref="search" className="btn btn-sm btn-light" onClick={this.search.bind(this)} style={{display: "none", marginTop: "-3px", position: "absolute", right: searchButtonRight}}><i className="zmdi zmdi-search"/></a>
+                <a ref="search" className="btn btn-sm btn-light" onClick={this.search.bind(this)} style={{display: "none", marginTop: "-3px", position: "absolute", right: searchButtonRight}}><i className="zmdi zmdi-search"/></a>
                 }
 
                 {this.props.column.searchable &&
-                    <SearchDialog column={this.props.column} query={this.props.query} hidden={this.state.searchDialogHidden} onClose={this.onSearchDialogClose.bind(this)}/>
+                <SearchDialog column={this.props.column} query={this.props.query} hidden={this.state.searchDialogHidden} onClose={this.onSearchDialogClose.bind(this)}/>
                 }
             </th>
         )
@@ -478,11 +479,11 @@ export class GridHeader extends React.Component {
         }
 
         let id = 1
-        let headerCells = this.props.descriptor.columns.map(c => <HeaderCell key={id++} column={c} query={this.props.query} />)
+        let headerCells = _.filter(this.props.descriptor.columns, (column => !_.isFunction(column.visibility) || column.visibility())).map(c => <HeaderCell key={id++} column={c} query={this.props.query} />)
 
         return (
             <thead>
-                <tr>{headerCells}</tr>
+            <tr>{headerCells}</tr>
             </thead>
         )
     }
@@ -555,7 +556,7 @@ export class Row extends React.Component {
 
         let firstElement = true
         let key = 1
-        let cells = this.props.descriptor.columns.map(c => {
+        let cells = _.filter(this.props.descriptor.columns, (column => !_.isFunction(column.visibility) || column.visibility())).map(c => {
             let cell = createCell(c, this.props.row, firstElement, onExpand, c.props)
             firstElement = false
             return <td key={key++} className={c.tdClassName}><div className="grid-cell-container">{cell}</div></td>
@@ -634,7 +635,7 @@ export class GridBody extends React.Component {
 
         return (
             <tbody>
-                {rowElements}
+            {rowElements}
             </tbody>
         )
     }
@@ -657,7 +658,7 @@ export class GridFooter extends React.Component {
         }
 
         let id = 1
-        let footerCells = this.props.descriptor.columns.map(c => <FooterCell key={id++} column={c} query={this.props.query} />)
+        let footerCells = _.filter(this.props.descriptor.columns, (column => !_.isFunction(column.visibility) || column.visibility())).map(c => <FooterCell key={id++} column={c} query={this.props.query} />)
 
         return (
             <tfoot>
@@ -744,7 +745,7 @@ export class TextCell extends Cell {
         } else {
             icon += " zmdi-minus"
         }
-        
+
         let formatter = _.isFunction(this.props.formatter) ? this.props.formatter : v => v
 
         let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
@@ -798,7 +799,7 @@ export class CheckCell extends Cell {
         )
     }
 }
-    
+
 export class ActionsCell extends Cell {
     componentDidMount() {
         let me = ReactDOM.findDOMNode(this)
@@ -818,7 +819,7 @@ export class ActionsCell extends Cell {
 
     render() {
         let actionKey = 1
-        let actions = this.props.column.actions.map(a => 
+        let actions = this.props.column.actions.map(a =>
             React.createElement(Actions.getButtonClass(a), {key: actionKey++, action: a, arguments: [this.props.row.data], className: "grid-action"})
         )
 
@@ -869,11 +870,11 @@ export class SelectCell extends Cell {
                 <div className="fg-line">
                     <div className="select">
                         <select className="form-control" value={optional(this.props.value, "")} onChange={this.onChange.bind(this)}>
-                            {allowNull && 
-                                <option value=""></option>
+                            {allowNull &&
+                            <option value=""></option>
                             }
                             {options}
-                            
+
                         </select>
                     </div>
                 </div>
@@ -918,11 +919,12 @@ export class Filter extends React.Component {
 
     render() {
         const column = this.getColumn()
+        //TODO: unificare questo sistema con il getVisibleFilters richiamato dal padre di questo componente (Filters)
         const hiddenInFilters = this.isHiddenInFilters()
         const name = column ? column.header : this.props.data.property
         const value = this.props.data.label ? this.props.data.label : this.props.data.value
-        const type = FilterTypeMap.get(this.props.data.type) 
-        
+        const type = FilterTypeMap.get(this.props.data.type)
+
         if (hiddenInFilters) {
             return null
         }
@@ -945,7 +947,7 @@ export class Filters extends React.Component {
     render() {
         let filters = []
         if (this.props.query) {
-            filters = this.props.query.filters.map(f => <Filter key={f.property + f.type + f.value} data={f} query={this.props.query} descriptor={this.props.descriptor}  />)
+            filters = getVisibleFilters(this.props.query).map(f => <Filter key={f.property + f.type + f.value} data={f} query={this.props.query} descriptor={this.props.descriptor}  />)
         }
 
         let actions = [
@@ -1116,12 +1118,12 @@ export class QuickSearch extends React.Component {
 
         $(me).find("input[type=search]")
             .focus(() => {
-                $(me).find(".quick-search").addClass("quick-search__active");    
+                $(me).find(".quick-search").addClass("quick-search__active");
             })
             .blur(() => {
                 $(me).find(".quick-search").removeClass("quick-search__active");
             })
-    
+
     }
 
     onChange(e) {
@@ -1134,7 +1136,7 @@ export class QuickSearch extends React.Component {
             e.preventDefault()
         }
     }
-    
+
     onDelete() {
         this.setState({value: ""})
         this._onChange("")
@@ -1309,7 +1311,7 @@ export class Grid extends React.Component {
         if (!selectionEnabled) {
             return
         }
-        
+
         let rows = props.data && props.data.rows
         if (!this.selection && _.isEmpty(rows)) {
             this.selection = new Selection(rows)
@@ -1434,10 +1436,10 @@ export class Grid extends React.Component {
                     actions: [
                         {
                             icon: "zmdi zmdi-edit", action: (row) => {
-                            if (_.isFunction(this.props.onRowDoubleClick)) {
-                                this.props.onRowDoubleClick(row)
+                                if (_.isFunction(this.props.onRowDoubleClick)) {
+                                    this.props.onRowDoubleClick(row)
+                                }
                             }
-                        }
                         }
                     ],
                     props: {
@@ -1452,16 +1454,16 @@ export class Grid extends React.Component {
 
         if (selectWithCheck && selectionEnabled) {
             descriptor =  _.assign({}, original, {columns: _.union([
-                {
-                    property: "selected",
-                    header: "selectAllBtn",
-                    cell: EditCheckCell,
-                    props: {
-                        width: "65px",
-                        onValueChange: this.onSelectWithCheck.bind(this),
-                        valueSupplier: (data, row) => row.selected
-                    }
-                }], original.columns)});
+                    {
+                        property: "selected",
+                        header: "selectAllBtn",
+                        cell: EditCheckCell,
+                        props: {
+                            width: "65px",
+                            onValueChange: this.onSelectWithCheck.bind(this),
+                            valueSupplier: (data, row) => row.selected
+                        }
+                    }], original.columns)});
         }
 
         return descriptor;
@@ -1471,12 +1473,12 @@ export class Grid extends React.Component {
         if (_.isEmpty(this.props.descriptor)) {
             return null
         }
-        
+
         const data = this.getData()
         const myQuery = this.getQuery()
 
         //customization properties
-        const showFilters = myQuery.filters.length > 0 && !this.props.hideFilter
+        const showFilters = getVisibleFilters(myQuery).length > 0 && !this.props.hideFilter
         const quickSearchEnabled = optional(parseBoolean(this.props.quickSearchEnabled), false)
         const quickSearchPlaceholder = optional(this.props.quickSearchPlaceholder, "")
         const headerVisible = optional(parseBoolean(this.props.headerVisible), true)
@@ -1486,20 +1488,19 @@ export class Grid extends React.Component {
         const noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
         const filtersVisible = optional(parseBoolean(this.props.filtersVisible), true)
         const paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
-        let tableClassName = optional(this.props.tableClassName, "table table-striped table-hover")
+        let tableClassName = optional(this.props.tableClassName, "table table-striped table-hover table-bordered")
         if (showFilters) {
             tableClassName += " br-t"
         }
         const tableId= optional(this.props.tableId, uuid())
         const noResultsText = optional(this.props.noResultsText, M("noResults"))
-        const className = "grid " + optional(this.props.className, "")
         const hasResults = (data && data.rows) ? data.rows.length > 0 : false
         const hasPagination = this.getTotalPages() > 1
         const anchorHeader = optional(parseBoolean(this.props.anchorHeader), false)
         const scrollHorizontal = optional(parseBoolean(this.props.scrollHorizontal), false)
         let Container = optional(parseBoolean(this.props.showInCard), true) ? Card : NoCard
         let descriptor = this.getDescriptor()
-        
+
         let parentTableClass = optional(this.props.parentTableClass, "parent-table")
         if (scrollHorizontal) {
             parentTableClass += " grid-scroll-horizontal"
@@ -1513,11 +1514,11 @@ export class Grid extends React.Component {
                 <Container>
                     <div>
                         {quickSearchEnabled &&
-                            <QuickSearch discriminator={this.props.discriminator} query={myQuery} placeholder={quickSearchPlaceholder}/>
+                        <QuickSearch discriminator={this.props.discriminator} query={myQuery} placeholder={quickSearchPlaceholder}/>
                         }
 
                         {showFilters && filtersVisible &&
-                            <Filters query={myQuery} descriptor={descriptor} />
+                        <Filters query={myQuery} descriptor={descriptor} />
                         }
 
                         <div className="clearfix"></div>
@@ -1533,36 +1534,36 @@ export class Grid extends React.Component {
                                 <div className="parent-table-content">
                                     <table id={tableId} className={tableClassName}>
                                         {headerVisible && (hasResults || !hasResults && headerVisibleNoResults) &&
-                                            <GridHeader descriptor={descriptor} query={myQuery} onSelectAll={this.toggleSelectAll.bind(this)} onDeselectAll={this.clearSelection.bind(this)}/>
+                                        <GridHeader descriptor={descriptor} query={myQuery} onSelectAll={this.toggleSelectAll.bind(this)} onDeselectAll={this.clearSelection.bind(this)}/>
                                         }
-                                        
+
                                         {hasResults &&
-                                            <GridBody descriptor={descriptor} data={data} query={myQuery} onRowExpand={this.onRowExpand.bind(this)} onRowMouseDown={this.onRowMouseDown.bind(this)} onRowDoubleClick={this.onRowDoubleClick.bind(this)} />
+                                        <GridBody descriptor={descriptor} data={data} query={myQuery} onRowExpand={this.onRowExpand.bind(this)} onRowMouseDown={this.onRowMouseDown.bind(this)} onRowDoubleClick={this.onRowDoubleClick.bind(this)} />
                                         }
-                                        
+
                                         {hasResults && footerVisible &&
-                                            <GridFooter descriptor={descriptor} />
+                                        <GridFooter descriptor={descriptor} />
                                         }
                                     </table>
                                 </div>
                             </div>
-                                
+
 
                             {hasResults && hasPagination && paginationEnabled &&
-                                <div className="pull-right m-20">
-                                    <Pagination data={this.props.data} query={myQuery} />
-                                </div>
+                            <div className="pull-right m-20">
+                                <Pagination data={this.props.data} query={myQuery} />
+                            </div>
                             }
 
                             {hasResults && summaryVisible &&
-                                <ResultSummary query={myQuery} data={this.props.data} />
+                            <ResultSummary query={myQuery} data={this.props.data} />
                             }
 
                             {!hasResults && noResultsVisible &&
-                                <div className="no-results text-center p-30">
-                                    <h1><i className="zmdi zmdi-info-outline" /></h1>
-                                    <h4>{noResultsText}</h4>
-                                </div>
+                            <div className="no-results text-center p-30">
+                                <h1><i className="zmdi zmdi-info-outline" /></h1>
+                                <h4>{noResultsText}</h4>
+                            </div>
                             }
 
                             <div className="clearfix"></div>
@@ -1648,7 +1649,7 @@ export function createCell(column, row, firstElement, onExpand, props = {}) {
     let value = traverse(row.data).get(column.property);
     let cell = _.isFunction(column.getCell) ? column.getCell(value, row) : column.cell;
     return React.createElement(cell, _.assign({key, column, property: column.property, row, value, firstElement, onExpand}, props))
-    
+
 }
 
 export class ButtonCell extends Cell {
@@ -1671,6 +1672,48 @@ export class ButtonCell extends Cell {
                 <a ref="button" className={className} onClick={this.onClick.bind(this)}>
                     <span>{value}</span>
                 </a>
+        )
+    }
+}
+
+export class TextCellWithSubText extends Cell {
+    toggleExpand(e) {
+        if (_.isFunction(this.props.onExpand)) {
+            this.props.onExpand(this.props.row)
+            e.preventDefault()
+            e.stopPropagation()
+            e.nativeEvent.stopImmediatePropagation()
+        }
+    }
+
+    render() {
+        let marginLeft = 30 * (this.props.row.level || 0)
+        let icon = "zmdi "
+        if (!this.props.row.expanded) {
+            icon += " zmdi-plus"
+        } else {
+            icon += " zmdi-minus"
+        }
+
+        let formatterTitle = _.isFunction(this.props.formatterTitle) ? this.props.formatterTitle : v => v
+        let formatterSubtitle = _.isFunction(this.props.formatterSubtitle) ? this.props.formatterSubtitle : v => v
+
+        let caret = !_.isEmpty(this.props.row.children) && this.props.firstElement ?
+            <a style={{marginLeft: marginLeft, marginRight: 20}} href="javascript:;" className="expand-button" onClick={this.toggleExpand.bind(this)} onMouseDown={(e) => e.stopPropagation()}>
+                <i className={"c-black " + icon} />
+            </a> : null
+
+        let style = {}
+        if (caret == null && this.props.row.level > 0 && this.props.firstElement) {
+            style.marginLeft = marginLeft + 20
+        }
+
+        return (
+            <div>{caret}
+                <p className="textcell-title">{formatterTitle(this.props.value, this.props.row.data)}</p>
+                <p className="textcell-subtitle">{formatterSubtitle(this.props.value, this.props.row.data)}</p>
+            </div>
+
         )
     }
 }

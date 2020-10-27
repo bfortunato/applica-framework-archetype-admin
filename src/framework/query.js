@@ -2,7 +2,7 @@
 
 import _ from "underscore"
 import {Observable} from "../aj/events"
-import {isMatched, stringPower} from "../utils/lang"
+import {isMatched, optional, stringPower, updatedList} from "../utils/lang"
 
 export const LIKE = "like"
 export const GT = "gt"
@@ -262,6 +262,11 @@ const FILTERS = {
         return value > other
     },
 
+    hideFilter(property) {
+        updatedList(this.filters,  s => s.property === property, s => s.hide = true)
+    },
+
+
     ne: (value, other) => {
         return !FILTERS.eq(value, other)
     },
@@ -447,3 +452,13 @@ export function merge(first, second) {
 
     return nq;
 }
+
+export function getVisibleFilters(query) {
+    if (!query)
+        query = create();
+    return _.filter(optional(query.filters, []), s =>{
+        return s.hide !== true
+    })
+
+}
+

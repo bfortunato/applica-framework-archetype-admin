@@ -220,11 +220,31 @@ export default class EntityForm extends Screen {
         return _.isFunction(descriptor.canCancel) ? descriptor.canCancel(this.state.data) : true
     }
 
-
     getTitle() {
-        let form = entities[this.getEntity()].form;
-        return _.isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params): optional(form.title, "Edit");
+        let entity = this.getEntity()
+        let form = entities[entity].form;
+        let title = _.isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params): null;
+
+        if (title)
+            return title;
+        else {
+            let items = [];
+            let gridTitle = entities[entity].grid.title;
+            let data = this.state && this.state.data ? this.state.data : {}
+            items.push({title: gridTitle, url : this.getGridUrl(data)});
+            if (data.id && data.id !== "new") {
+                items.push({title: M(["edit", entity]) + " " + " <b>" + this.generateDataDescription(data) + "</b>"});
+            } else {
+                items.push({title: M(["create", entity])});
+            }
+            return items;
+        }
     }
+
+    generateDataDescription(data) {
+        return data? data.description : ""
+    }
+
 
     getSubtitle() {
         let form = entities[this.getEntity()].form
