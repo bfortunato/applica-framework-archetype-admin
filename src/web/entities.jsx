@@ -1,5 +1,5 @@
 import {CheckCell, DateCell, MultiTextCell, TextCell} from "./components/grids";
-import {Autocomplete, DateTime, Image, Mail, PasswordText, ReadOnlyText, Text, YesNo} from "./components/forms";
+import {Autocomplete, DateTime, Image, Mail, PasswordText, ReadOnlyText, Select, Text, YesNo} from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer, ValuesSelectContainer} from "./components/containers";
 import M, {M_Multiple} from "../strings";
 import {getLoggedUser, hasPermission} from "../api/session";
@@ -8,7 +8,7 @@ import * as ui from "./utils/ui";
 import {logout} from "../actions/session";
 import {activeSearchForm} from "./screens/entities/commonFields";
 import { SEARCH_FORM_DATE_DESCRIPTOR } from "../model/searchForms";
-
+import * as datasource from "../utils/datasource";
 
 const entities = {
 	user: {
@@ -186,7 +186,7 @@ const entities = {
 			quickSearchEnabled: true,
 			descriptor: {
 				columns: [
-	                {property: "role", header: "Role", cell: TextCell, sortable: true, searchable: true}
+	                {property: "role", header: M("role"), cell: TextCell, sortable: true, searchable: true}
 	            ]
 			}
 		},
@@ -272,6 +272,126 @@ const entities = {
             }
         },
 	},
+
+
+	customer: {
+        grid: {
+            title: M("customerList"),
+            quickSearchEnabled: true,
+            descriptor: {
+                columns: [
+                    {
+                        property: "code",
+                        header: M("code"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "code",
+                                    label: M("code"),
+                                    control: Number,
+                                    filterType: "eq",
+                                    isInteger: true
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "subjectType",
+                        header: M("type"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                    },
+                    {
+                        property: "name",
+                        header: M("name"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "name",
+                                    label: M("name"),
+                                    control: Text,
+                                    filterType: "like"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        property: "fabricator",
+                        header: M("fabricator"),
+                        cell: TextCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "fabricatorId",
+                                    label: M("fabricator"),
+                                    control: ValuesSelectContainer,
+                                    filterType: "eq",
+                                    props: {
+                                        id: "dossier_fabricator",
+                                        mode: "single",
+                                        allowNull: true,
+                                        searchEnabled: true,
+                                        collection: "fabricators",
+                                        getSingleItemLabel: (value) => {
+                                            return value.businessName
+                                        },
+                                        getSingleItemValue: (value) => {
+                                            return value.id
+                                        },
+                                        formatter: v => {
+                                            return v != null ? v.businessName : "";
+                                        }
+                                    }
+                                },
+                            ]
+                        },
+                        props: {
+                            formatter: v => {
+                                return v != null ? v.businessName : "";
+                            }
+                        }
+                    },
+                    {
+                        property: "active",
+                        header: M("active"),
+                        cell: CheckCell,
+                        sortable: true,
+                        searchable: true,
+                        searchForm: {
+                            showInCard: false,
+                            fields: [
+                                {
+                                    property: "active",
+                                    label: M("status"),
+                                    control: Select,
+                                    filterType: "eq",
+                                    props: {
+                                        allowNull: true,
+                                        datasource: datasource.fixed([
+                                            {label: M("active"), value: true},
+                                            {label: M("notActive"), value: false},
+                                        ]),
+                                    },
+                                }
+                            ]
+                        },
+                    },
+                ]
+            }
+		},
+	}
 
 }
 
