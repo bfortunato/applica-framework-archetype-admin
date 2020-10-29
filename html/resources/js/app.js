@@ -4327,6 +4327,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.create = create;
 exports.apply = apply;
 exports.merge = merge;
+exports.getVisibleFilters = getVisibleFilters;
 exports.Query = exports.EXACT = exports.RANGE = exports.AND = exports.OR = exports.ID = exports.NIN = exports.IN = exports.EQ = exports.LTE = exports.LT = exports.GTE = exports.NE = exports.GT = exports.LIKE = void 0;
 
 var _underscore = _interopRequireDefault(require("underscore"));
@@ -4693,6 +4694,13 @@ var FILTERS = {
 
     return value > other;
   },
+  hideFilter: function hideFilter(property) {
+    (0, _lang.updatedList)(this.filters, function (s) {
+      return s.property === property;
+    }, function (s) {
+      return s.hide = true;
+    });
+  },
   ne: function ne(value, other) {
     return !FILTERS.eq(value, other);
   },
@@ -4947,6 +4955,13 @@ function merge(first, second) {
   nq.rowsPerPage = first.rowsPerPage;
   nq.projections = projections;
   return nq;
+}
+
+function getVisibleFilters(query) {
+  if (!query) query = create();
+  return _underscore["default"].filter((0, _lang.optional)(query.filters, []), function (s) {
+    return s.hide !== true;
+  });
 }
 
 },{"../aj/events":13,"../utils/lang":374,"underscore":359}],32:[function(require,module,exports){
@@ -56571,9 +56586,9 @@ Object.defineProperty(exports, "__esModule", {
 exports.arrayResult = arrayResult;
 exports.resultToGridData = resultToGridData;
 exports.createCell = createCell;
-exports.ButtonCell = exports.MultiTextCell = exports.EditCheckCell = exports.Grid = exports.QuickSearch = exports.NoCard = exports.ResultSummary = exports.Pagination = exports.Filters = exports.Filter = exports.KeywordSearch = exports.SelectCell = exports.ActionsCell = exports.CheckCell = exports.DateCell = exports.TextCell = exports.EditTextCell = exports.Cell = exports.GridFooter = exports.FooterCell = exports.GridBody = exports.Row = exports.GridHeader = exports.HeaderCell = exports.SearchDialog = void 0;
+exports.TextCellWithSubText = exports.ButtonCell = exports.MultiTextCell = exports.EditCheckCell = exports.Grid = exports.QuickSearch = exports.NoCard = exports.ResultSummary = exports.Pagination = exports.Filters = exports.Filter = exports.KeywordSearch = exports.SelectCell = exports.ActionsCell = exports.CheckCell = exports.DateCell = exports.TextCell = exports.EditTextCell = exports.Cell = exports.GridFooter = exports.FooterCell = exports.GridBody = exports.Row = exports.GridHeader = exports.HeaderCell = exports.SearchDialog = void 0;
 
-var _underscore = _interopRequireDefault(require("underscore"));
+var _underscore = _interopRequireWildcard(require("underscore"));
 
 var _react = _interopRequireDefault(require("react"));
 
@@ -56595,11 +56610,7 @@ var mobile = _interopRequireWildcard(require("../utils/mobile"));
 
 var datasource = _interopRequireWildcard(require("../../utils/datasource"));
 
-var _traverse = _interopRequireDefault(require("../../utils/traverse"));
-
 var _entities = require("../../stores/entities");
-
-var _enums = require("../../model/enums");
 
 var _ajex = require("../../utils/ajex");
 
@@ -56607,11 +56618,15 @@ var _dialogs = require("./dialogs");
 
 var _moment = _interopRequireDefault(require("moment"));
 
+var _traverse = _interopRequireDefault(require("../../utils/traverse"));
+
+var _enums = require("../../model/enums");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -56638,8 +56653,8 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 var EXPAND_ANIMATION_TIME = 250;
 var CELL_PADDING_TOP = 15;
 var CELL_PADDING_BOTTOM = 15;
-/* 
- * hack to load forms when is useful but prevent circular references of modules. forms.jsx uses grids.jsx 
+/*
+ * hack to load forms when is useful but prevent circular references of modules. forms.jsx uses grids.jsx
  */
 
 var _forms = null;
@@ -56765,10 +56780,10 @@ var Selection = /*#__PURE__*/function (_Observable) {
     }
   }, {
     key: "handle",
-    value: function handle(row) {
+    value: function handle(row, selectWithCheck) {
       var flatRows = this.flatRows();
 
-      if (this.shiftPressed && !this.single) {
+      if ((0, _keyboard.isShiftPressed)() && !this.single) {
         flatRows.forEach(function (r) {
           return r.selected = false;
         });
@@ -56792,7 +56807,7 @@ var Selection = /*#__PURE__*/function (_Observable) {
           });
           this.lastSelected = row;
         }
-      } else if (this.controlPressed && !this.single) {
+      } else if (((0, _keyboard.isControlPressed)() || selectWithCheck) && !this.single) {
         row.selected = !row.selected;
         this.rangeStartRow = row;
         this.lastSelected = row;
@@ -56817,10 +56832,25 @@ var Selection = /*#__PURE__*/function (_Observable) {
       });
     }
   }, {
+    key: "getSelected",
+    value: function getSelected() {
+      return _underscore["default"].filter(this.flatRows(), function (r) {
+        return r.selected;
+      });
+    }
+  }, {
+    key: "isAllSelected",
+    value: function isAllSelected() {
+      return _underscore["default"].every(this.flatRows(), function (r) {
+        return r.selected;
+      });
+    }
+  }, {
     key: "toggleAll",
     value: function toggleAll() {
       var _this2 = this;
 
+      this.allSelected = this.isAllSelected();
       this.flatRows().forEach(function (r) {
         return r.selected = !_this2.allSelected;
       });
@@ -56849,9 +56879,15 @@ var Selection = /*#__PURE__*/function (_Observable) {
         return;
       }
 
+      if (!this.lastSelected) {
+        this.lastSelected = _underscore["default"].find(flatRows, function (r) {
+          return r.selected;
+        });
+      }
+
       var index = -1;
 
-      if (this.lastSelected != null) {
+      if (this.lastSelected) {
         index = flatRows.indexOf(this.lastSelected);
       }
 
@@ -56863,6 +56899,7 @@ var Selection = /*#__PURE__*/function (_Observable) {
 
       var newRow = flatRows[index];
       this.handle(newRow);
+      this.invoke("onRowDown", newRow.data);
     }
   }, {
     key: "up",
@@ -56875,7 +56912,13 @@ var Selection = /*#__PURE__*/function (_Observable) {
 
       var index = -1;
 
-      if (this.lastSelected != null) {
+      if (!this.lastSelected) {
+        this.lastSelected = _underscore["default"].find(flatRows, function (r) {
+          return r.selected;
+        });
+      }
+
+      if (this.lastSelected) {
         index = flatRows.indexOf(this.lastSelected);
       }
 
@@ -56887,6 +56930,7 @@ var Selection = /*#__PURE__*/function (_Observable) {
 
       var newRow = flatRows[index];
       this.handle(newRow);
+      this.invoke("onRowUp", newRow.data);
     }
   }]);
 
@@ -56936,8 +56980,6 @@ var SearchDialog = /*#__PURE__*/function (_React$Component) {
   }, {
     key: "close",
     value: function close() {
-      // let me = ReactDOM.findDOMNode(this)
-      // $(me).modal("hide")
       this.onClose(_dialogs.DIALOG_RESULT_OK);
     }
   }, {
@@ -57073,26 +57115,7 @@ var SearchDialog = /*#__PURE__*/function (_React$Component) {
       }, /*#__PURE__*/_react["default"].createElement(FormBody, {
         model: this.model,
         descriptor: searchForm
-      }))); // return (
-      //     <div className=" modal fade" role="dialog" tabIndex="-1" style={{display: "none", zIndex: 1500}}>
-      //         <div className="modal-dialog">
-      //             <div className="modal-content">
-      //                 <div className="modal-header">
-      //                     <h4 className="modal-title">{this.props.column.header}</h4>
-      //                 </div>
-      //                 <div className="modal-body">
-      //                     <div className="row seartc">
-      //                         <FormBody model={this.model} descriptor={searchForm} />
-      //                     </div>
-      //                 </div>
-      //                 <div className="modal-footer">
-      //                     <button type="button" className="btn btn-link waves-effect" onClick={this.filter.bind(this)}>{M("search")}</button>
-      //                     <button type="button" className="btn btn-link waves-effect" data-dismiss="modal">{M("close")}</button>
-      //                 </div>
-      //             </div>
-      //         </div>
-      //     </div>
-      // )
+      })));
     }
   }]);
 
@@ -57115,7 +57138,12 @@ var HeaderCell = /*#__PURE__*/function (_React$Component2) {
     _this7.state = {
       sorting: false,
       sortDescending: false,
-      searchDialogHidden: true
+      searchDialogHidden: true,
+      row: {
+        index: 0,
+        data: {},
+        selectAll: false
+      }
     };
     return _this7;
   }
@@ -57176,8 +57204,6 @@ var HeaderCell = /*#__PURE__*/function (_React$Component2) {
   }, {
     key: "search",
     value: function search() {
-      // let me = ReactDOM.findDOMNode(this)
-      // $(me).find(".search-dialog").modal()
       _underscore["default"].assign(this.state, {
         searchDialogHidden: false
       });
@@ -57194,8 +57220,23 @@ var HeaderCell = /*#__PURE__*/function (_React$Component2) {
       this.forceUpdate();
     }
   }, {
+    key: "onClickToSelectAll",
+    value: function onClickToSelectAll() {
+      if (!this.props.allSelected) {
+        if (_underscore["default"].isFunction(this.props.onSelectAll)) {
+          this.props.onSelectAll();
+        }
+      } else {
+        if (_underscore["default"].isFunction(this.props.onDeselectAll)) {
+          this.props.onDeselectAll();
+        }
+      }
+    }
+  }, {
     key: "render",
     value: function render() {
+      var _this8 = this;
+
       var sortClass = "";
 
       if (this.state.sorting && this.state.sortDescending) {
@@ -57210,32 +57251,67 @@ var HeaderCell = /*#__PURE__*/function (_React$Component2) {
         searchButtonRight += 25;
       }
 
-      return /*#__PURE__*/_react["default"].createElement("th", {
-        className: "hover " + sortClass,
-        style: {
-          position: "relative"
-        }
-      }, /*#__PURE__*/_react["default"].createElement("span", {
-        onClick: this.changeSort.bind(this),
-        className: "pointer-cursor"
-      }, this.props.column.header), this.props.column.searchable && /*#__PURE__*/_react["default"].createElement("a", {
-        ref: "search",
-        className: "btn btn-sm btn-light",
-        onClick: this.search.bind(this),
-        style: {
-          display: "none",
-          marginTop: "-3px",
-          position: "absolute",
-          right: searchButtonRight
-        }
-      }, /*#__PURE__*/_react["default"].createElement("i", {
-        className: "zmdi zmdi-search"
-      })), this.props.column.searchable && /*#__PURE__*/_react["default"].createElement(SearchDialog, {
-        column: this.props.column,
-        query: this.props.query,
-        hidden: this.state.searchDialogHidden,
-        onClose: this.onSearchDialogClose.bind(this)
-      }));
+      var cellStyle = {
+        position: "relative"
+      };
+      var cellWidth = (0, _lang.optional)((0, _lang.safeGet)(this.props.column.props, "width", null), "");
+
+      if (!_underscore["default"].isEmpty(cellWidth)) {
+        cellStyle = _underscore["default"].assign(cellStyle, {
+          width: cellWidth
+        });
+      }
+
+      var cellMaxWidth = (0, _lang.optional)((0, _lang.safeGet)(this.props.column.props, "maxWidth", null), "");
+
+      if (!_underscore["default"].isEmpty(cellMaxWidth)) {
+        cellStyle = _underscore["default"].assign(cellStyle, {
+          maxWidth: cellMaxWidth
+        });
+      }
+
+      if (this.props.column.header === "selectAllBtn") {
+        var _column = {
+          property: "selectAll",
+          cell: EditCheckCell,
+          props: {
+            width: "15px",
+            onValueChange: this.onClickToSelectAll.bind(this),
+            valueSupplier: function valueSupplier(data, row) {
+              return _this8.props.allSelected;
+            }
+          }
+        };
+        return /*#__PURE__*/_react["default"].createElement("th", {
+          className: "hover",
+          style: cellStyle
+        }, createCell(_column, this.state.row, true, false, _column.props));
+      } else {
+        return /*#__PURE__*/_react["default"].createElement("th", {
+          className: "hover " + sortClass,
+          style: cellStyle
+        }, /*#__PURE__*/_react["default"].createElement("span", {
+          onClick: this.changeSort.bind(this),
+          className: "pointer-cursor"
+        }, this.props.column.header), this.props.column.searchable && /*#__PURE__*/_react["default"].createElement("a", {
+          ref: "search",
+          className: "btn btn-sm btn-light",
+          onClick: this.search.bind(this),
+          style: {
+            display: "none",
+            marginTop: "-3px",
+            position: "absolute",
+            right: searchButtonRight
+          }
+        }, /*#__PURE__*/_react["default"].createElement("i", {
+          className: "zmdi zmdi-search"
+        })), this.props.column.searchable && /*#__PURE__*/_react["default"].createElement(SearchDialog, {
+          column: this.props.column,
+          query: this.props.query,
+          hidden: this.state.searchDialogHidden,
+          onClose: this.onSearchDialogClose.bind(this)
+        }));
+      }
     }
   }]);
 
@@ -57256,22 +57332,43 @@ var GridHeader = /*#__PURE__*/function (_React$Component3) {
   }
 
   _createClass(GridHeader, [{
+    key: "onSelectAll",
+    value: function onSelectAll() {
+      if (_underscore["default"].isFunction(this.props.onSelectAll)) {
+        this.props.onSelectAll();
+      }
+    }
+  }, {
+    key: "onDeselectAll",
+    value: function onDeselectAll() {
+      if (_underscore["default"].isFunction(this.props.onDeselectAll)) {
+        this.props.onDeselectAll();
+      }
+    }
+  }, {
     key: "render",
     value: function render() {
-      var _this8 = this;
+      var _this9 = this;
 
       if (_underscore["default"].isEmpty(this.props.descriptor)) {
         return null;
       }
 
       var id = 1;
-      var headerCells = this.props.descriptor.columns.map(function (c) {
+
+      var headerCells = _underscore["default"].filter(this.props.descriptor.columns, function (column) {
+        return !_underscore["default"].isFunction(column.visibility) || column.visibility();
+      }).map(function (c) {
         return /*#__PURE__*/_react["default"].createElement(HeaderCell, {
           key: id++,
           column: c,
-          query: _this8.props.query
+          query: _this9.props.query,
+          allSelected: _this9.props.allSelected,
+          onSelectAll: _this9.onSelectAll.bind(_this9),
+          onDeselectAll: _this9.onDeselectAll.bind(_this9)
         });
       });
+
       return /*#__PURE__*/_react["default"].createElement("thead", null, /*#__PURE__*/_react["default"].createElement("tr", null, headerCells));
     }
   }]);
@@ -57346,30 +57443,20 @@ var Row = /*#__PURE__*/function (_React$Component4) {
   }, {
     key: "render",
     value: function render() {
-      var _this9 = this;
+      var _this10 = this;
 
       if (_underscore["default"].isEmpty(this.props.descriptor)) {
         return null;
       }
 
       var onExpand = function onExpand(row) {
-        if (_underscore["default"].isFunction(_this9.props.onExpand)) {
-          _this9.props.onExpand(row);
+        if (_underscore["default"].isFunction(_this10.props.onExpand)) {
+          _this10.props.onExpand(row);
         }
       };
 
       var firstElement = true;
       var key = 1;
-      var cells = this.props.descriptor.columns.map(function (c) {
-        var cell = createCell(c, _this9.props.row, firstElement, onExpand, c.props);
-        firstElement = false;
-        return /*#__PURE__*/_react["default"].createElement("td", {
-          key: key++,
-          className: c.tdClassName
-        }, /*#__PURE__*/_react["default"].createElement("div", {
-          className: "grid-cell-container"
-        }, cell));
-      });
       var className = "level-".concat(this.props.row.level, " ") + (this.props.row.selected ? "selected" : "");
       var rowClassName = this.props.descriptor.rowClassName;
 
@@ -57381,11 +57468,50 @@ var Row = /*#__PURE__*/function (_React$Component4) {
         }
       }
 
+      var rowContent = null;
+      var customRowContent = this.props.descriptor.customRowContent;
+
+      if (_underscore["default"].isFunction(customRowContent)) {
+        rowContent = customRowContent(this.props.row.data, this.props.row);
+      }
+
+      var cellStyle = {};
+
+      if (!rowContent) {
+        rowContent = this.props.descriptor.columns.map(function (c) {
+          var cell = createCell(c, _this10.props.row, firstElement, onExpand, c.props);
+          firstElement = false;
+          var cellWidth = (0, _lang.optional)((0, _lang.safeGet)(c.props, "width", null), "");
+
+          if (!_underscore["default"].isEmpty(cellWidth)) {
+            cellStyle = _underscore["default"].assign(cellStyle, {
+              width: cellWidth
+            });
+          }
+
+          var cellMaxWidth = (0, _lang.optional)((0, _lang.safeGet)(c.props, "maxWidth", null), "");
+
+          if (!_underscore["default"].isEmpty(cellMaxWidth)) {
+            cellStyle = _underscore["default"].assign(cellStyle, {
+              maxWidth: cellMaxWidth
+            });
+          }
+
+          return /*#__PURE__*/_react["default"].createElement("td", {
+            key: key++,
+            className: c.tdClassName,
+            style: cellStyle
+          }, /*#__PURE__*/_react["default"].createElement("div", {
+            className: "grid-cell-container"
+          }, cell));
+        });
+      }
+
       return /*#__PURE__*/_react["default"].createElement("tr", {
         onMouseDown: this.onMouseDown.bind(this),
         onDoubleClick: this.doubleClick.bind(this),
         className: className
-      }, cells);
+      }, rowContent);
     }
   }]);
 
@@ -57429,7 +57555,7 @@ var GridBody = /*#__PURE__*/function (_React$Component5) {
   }, {
     key: "render",
     value: function render() {
-      var _this10 = this;
+      var _this11 = this;
 
       if (_underscore["default"].isEmpty(this.props.descriptor)) {
         return null;
@@ -57448,12 +57574,12 @@ var GridBody = /*#__PURE__*/function (_React$Component5) {
 
           var element = /*#__PURE__*/_react["default"].createElement(Row, {
             key: parentKey + "_" + key++,
-            descriptor: _this10.props.descriptor,
+            descriptor: _this11.props.descriptor,
             row: r,
-            query: _this10.props.query,
-            onMouseDown: _this10.onRowMouseDown.bind(_this10),
-            onDoubleClick: _this10.onRowDoubleClick.bind(_this10),
-            onExpand: _this10.onRowExpand.bind(_this10)
+            query: _this11.props.query,
+            onMouseDown: _this11.onRowMouseDown.bind(_this11),
+            onDoubleClick: _this11.onRowDoubleClick.bind(_this11),
+            onExpand: _this11.onRowExpand.bind(_this11)
           });
 
           rowElements.push(element);
@@ -57490,7 +57616,7 @@ var FooterCell = /*#__PURE__*/function (_React$Component6) {
   _createClass(FooterCell, [{
     key: "render",
     value: function render() {
-      return /*#__PURE__*/_react["default"].createElement("th", null, this.props.column.header);
+      return /*#__PURE__*/_react["default"].createElement("th", null, this.props.column.header != "selectAllBtn" && this.props.column.header);
     }
   }]);
 
@@ -57513,20 +57639,24 @@ var GridFooter = /*#__PURE__*/function (_React$Component7) {
   _createClass(GridFooter, [{
     key: "render",
     value: function render() {
-      var _this11 = this;
+      var _this12 = this;
 
       if (_underscore["default"].isEmpty(this.props.descriptor)) {
         return null;
       }
 
       var id = 1;
-      var footerCells = this.props.descriptor.columns.map(function (c) {
+
+      var footerCells = _underscore["default"].filter(this.props.descriptor.columns, function (column) {
+        return !_underscore["default"].isFunction(column.visibility) || column.visibility();
+      }).map(function (c) {
         return /*#__PURE__*/_react["default"].createElement(FooterCell, {
           key: id++,
           column: c,
-          query: _this11.props.query
+          query: _this12.props.query
         });
       });
+
       return /*#__PURE__*/_react["default"].createElement("tfoot", null, /*#__PURE__*/_react["default"].createElement("tr", null, footerCells));
     }
   }]);
@@ -57568,15 +57698,15 @@ var EditTextCell = /*#__PURE__*/function (_Cell) {
   var _super10 = _createSuper(EditTextCell);
 
   function EditTextCell(props) {
-    var _this12;
+    var _this13;
 
     _classCallCheck(this, EditTextCell);
 
-    _this12 = _super10.call(this, props);
-    _this12.state = {
+    _this13 = _super10.call(this, props);
+    _this13.state = {
       value: ""
     };
-    return _this12;
+    return _this13;
   }
 
   _createClass(EditTextCell, [{
@@ -57604,10 +57734,10 @@ var EditTextCell = /*#__PURE__*/function (_Cell) {
       });
 
       if (_underscore["default"].isFunction(this.props.onValueChange)) {
-        var column = this.props.column;
+        var _column2 = this.props.column;
         var property = this.props.property;
-        var row = this.props.row;
-        this.props.onValueChange(column, row.data, newValue);
+        var _row = this.props.row;
+        this.props.onValueChange(_column2, _row.data, newValue);
       }
     }
   }, {
@@ -57788,14 +57918,14 @@ var ActionsCell = /*#__PURE__*/function (_Cell5) {
   }, {
     key: "render",
     value: function render() {
-      var _this13 = this;
+      var _this14 = this;
 
       var actionKey = 1;
       var actions = this.props.column.actions.map(function (a) {
         return /*#__PURE__*/_react["default"].createElement(_common.Actions.getButtonClass(a), {
           key: actionKey++,
           action: a,
-          arguments: [_this13.props.row.data],
+          arguments: [_this14.props.row.data],
           className: "grid-action"
         });
       });
@@ -57816,26 +57946,26 @@ var SelectCell = /*#__PURE__*/function (_Cell6) {
   var _super15 = _createSuper(SelectCell);
 
   function SelectCell(props) {
-    var _this14;
+    var _this15;
 
     _classCallCheck(this, SelectCell);
 
-    _this14 = _super15.call(this, props);
+    _this15 = _super15.call(this, props);
 
     if (_underscore["default"].isEmpty(props.datasource)) {
       throw new Error("Datasource is null");
     }
 
-    return _this14;
+    return _this15;
   }
 
   _createClass(SelectCell, [{
     key: "componentDidMount",
     value: function componentDidMount() {
-      var _this15 = this;
+      var _this16 = this;
 
       this.onDataSourceChange = this.props.datasource.on("change", function () {
-        _this15.forceUpdate();
+        _this16.forceUpdate();
       });
     }
   }, {
@@ -57950,25 +58080,26 @@ var Filter = /*#__PURE__*/function (_React$Component10) {
   }, {
     key: "getColumn",
     value: function getColumn() {
-      var _this16 = this;
+      var _this17 = this;
 
       return _underscore["default"].find(this.props.descriptor.columns, function (c) {
-        return c.property == _this16.props.data.property;
+        return c.property == _this17.props.data.property;
       });
     }
   }, {
     key: "isHiddenInFilters",
     value: function isHiddenInFilters() {
-      var _this17 = this;
+      var _this18 = this;
 
       return _underscore["default"].any(this.props.descriptor.hiddenFilters, function (h) {
-        return h == _this17.props.data.property;
+        return h == _this18.props.data.property;
       });
     }
   }, {
     key: "render",
     value: function render() {
-      var column = this.getColumn();
+      var column = this.getColumn(); //TODO: unificare questo sistema con il getVisibleFilters richiamato dal padre di questo componente (Filters)
+
       var hiddenInFilters = this.isHiddenInFilters();
       var name = column ? column.header : this.props.data.property;
       var value = this.props.data.label ? this.props.data.label : this.props.data.value;
@@ -58016,17 +58147,17 @@ var Filters = /*#__PURE__*/function (_React$Component11) {
   }, {
     key: "render",
     value: function render() {
-      var _this18 = this;
+      var _this19 = this;
 
       var filters = [];
 
       if (this.props.query) {
-        filters = this.props.query.filters.map(function (f) {
+        filters = (0, query.getVisibleFilters)(this.props.query).map(function (f) {
           return /*#__PURE__*/_react["default"].createElement(Filter, {
             key: f.property + f.type + f.value,
             data: f,
-            query: _this18.props.query,
-            descriptor: _this18.props.descriptor
+            query: _this19.props.query,
+            descriptor: _this19.props.descriptor
           });
         });
       }
@@ -58107,7 +58238,7 @@ var Pagination = /*#__PURE__*/function (_React$Component12) {
   }, {
     key: "render",
     value: function render() {
-      var _this19 = this;
+      var _this20 = this;
 
       if (_underscore["default"].isEmpty(this.props.query) || _underscore["default"].isEmpty(this.props.data.rows)) {
         return null;
@@ -58152,7 +58283,7 @@ var Pagination = /*#__PURE__*/function (_React$Component12) {
           className: "page-item " + active
         }, /*#__PURE__*/_react["default"].createElement("a", {
           className: "page-link",
-          onClick: _this19.changePage.bind(_this19, i)
+          onClick: _this20.changePage.bind(_this20, i)
         }, i)));
       });
       return /*#__PURE__*/_react["default"].createElement("nav", null, /*#__PURE__*/_react["default"].createElement("ul", {
@@ -58259,21 +58390,21 @@ var QuickSearch = /*#__PURE__*/function (_React$Component15) {
   var _super22 = _createSuper(QuickSearch);
 
   function QuickSearch(props) {
-    var _this20;
+    var _this21;
 
     _classCallCheck(this, QuickSearch);
 
-    _this20 = _super22.call(this, props);
-    _this20.state = {
+    _this21 = _super22.call(this, props);
+    _this21.state = {
       value: ""
     };
-    _this20._onChange = _underscore["default"].debounce(function (keyword) {
-      if (!_underscore["default"].isEmpty(_this20.props.query)) {
-        _this20.props.query.setKeyword(keyword);
+    _this21._onChange = _underscore["default"].debounce(function (keyword) {
+      if (!_underscore["default"].isEmpty(_this21.props.query)) {
+        _this21.props.query.setKeyword(keyword);
       }
     }, 500);
-    _this20.initialValue = _this20.getInitialValue();
-    return _this20;
+    _this21.initialValue = _this21.getInitialValue();
+    return _this21;
   }
 
   _createClass(QuickSearch, [{
@@ -58362,31 +58493,45 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
   var _super23 = _createSuper(Grid);
 
   function Grid(props) {
-    var _this21;
+    var _this22;
 
     _classCallCheck(this, Grid);
 
-    _this21 = _super23.call(this, props);
-    _this21.selection = null;
-    _this21.state = {
+    _this22 = _super23.call(this, props);
+    _this22.selection = null;
+    _this22.state = {
       rows: null
     };
+    _this22.queryInitialized = false;
 
-    _this21.initSelection(props);
+    _this22.initSelection(props);
 
-    _this21.initQuery(props);
+    _this22.initQuery(props);
 
-    return _this21;
+    _this22.stack = [];
+    return _this22;
   }
 
   _createClass(Grid, [{
     key: "componentDidMount",
     value: function componentDidMount() {
+      var _this23 = this;
+
       this.initQuery(this.props);
+      this.props.query.on("change", function () {
+        _this23.selection = null;
+      });
     }
   }, {
     key: "componentDidUpdate",
     value: function componentDidUpdate(prevProps, prevState) {
+      var oldRows = prevProps.data && prevProps.data.rows;
+      var rows = this.props.data && this.props.data.rows; //se c'è differenza va resettato così da farlo reinizializzare
+
+      if ((0, _lang.diff)(oldRows, rows).length > 0) {
+        this.selection = null;
+      }
+
       this.initSelection(this.props);
     }
   }, {
@@ -58410,7 +58555,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
   }, {
     key: "isAllSelected",
     value: function isAllSelected() {
-      return this.selection.isAllSelected();
+      return this.selection && this.selection.isAllSelected();
     }
   }, {
     key: "onKeyPress",
@@ -58503,7 +58648,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
   }, {
     key: "onRowExpand",
     value: function onRowExpand(row) {
-      var _this22 = this;
+      var _this24 = this;
 
       var expanded = !row.expanded;
 
@@ -58522,7 +58667,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
         setTimeout(function () {
           row.expanded = expanded;
 
-          _this22.forceUpdate();
+          _this24.forceUpdate();
         }, EXPAND_ANIMATION_TIME);
       } else {
         row.expanded = expanded;
@@ -58536,7 +58681,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
   }, {
     key: "initSelection",
     value: function initSelection(props) {
-      var _this23 = this;
+      var _this25 = this;
 
       var selectionEnabled = (0, _lang.optional)((0, _lang.parseBoolean)(props.selectionEnabled), true);
 
@@ -58546,22 +58691,60 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
 
       var rows = props.data && props.data.rows;
 
-      if (!this.selection && _underscore["default"].isEmpty(rows)) {
+      if (!_underscore["default"].isEmpty(rows) && !this.selection) {
         this.selection = new Selection(rows);
         this.selection.single = props.selectionMode === "single";
         this.selection.on("change", function () {
-          _this23.setState(_this23.state);
+          _underscore["default"].assign(_this25.state, {
+            rows: _this25.selection.rows
+          });
 
-          if (_underscore["default"].isFunction(_this23.props.onSelectionChanged)) {
-            _this23.props.onSelectionChanged(_this23.selection.getSelectedData());
+          _this25.forceUpdate();
+
+          if (_underscore["default"].isFunction(_this25.props.onSelectionChanged)) {
+            _this25.stack = _underscore["default"].filter(_this25.stack, function (selected) {
+              return _underscore["default"].any(_this25.selection.getSelected(), function (s) {
+                return s.index === selected.index;
+              });
+            });
+
+            if (!_underscore["default"].isEmpty(_this25.selection.lastSelected)) {
+              if (_this25.selection.lastSelected.selected) {
+                _this25.stack.push(_this25.selection.lastSelected);
+              } else {
+                _this25.stack = _underscore["default"].filter(_this25.stack, function (s) {
+                  return s.index !== _this25.selection.lastSelected.index;
+                });
+              }
+            }
+
+            _this25.props.onSelectionChanged(_this25.selection.getSelectedData(), (0, _lang.safeGet)(_underscore["default"].last(_this25.stack), "data"));
           }
         });
+        this.selection.on("onRowDown", function (row) {
+          if (_underscore["default"].isFunction(_this25.props.onRowDown)) {
+            _this25.props.onRowDown(row);
+          }
+        });
+        this.selection.on("onRowUp", function (row) {
+          if (_underscore["default"].isFunction(_this25.props.onRowUp)) {
+            _this25.props.onRowUp(row);
+          }
+        });
+
+        if (props.initialSelection) {
+          _underscore["default"].each(rows, function (r) {
+            r.selected = _underscore["default"].any(props.initialSelection, function (s) {
+              return s === r.data;
+            });
+          });
+        }
       }
     }
   }, {
     key: "initQuery",
     value: function initQuery(props) {
-      var _this24 = this;
+      var _this26 = this;
 
       if (!this.queryInitialized) {
         this.queryInitialized = true;
@@ -58571,9 +58754,9 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
 
           if ((0, _lang.forceBoolean)(props.clientSideQuerying)) {
             this.standardQuery.on("change", function () {
-              query.apply(_this24.standardQuery, props.data);
+              query.apply(_this26.standardQuery, props.data);
 
-              _this24.forceUpdate();
+              _this26.forceUpdate();
             });
           }
         } else {
@@ -58581,7 +58764,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
             props.query.on("change", this.onQueryChange = function () {
               query.apply(props.query, props.data);
 
-              _this24.forceUpdate();
+              _this26.forceUpdate();
             });
           }
         }
@@ -58678,7 +58861,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
   }, {
     key: "getDescriptor",
     value: function getDescriptor() {
-      var _this25 = this;
+      var _this27 = this;
 
       var original = this.props.descriptor;
       var descriptor = original;
@@ -58691,8 +58874,8 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
             actions: [{
               icon: "zmdi zmdi-edit",
               action: function action(row) {
-                if (_underscore["default"].isFunction(_this25.props.onRowDoubleClick)) {
-                  _this25.props.onRowDoubleClick(row);
+                if (_underscore["default"].isFunction(_this27.props.onRowDoubleClick)) {
+                  _this27.props.onRowDoubleClick(row);
                 }
               }
             }],
@@ -58704,7 +58887,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
       }
 
       var selectionEnabled = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.selectionEnabled), true);
-      var selectWithCheck = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.selectWithCheck), false);
+      var selectWithCheck = (0, _lang.forceBoolean)(this.props.selectWithCheck);
 
       if (selectWithCheck && selectionEnabled) {
         descriptor = _underscore["default"].assign({}, original, {
@@ -58713,7 +58896,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
             header: "selectAllBtn",
             cell: EditCheckCell,
             props: {
-              width: "65px",
+              width: "15px",
               onValueChange: this.onSelectWithCheck.bind(this),
               valueSupplier: function valueSupplier(data, row) {
                 return row.selected;
@@ -58735,7 +58918,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
       var data = this.getData();
       var myQuery = this.getQuery(); //customization properties
 
-      var showFilters = myQuery.filters.length > 0 && !this.props.hideFilter;
+      var showFilters = (0, query.getVisibleFilters)(myQuery).length > 0 && !this.props.hideFilter;
       var quickSearchEnabled = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.quickSearchEnabled), false);
       var quickSearchPlaceholder = (0, _lang.optional)(this.props.quickSearchPlaceholder, "");
       var headerVisible = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.headerVisible), true);
@@ -58745,7 +58928,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
       var noResultsVisible = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.noResultsVisible), true);
       var filtersVisible = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.filtersVisible), true);
       var paginationEnabled = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.paginationEnabled), true);
-      var tableClassName = (0, _lang.optional)(this.props.tableClassName, "table table-striped table-hover");
+      var tableClassName = (0, _lang.optional)(this.props.tableClassName, "table table-striped table-hover table-bordered");
 
       if (showFilters) {
         tableClassName += " br-t";
@@ -58753,7 +58936,6 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
 
       var tableId = (0, _lang.optional)(this.props.tableId, (0, _lang.uuid)());
       var noResultsText = (0, _lang.optional)(this.props.noResultsText, (0, _strings["default"])("noResults"));
-      var className = "grid " + (0, _lang.optional)(this.props.className, "");
       var hasResults = data && data.rows ? data.rows.length > 0 : false;
       var hasPagination = this.getTotalPages() > 1;
       var anchorHeader = (0, _lang.optional)((0, _lang.parseBoolean)(this.props.anchorHeader), false);
@@ -58806,6 +58988,7 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
       }, headerVisible && (hasResults || !hasResults && headerVisibleNoResults) && /*#__PURE__*/_react["default"].createElement(GridHeader, {
         descriptor: descriptor,
         query: myQuery,
+        allSelected: this.isAllSelected(),
         onSelectAll: this.toggleSelectAll.bind(this),
         onDeselectAll: this.clearSelection.bind(this)
       }), hasResults && /*#__PURE__*/_react["default"].createElement(GridBody, {
@@ -58833,14 +59016,6 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
         className: "clearfix"
       })))));
     }
-  }], [{
-    key: "getDerivedStateFromProps",
-    value: function getDerivedStateFromProps(props, state) {
-      var rows = props.data && props.data.rows;
-      return _underscore["default"].assign(state, {
-        rows: rows
-      });
-    }
   }]);
 
   return Grid;
@@ -58854,27 +59029,19 @@ var EditCheckCell = /*#__PURE__*/function (_Cell7) {
   var _super24 = _createSuper(EditCheckCell);
 
   function EditCheckCell(props) {
-    var _this26;
+    var _this28;
 
     _classCallCheck(this, EditCheckCell);
 
-    _this26 = _super24.call(this, props);
-    _this26.state = {
+    _this28 = _super24.call(this, props);
+    _this28.checkbox = /*#__PURE__*/_react["default"].createRef();
+    _this28.state = {
       value: "false"
     };
-    return _this26;
+    return _this28;
   }
 
   _createClass(EditCheckCell, [{
-    key: "componentWillUpdate",
-    value: function componentWillUpdate(nextProps, nextState) {
-      if (nextProps.value != nextState.value) {
-        this.setState({
-          value: nextProps.value
-        });
-      }
-    }
-  }, {
     key: "componentDidMount",
     value: function componentDidMount() {
       this.setState({
@@ -58884,35 +59051,81 @@ var EditCheckCell = /*#__PURE__*/function (_Cell7) {
   }, {
     key: "onValueChange",
     value: function onValueChange(e) {
-      var newValue = $(e.target).is(":checked");
+      e.stopPropagation();
+      var newValue = this.checkbox.current.checked;
       this.setState({
         value: newValue
       });
 
-      if (_underscore["default"].isFunction(this.props.onValueChange)) {
-        var column = this.props.column;
-        var property = this.props.property;
-        var row = this.props.row;
-        this.props.onValueChange(column, row.data, newValue);
+      if (this.props.binding) {
+        row.data[column.property] = checked;
       }
+
+      if (_underscore["default"].isFunction(this.props.onValueChange)) {
+        var _column3 = this.props.column;
+        var property = this.props.property;
+        var _row2 = this.props.row;
+        this.props.onValueChange(_column3, _row2.data, newValue, _row2);
+      }
+    }
+  }, {
+    key: "getValue",
+    value: function getValue() {
+      if (_underscore["default"].isFunction(this.props.valueSupplier)) {
+        var _column4 = this.props.column;
+        var property = this.props.property;
+        var _row3 = this.props.row;
+        return this.props.valueSupplier(_row3.data, _row3, _column4);
+      } else {
+        return (0, _lang.optional)(this.state.value, "false");
+      }
+    }
+  }, {
+    key: "onMouseDown",
+    value: function onMouseDown(e) {
+      e.stopPropagation();
+    }
+  }, {
+    key: "onClick",
+    value: function onClick(e) {
+      this.onValueChange(e);
     }
   }, {
     key: "render",
     value: function render() {
+      var className = "checkbox " + (0, _lang.optional)(this.props.className, "");
       var property = this.props.property;
-      var value = (0, _lang.optional)(this.state.value, "false");
-      var checked = value === true || value === "true";
+      var value = (0, _lang.forceBoolean)(this.getValue());
+      var checked = value;
+      var tr = $(this.checkbox.current).parent().parent().parent().parent();
+      var inputCheckbox = null;
+
+      if ($(tr).hasClass("disabled")) {
+        inputCheckbox = /*#__PURE__*/_react["default"].createElement("input", {
+          type: "checkbox",
+          ref: this.checkbox,
+          value: value,
+          "data-property": property,
+          checked: checked,
+          disabled: "disabled"
+        });
+      } else {
+        inputCheckbox = /*#__PURE__*/_react["default"].createElement("input", {
+          type: "checkbox",
+          ref: this.checkbox,
+          value: value,
+          "data-property": property,
+          checked: checked
+        });
+      }
+
       return /*#__PURE__*/_react["default"].createElement("div", {
-        className: "checkbox",
-        onClick: this.onValueChange.bind(this)
-      }, /*#__PURE__*/_react["default"].createElement("label", null, /*#__PURE__*/_react["default"].createElement("input", {
-        type: "checkbox",
-        value: value,
-        "data-property": property,
-        checked: checked
-      }), /*#__PURE__*/_react["default"].createElement("i", {
-        className: "input-helper"
-      })));
+        className: className
+      }, inputCheckbox, /*#__PURE__*/_react["default"].createElement("label", {
+        className: "checkbox__label",
+        onClick: this.onClick.bind(this),
+        onMouseDown: this.onMouseDown.bind(this)
+      }));
     }
   }]);
 
@@ -58935,15 +59148,15 @@ var MultiTextCell = /*#__PURE__*/function (_Cell8) {
   _createClass(MultiTextCell, [{
     key: "render",
     value: function render() {
-      var _this27 = this;
+      var _this29 = this;
 
       var formatter = _underscore["default"].isFunction(this.props.formatter) ? this.props.formatter : function (v) {
         return v;
       };
 
       var values = _underscore["default"].map(formatter(this.props.value), function (v, i) {
-        var item = _underscore["default"].isFunction(_this27.props.singleItemFormatter) ? _this27.props.singleItemFormatter(v) : v;
-        var spanClass = _underscore["default"].isFunction(_this27.props.itemClass) ? _this27.props.itemClass(i) : "";
+        var item = _underscore["default"].isFunction(_this29.props.singleItemFormatter) ? _this29.props.singleItemFormatter(v) : v;
+        var spanClass = _underscore["default"].isFunction(_this29.props.itemClass) ? _this29.props.itemClass(i) : "";
         return /*#__PURE__*/_react["default"].createElement("li", {
           key: v + Math.random()
         }, /*#__PURE__*/_react["default"].createElement("span", {
@@ -59020,6 +59233,78 @@ var ButtonCell = /*#__PURE__*/function (_Cell9) {
 }(Cell);
 
 exports.ButtonCell = ButtonCell;
+
+var TextCellWithSubText = /*#__PURE__*/function (_Cell10) {
+  _inherits(TextCellWithSubText, _Cell10);
+
+  var _super27 = _createSuper(TextCellWithSubText);
+
+  function TextCellWithSubText() {
+    _classCallCheck(this, TextCellWithSubText);
+
+    return _super27.apply(this, arguments);
+  }
+
+  _createClass(TextCellWithSubText, [{
+    key: "toggleExpand",
+    value: function toggleExpand(e) {
+      if (_underscore["default"].isFunction(this.props.onExpand)) {
+        this.props.onExpand(this.props.row);
+        e.preventDefault();
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+      }
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var marginLeft = 30 * (this.props.row.level || 0);
+      var icon = "zmdi ";
+
+      if (!this.props.row.expanded) {
+        icon += " zmdi-plus";
+      } else {
+        icon += " zmdi-minus";
+      }
+
+      var formatterTitle = _underscore["default"].isFunction(this.props.formatterTitle) ? this.props.formatterTitle : function (v) {
+        return v;
+      };
+      var formatterSubtitle = _underscore["default"].isFunction(this.props.formatterSubtitle) ? this.props.formatterSubtitle : function (v) {
+        return v;
+      };
+      var caret = !_underscore["default"].isEmpty(this.props.row.children) && this.props.firstElement ? /*#__PURE__*/_react["default"].createElement("a", {
+        style: {
+          marginLeft: marginLeft,
+          marginRight: 20
+        },
+        href: "javascript:;",
+        className: "expand-button",
+        onClick: this.toggleExpand.bind(this),
+        onMouseDown: function onMouseDown(e) {
+          return e.stopPropagation();
+        }
+      }, /*#__PURE__*/_react["default"].createElement("i", {
+        className: "c-black " + icon
+      })) : null;
+      var style = {};
+
+      if (caret == null && this.props.row.level > 0 && this.props.firstElement) {
+        style.marginLeft = marginLeft + 20;
+      }
+
+      return /*#__PURE__*/_react["default"].createElement("div", null, caret, /*#__PURE__*/_react["default"].createElement("p", {
+        className: "textcell-title"
+      }, formatterTitle(this.props.value, this.props.row.data)), /*#__PURE__*/_react["default"].createElement("p", {
+        className: "textcell-subtitle"
+      }, formatterSubtitle(this.props.value, this.props.row.data)));
+    }
+  }]);
+
+  return TextCellWithSubText;
+}(Cell);
+
+exports.TextCellWithSubText = TextCellWithSubText;
 
 },{"../../aj/events":13,"../../framework/query":31,"../../model/enums":32,"../../stores/entities":363,"../../strings":370,"../../utils/ajex":372,"../../utils/datasource":373,"../../utils/lang":374,"../../utils/traverse":376,"../utils/keyboard":407,"../utils/mobile":408,"./common":377,"./dialogs":379,"./forms":382,"moment":341,"react":350,"react-dom":347,"underscore":359}],384:[function(require,module,exports){
 "use strict";
@@ -59889,6 +60174,8 @@ var _commonFields = require("./screens/entities/commonFields");
 
 var _searchForms = require("../model/searchForms");
 
+var datasource = _interopRequireWildcard(require("../utils/datasource"));
+
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
@@ -60081,7 +60368,7 @@ var entities = {
       descriptor: {
         columns: [{
           property: "role",
-          header: "Role",
+          header: (0, _strings["default"])("role"),
           cell: _grids.TextCell,
           sortable: true,
           searchable: true
@@ -60176,7 +60463,7 @@ var entities = {
 var _default = entities;
 exports["default"] = _default;
 
-},{"../actions/account":3,"../actions/session":6,"../api/session":23,"../model/searchForms":34,"../strings":370,"./components/containers":378,"./components/forms":382,"./components/grids":383,"./screens/entities/commonFields":393,"./utils/ui":409}],388:[function(require,module,exports){
+},{"../actions/account":3,"../actions/session":6,"../api/session":23,"../model/searchForms":34,"../strings":370,"../utils/datasource":373,"./components/containers":378,"./components/forms":382,"./components/grids":383,"./screens/entities/commonFields":393,"./utils/ui":409}],388:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -61033,25 +61320,35 @@ var AbstractEntitiesGrid = /*#__PURE__*/function (_Screen) {
             query: _this3.state.query
           });
         }
-      }, {
-        id: "create",
-        type: "button",
-        icon: "zmdi zmdi-plus",
-        tooltip: (0, _strings["default"])("create"),
-        permissions: [this.getEntity() + ":" + _session.Permission.NEW],
-        action: function action() {
-          _this3.createEntity();
-        }
-      }, {
-        id: "delete",
-        type: "button",
-        icon: "zmdi zmdi-delete",
-        tooltip: (0, _strings["default"])("delete"),
-        permissions: [this.getEntity() + ":" + _session.Permission.DELETE],
-        action: function action() {
-          _this3.deleteEntities();
-        }
-      }, {
+      }];
+
+      if (this.canCreate()) {
+        defaultActions.push({
+          id: "create",
+          type: "button",
+          icon: "zmdi zmdi-plus",
+          tooltip: (0, _strings["default"])("create"),
+          permissions: [this.getEntity() + ":" + _session.Permission.NEW],
+          action: function action() {
+            _this3.createEntity();
+          }
+        });
+      }
+
+      if (this.canDelete()) {
+        defaultActions.push({
+          id: "delete",
+          type: "button",
+          icon: "zmdi zmdi-delete",
+          tooltip: (0, _strings["default"])("delete"),
+          permissions: [this.getEntity() + ":" + _session.Permission.DELETE],
+          action: function action() {
+            _this3.deleteEntities();
+          }
+        });
+      }
+
+      defaultActions.push({
         id: "selectAll",
         type: "button",
         icon: "zmdi zmdi-select-all",
@@ -61059,12 +61356,12 @@ var AbstractEntitiesGrid = /*#__PURE__*/function (_Screen) {
         action: function action() {
           _this3.refs.grid.toggleSelectAll();
         }
-      }];
+      });
 
       var grid = _entities2["default"][this.getEntity()].grid;
 
       var matcher = new _common.ActionsMatcher(defaultActions);
-      return matcher.match(grid.actions);
+      return matcher.match(_underscore["default"].isFunction(grid.getActions) ? grid.getActions() : grid.actions);
     }
   }, {
     key: "getGrid",
@@ -61163,7 +61460,8 @@ var AbstractEntitiesGrid = /*#__PURE__*/function (_Screen) {
         onRowDoubleClick: this.onGridRowDoubleClick.bind(this),
         quickSearchEnabled: this.isQuickSearchEnabled(),
         quickSearchPlaceholder: this.getQuickSearchPlaceholder(),
-        headerVisibleNoResults: this.getHeaderVisibleNoResults()
+        headerVisibleNoResults: this.getHeaderVisibleNoResults() // selectWithCheck="true"
+
       }), this.renderExtra(), this.canCreate() && /*#__PURE__*/_react["default"].createElement(_common.FloatingButton, {
         icon: "zmdi zmdi-plus",
         onClick: this.createEntity.bind(this)
@@ -61732,9 +62030,35 @@ var EntityForm = /*#__PURE__*/function (_Screen) {
   }, {
     key: "getTitle",
     value: function getTitle() {
-      var form = _entities2["default"][this.getEntity()].form;
+      var entity = this.getEntity();
+      var form = _entities2["default"][entity].form;
+      var title = _underscore["default"].isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params) : null;
+      if (title) return title;else {
+        var items = [];
+        var gridTitle = _entities2["default"][entity].grid.title;
+        var data = this.state && this.state.data ? this.state.data : {};
+        items.push({
+          title: gridTitle,
+          url: this.getGridUrl(data)
+        });
 
-      return _underscore["default"].isFunction(form.getTitle) ? form.getTitle(this.state.data, this.props.params) : (0, _lang.optional)(form.title, "Edit");
+        if (data.id && data.id !== "new") {
+          items.push({
+            title: (0, _strings["default"])(["edit", entity]) + " " + " <b>" + this.generateDataDescription(data) + "</b>"
+          });
+        } else {
+          items.push({
+            title: (0, _strings["default"])(["create", entity])
+          });
+        }
+
+        return items;
+      }
+    }
+  }, {
+    key: "generateDataDescription",
+    value: function generateDataDescription(data) {
+      return data ? data.description : "";
     }
   }, {
     key: "getSubtitle",

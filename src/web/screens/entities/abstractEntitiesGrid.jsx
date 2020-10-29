@@ -279,6 +279,7 @@ export default class AbstractEntitiesGrid extends Screen {
                     quickSearchEnabled={this.isQuickSearchEnabled()}
                     quickSearchPlaceholder={this.getQuickSearchPlaceholder()}
                     headerVisibleNoResults={this.getHeaderVisibleNoResults()}
+                    // selectWithCheck="true"
                 />
 
                 {this.renderExtra()}

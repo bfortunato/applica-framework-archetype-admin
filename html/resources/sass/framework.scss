@@ -873,6 +873,14 @@ tr.collapsible {
     background-color: $primary-color;
 }
 
+.checkbox {
+  .checkbox__label {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
 //Borders
 .br-t {
   border-top: 1px solid $border-color;
