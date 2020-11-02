@@ -1276,7 +1276,8 @@ export class Grid extends React.Component {
     componentDidMount() {
         this.initQuery(this.props)
 
-        this.props.query.on("change", () => {
+        const query = this.getQuery()
+        query.on("change", () => {
             this.selection = null
         })
     }
@@ -1479,7 +1480,7 @@ export class Grid extends React.Component {
                 if (forceBoolean(props.clientSideQuerying)) {
                     this.standardQuery.on("change", () => {
                         query.apply(this.standardQuery, props.data)
-
+                        
                         this.forceUpdate()
                     })
                 }
