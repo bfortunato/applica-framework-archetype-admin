@@ -716,10 +716,10 @@ const { format } = require("../utils/lang");
 
     Validator.prototype.len = function(min, max) {
         if (this.str.length < min) {
-            this.error(this.msg || 'String is too small');
+            this.error(this.msg || format(M("stringTooSmall"), min));
         }
         if (typeof max !== undefined && this.str.length > max) {
-            return this.error(this.msg || 'String is too large');
+            return this.error(this.msg || format(M("stringTooLarge"), max));
         }
         return this;
     }

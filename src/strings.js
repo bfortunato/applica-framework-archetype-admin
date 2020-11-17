@@ -276,6 +276,8 @@ strings["it"] = {
     invalidEmail: "Email non valida",
     invalidUrl: "Url non valido",
     invalidIP: "IP non valido",
+    stringTooSmall: "Il campo deve contenere almeno {0} caratteri",
+    stringTooLarge: "Il campo può avere massimo {0} caratteri",
     invalidCharacters: "Caratteri non validi",
     badLogin: "Non riesco ad accedere! Per favore controlla il tuo indirizzo email o password!",
     welcome: "Benvenuto",
