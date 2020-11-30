@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import M, { getLanguage } from "../../strings"
 import {Actions, Card, FloatingButton} from "./common"
-import {diff, format, optional, parseBoolean} from "../../utils/lang"
+import {diff, forceBoolean, format, optional, parseBoolean} from "../../utils/lang"
 import {Observable} from "../../aj/events"
 import {ActionsCell, Grid, resultToGridData} from "./grids"
 import * as query from "../../framework/query"

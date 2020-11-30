@@ -32,13 +32,6 @@ export default [
         ]
     },
     {
-        id: "customers",
-        icon: "zmdi zmdi-accounts-list-alt",
-        text: M("customers"),
-        href: "/#/entities/customer?grid=customers",
-        // permissions: ["customer:list"],
-    },
-    {
         icon: "zmdi zmdi-settings",
         text: M("settings"),
         roles: ["admin"],

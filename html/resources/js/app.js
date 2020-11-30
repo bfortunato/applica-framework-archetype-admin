@@ -4470,6 +4470,20 @@ var Query = /*#__PURE__*/function (_Observable) {
       return this;
     }
   }, {
+    key: "hasFilter",
+    value: function hasFilter(property) {
+      return _underscore["default"].any(this.filters, function (f) {
+        return f.property == property;
+      });
+    }
+  }, {
+    key: "hasFilterValue",
+    value: function hasFilterValue(property, value) {
+      return _underscore["default"].any(this.filters, function (f) {
+        return f.property == property && f.value == value;
+      });
+    }
+  }, {
     key: "like",
     value: function like(prop, value) {
       this.filter(LIKE, prop, value);
@@ -5014,12 +5028,6 @@ var _default = [{
   //     permissions: ["entityRevisionSettings:edit"]
   // }
   ]
-}, {
-  id: "customers",
-  icon: "zmdi zmdi-accounts-list-alt",
-  text: (0, _strings["default"])("customers"),
-  href: "/#/entities/customer?grid=customers" // permissions: ["customer:list"],
-
 }, {
   icon: "zmdi zmdi-settings",
   text: (0, _strings["default"])("settings"),
@@ -50627,6 +50635,8 @@ strings["it"] = (_strings$it = {
   invalidEmail: "Email non valida",
   invalidUrl: "Url non valido",
   invalidIP: "IP non valido",
+  stringTooSmall: "Il campo deve contenere almeno {0} caratteri",
+  stringTooLarge: "Il campo può avere massimo {0} caratteri",
   invalidCharacters: "Caratteri non validi",
   badLogin: "Non riesco ad accedere! Per favore controlla il tuo indirizzo email o password!",
   welcome: "Benvenuto",
@@ -52022,12 +52032,29 @@ var FloatingButton = /*#__PURE__*/function (_React$Component6) {
       }
     }
   }, {
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      $(this.refs.button).tooltip({
+        trigger: "hover"
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
+      var className = "btn btn-float m-btn waves-effect waves-circle waves-float btn-danger ";
+
+      if (this.props.className) {
+        className += this.props.className;
+      }
+
       return /*#__PURE__*/_react["default"].createElement("button", {
+        ref: "button",
         type: "button",
-        className: "btn btn--action btn-primary",
-        onClick: this.onClick.bind(this)
+        className: className,
+        onClick: this.onClick.bind(this),
+        "data-toggle": "tooltip",
+        "data-placement": "left",
+        title: (0, _lang.optional)(this.props.tooltip, "")
       }, /*#__PURE__*/_react["default"].createElement("i", {
         className: this.props.icon
       }));
@@ -54200,8 +54227,6 @@ var Form = /*#__PURE__*/function (_React$Component6) {
       var model = this.model;
       var inline = (0, _lang.optional)(descriptor.inline, false);
       var className = inline ? "form-horizontal" : "";
-      var canSave = this.props.canSave;
-      var canCancel = this.props.canCancel;
       var showFormFooter = this.showFormFooter();
       return /*#__PURE__*/_react["default"].createElement("div", {
         className: "form"
@@ -54216,7 +54241,8 @@ var Form = /*#__PURE__*/function (_React$Component6) {
       }), showFormFooter && /*#__PURE__*/_react["default"].createElement(FormFooter, {
         descriptor: descriptor,
         model: model,
-        onCancel: this.onCancel.bind(this)
+        onCancel: this.onCancel.bind(this),
+        onClickFloatingBtn: this.submit.bind(this)
       }), /*#__PURE__*/_react["default"].createElement("div", {
         className: "clearfix"
       }), this.getExtra()));
@@ -54247,6 +54273,13 @@ var FormFooter = /*#__PURE__*/function (_React$Component7) {
       }
     }
   }, {
+    key: "onClickFloatingBtn",
+    value: function onClickFloatingBtn() {
+      if (_underscore["default"].isFunction(this.props.onClickFloatingBtn)) {
+        this.props.onClickFloatingBtn();
+      }
+    }
+  }, {
     key: "canSave",
     value: function canSave() {
       var descriptor = this.props.descriptor;
@@ -54257,6 +54290,12 @@ var FormFooter = /*#__PURE__*/function (_React$Component7) {
     value: function canCancel() {
       var descriptor = this.props.descriptor;
       return _underscore["default"].isFunction(descriptor.canCancel) ? descriptor.canCancel(this.props.model) : true;
+    }
+  }, {
+    key: "showFloatingSaveBtn",
+    value: function showFloatingSaveBtn() {
+      var descriptor = this.props.descriptor;
+      return (0, _lang.forceBoolean)(descriptor.showFloatingSaveBtn);
     }
   }, {
     key: "render",
@@ -54280,10 +54319,15 @@ var FormFooter = /*#__PURE__*/function (_React$Component7) {
       };
       var canSave = this.canSave();
       var canCancel = this.canCancel();
+      var showFloatingSaveBtn = this.showFloatingSaveBtn();
       return /*#__PURE__*/_react["default"].createElement("div", {
         className: "btn-actions-bar",
         style: style
-      }, canCancel && /*#__PURE__*/_react["default"].createElement("button", {
+      }, canSave && showFloatingSaveBtn && /*#__PURE__*/_react["default"].createElement(_common.FloatingButton, {
+        icon: "zmdi zmdi-save",
+        tooltip: (0, _strings["default"])("save"),
+        onClick: this.onClickFloatingBtn.bind(this)
+      }), canCancel && /*#__PURE__*/_react["default"].createElement("button", {
         type: "button",
         className: "btn btn-dark",
         onClick: this.onCancel.bind(this)
@@ -54493,7 +54537,9 @@ var LabelPropertyGenerationControl = /*#__PURE__*/function (_Control) {
       var model = this.props.model;
       var field = this.props.field;
       var labelProp = field.property + "__label";
+      model.untrackChanges();
       model.set(labelProp, label);
+      model.trackChanges();
     }
   }]);
 
@@ -58518,7 +58564,8 @@ var Grid = /*#__PURE__*/function (_React$Component16) {
       var _this23 = this;
 
       this.initQuery(this.props);
-      this.props.query.on("change", function () {
+      var query = this.getQuery();
+      query.on("change", function () {
         _this23.selection = null;
       });
     }
@@ -60379,6 +60426,7 @@ var entities = {
       title: "Edit role",
       subtitle: null,
       descriptor: {
+        showFloatingSaveBtn: true,
         fields: [{
           property: "role",
           control: _forms.Text,

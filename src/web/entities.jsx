@@ -194,6 +194,7 @@ const entities = {
 			title: "Edit role",
 			subtitle: null,
 			descriptor: {
+				showFloatingSaveBtn: true,
 				fields: [
 					{
                         property: "role",
