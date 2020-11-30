@@ -181,18 +181,38 @@ export class Card extends React.Component {
 }
 
 export class FloatingButton extends React.Component {
+
     onClick() {
         if (_.isFunction(this.props.onClick)) {
             this.props.onClick()
         }
     }
 
+    componentDidMount() {
+        $(this.refs.button).tooltip({trigger: "hover"})
+    }
+
     render() {
+        let className = "btn btn-float m-btn waves-effect waves-circle waves-float btn-danger "
+        if (this.props.className) {
+            className += this.props.className
+        }
+        
         return (
-            <button type="button" className="btn btn--action btn-primary" onClick={this.onClick.bind(this)}><i className={this.props.icon}></i></button>
+            <button 
+                ref="button"
+                type="button" 
+                className={className} 
+                onClick={this.onClick.bind(this)}
+                data-toggle="tooltip" 
+                data-placement="left" 
+                title={optional(this.props.tooltip, "")}>
+                <i className={this.props.icon}></i>
+            </button>
         )
     }
 }
+
 
 
 export class ActionsMatcher {

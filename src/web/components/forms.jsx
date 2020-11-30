@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import M, { getLanguage } from "../../strings"
-import {Actions, Card} from "./common"
+import {Actions, Card, FloatingButton} from "./common"
 import {diff, format, optional, parseBoolean} from "../../utils/lang"
 import {Observable} from "../../aj/events"
 import {ActionsCell, Grid, resultToGridData} from "./grids"
@@ -689,15 +689,13 @@ export class Form extends React.Component {
         return optional(this.props.descriptor.showFormFooter, true)
     }
 
-
     render() {
         let descriptor = this.props.descriptor
         let model = this.model
 
         let inline = optional(descriptor.inline, false)
         let className = inline ? "form-horizontal" : ""
-        let canSave = this.props.canSave
-        let canCancel = this.props.canCancel
+        
         let showFormFooter = this.showFormFooter();
 
 
@@ -707,7 +705,7 @@ export class Form extends React.Component {
                     <FormBody descriptor={descriptor} model={model} />
 
                     {showFormFooter &&
-                    <FormFooter descriptor={descriptor}  model={model} onCancel={this.onCancel.bind(this)}/>
+                    <FormFooter descriptor={descriptor}  model={model} onCancel={this.onCancel.bind(this)} onClickFloatingBtn={this.submit.bind(this)} />
                     }
                     <div className="clearfix"></div>
                     {this.getExtra()}
@@ -722,10 +720,15 @@ class FormFooter extends React.Component {
         super(props)
     }
 
-
     onCancel() {
         if(_.isFunction(this.props.onCancel)) {
             this.props.onCancel();
+        }
+    }
+
+    onClickFloatingBtn() {
+        if(_.isFunction(this.props.onClickFloatingBtn)) {
+            this.props.onClickFloatingBtn();
         }
     }
 
@@ -737,6 +740,11 @@ class FormFooter extends React.Component {
     canCancel() {
         let descriptor = this.props.descriptor;
         return _.isFunction(descriptor.canCancel) ? descriptor.canCancel(this.props.model) : true
+    }
+
+    showFloatingSaveBtn() {
+        let descriptor = this.props.descriptor;
+        return forceBoolean(descriptor.showFloatingSaveBtn)
     }
 
     render() {
@@ -757,10 +765,13 @@ class FormFooter extends React.Component {
 
         const canSave = this.canSave();
         const canCancel = this.canCancel();
+        const showFloatingSaveBtn = this.showFloatingSaveBtn();
 
         return (
 
             <div className="btn-actions-bar" style={style}>
+                {canSave && showFloatingSaveBtn && <FloatingButton icon="zmdi zmdi-save" tooltip={M("save")} onClick={this.onClickFloatingBtn.bind(this)}  />}
+
                 {canCancel &&
                 <button type="button" className="btn btn-dark" onClick={this.onCancel.bind(this)}><i className="zmdi zmdi-arrow-back" /> {cancelText}</button>
                 }
@@ -894,7 +905,9 @@ export class LabelPropertyGenerationControl extends Control {
         let model = this.props.model
         let field = this.props.field
         let labelProp = field.property+"__label"
+        model.untrackChanges()
         model.set(labelProp, label)
+        model.trackChanges()
     }
 }
 

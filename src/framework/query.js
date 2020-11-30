@@ -69,6 +69,14 @@ export class Query extends Observable {
         return this
     }
 
+    hasFilter(property) {
+        return _.any(this.filters, f => f.property == property)
+    }
+
+    hasFilterValue(property, value) {
+        return _.any(this.filters, f => f.property == property && f.value == value)
+    }
+
     like(prop, value) {
         this.filter(LIKE, prop, value)
         return this
