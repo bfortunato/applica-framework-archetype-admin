@@ -839,7 +839,7 @@ export class InlineField extends React.Component {
         }
 
         let model = this.props.model
-        let className = "form-group " + (this.props.field.size ? this.props.field.size : "col-sm-12")
+        let className = "row m-b-20 " + (this.props.field.size ? this.props.field.size : "col-sm-12")
         let control = React.createElement(this.props.field.control, _.assign({field: this.props.field, model: this.props.model}, this.props.field.props))
         let hasLabel = this.props.field.label != undefined && this.props.field.label != null
         let inline = optional(this.props.inline, false)
