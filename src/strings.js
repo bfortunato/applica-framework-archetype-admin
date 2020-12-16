@@ -268,6 +268,7 @@ strings["it"] = {
     enterNumberMin: "Inserire un numero <= di {0}",
     enterNumberMax: "Inserire un numero >= di {0}",
     enterNumberRange: "Inserire un numero >= di {0} e <= di {1}",
+    enterMail: "Inserisci e-mail",
     invalidNumber: "Inserire un numero",
     enterDecimal: "Inserire un numero decimale",
     enterInteger: "Inserire un numero intero",
@@ -344,7 +345,6 @@ strings["it"] = {
     editUser: "Modifica utente",
     editUserDescription: "Usa questo modulo per modificare le informazioni dell'utente",
     generalInformations: "Informazioni generali",
-    editRole: "Modifica ruolo",
     rolesList: "Lista ruoli",
     rolesListDescription: "Un ruolo è un'entità che da all'utente l'autorizzazione per fare qualcosa",
     nameOfRole: "Nome del ruolo",
@@ -453,8 +453,6 @@ strings["it"] = {
     typeForSearching: "Inizia a scrivere per cercare",
     searching: "Sto cercando ...",
     registrationDate: "Data registrazione",
-    enterNumber: "Inserisci numero",
-    enterMail: "Inserisci e-mail",
 }
 
 export function setLanguage(language_) {
