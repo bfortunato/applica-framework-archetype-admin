@@ -23,6 +23,7 @@
 
 const { default: M } = require("../strings");
 const { format } = require("../utils/lang");
+const moment = require("moment");
 
 (function(exports) {
 
@@ -747,6 +748,29 @@ const { format } = require("../utils/lang");
         return this;
     }
 
+
+    Validator.prototype.isDateLessThanToday = function() {
+        var intDate = new Date(Number(this.str));
+        if (isNaN(intDate)) {
+            return this.error(this.msg || M("enterDate"));
+        }
+        if (!moment(intDate).isBefore(new Date())) {
+            return this.error(this.msg || M("dateCanBeforeToday"));
+        }
+        return this;
+    }
+
+    Validator.prototype.isAdult = function() {
+        var intDate = new Date(Number(this.str));
+        if (isNaN(intDate)) {
+            return this.error(this.msg || M("enterDate"));
+        }
+        if (moment().diff(intDate, 'years', false) < 18) {
+            return this.error(this.msg || M("adultDateRequired"));
+        }
+        return this;
+    }
+
     Validator.prototype.in = function(options) {
         if (options && typeof options.indexOf === 'function') {
             if (!~options.indexOf(this.str)) {
@@ -783,6 +807,24 @@ const { format } = require("../utils/lang");
         var number = parseFloat(this.str);
         if (!isNaN(number) && number > val) {
             return this.error(this.msg || format(M("enterNumberMin"), val));
+        }
+        return this;
+    }
+
+    Validator.prototype.range = function(min, max) {
+        var number = parseFloat(this.str);
+        if (isNaN(number) || number > max || number < min) {
+            return this.error(this.msg || format(M("enterNumberRange"), min, max));
+        }
+        return this;
+    }
+
+    Validator.prototype.custom = function(isValidFunction) {
+        if (this.str.match(/^[\s\t\r\n]*$/)) {
+            return this.error(this.msg || M("requiredField"));
+        }
+        if (!isValidFunction()){
+            return this.error(this.msg || M("Error"))
         }
         return this;
     }

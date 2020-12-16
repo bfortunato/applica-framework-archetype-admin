@@ -267,10 +267,13 @@ strings["it"] = {
     enterNumber: "Inserire un numero",
     enterNumberMin: "Inserire un numero <= di {0}",
     enterNumberMax: "Inserire un numero >= di {0}",
+    enterNumberRange: "Inserire un numero >= di {0} e <= di {1}",
     invalidNumber: "Inserire un numero",
     enterDecimal: "Inserire un numero decimale",
     enterInteger: "Inserire un numero intero",
     enterDate: "Inserire una data valida",
+    dateCanBeforeToday: "La data deve essere <= a quella odierna",
+    adultDateRequired: "Devi essere maggiorenne",
     enterFiscalCode: "Inserire un codice fiscale valido",
     invalidCreditCard: "Carda di credito non valida",
     invalidEmail: "Email non valida",
@@ -449,7 +452,9 @@ strings["it"] = {
     insertValueAndPressEnter: "Inserisci il valore e premi invio oppure clicca su ricerca",
     typeForSearching: "Inizia a scrivere per cercare",
     searching: "Sto cercando ...",
-    registrationDate: "Data registrazione"
+    registrationDate: "Data registrazione",
+    enterNumber: "Inserisci numero",
+    enterMail: "Inserisci e-mail",
 }
 
 export function setLanguage(language_) {

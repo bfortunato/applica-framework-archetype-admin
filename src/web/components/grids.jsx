@@ -1383,6 +1383,7 @@ export class Grid extends React.Component {
             return
         }
 
+        this.props.data.rows.forEach(r => r.selected = false)
         this.selection.handle(row)
     }
 

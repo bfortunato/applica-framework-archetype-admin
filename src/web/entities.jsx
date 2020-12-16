@@ -1,5 +1,6 @@
+import React from "react";
 import {CheckCell, DateCell, MultiTextCell, TextCell} from "./components/grids";
-import {Autocomplete, DateTime, Image, Mail, PasswordText, ReadOnlyText, Select, Text, YesNo} from "./components/forms";
+import {Autocomplete, DateTime, Image, Mail, PasswordText, ReadOnlyText, Select, Text, YesNo, Check} from "./components/forms";
 import {EntitiesLookupContainer, ValuesLookupContainer, ValuesSelectContainer} from "./components/containers";
 import M, {M_Multiple} from "../strings";
 import {getLoggedUser, hasPermission} from "../api/session";

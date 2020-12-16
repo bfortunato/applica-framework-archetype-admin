@@ -954,6 +954,21 @@ tr.collapsible {
   }
 }
 
+.flatpickr-months {
+  .arrowUp, .arrowDown {
+    opacity: 1;
+  }
+  
+  input.numInput.cur-year {
+    width: 48px;
+    
+    &:hover {
+      background-color: #2ca097;
+    }
+  }
+} 
+
+
 //Borders
 .br-t {
   border-top: 1px solid $border-color;

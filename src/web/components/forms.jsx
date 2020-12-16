@@ -1054,14 +1054,14 @@ export class Spacer extends Control {
 export class Mail extends Control {
     render() {
         let field = this.props.field
-
+        let placeholder = optional(field.placeholder, M("enterMail"))
         return (
             <input
                 type="email"
                 className="form-control input-sm"
                 id={field.property}
                 data-property={field.property}
-                placeholder={field.placeholder}
+                placeholder={placeholder}
                 value={optional(this.props.model.get(field.property), "")}
                 onChange={this.onValueChange.bind(this)} />
         )
@@ -1070,6 +1070,10 @@ export class Mail extends Control {
 
 //https://flatpickr.js.org/options/
 export class DateTime extends LabelPropertyGenerationControl {
+    constructor(props) {
+        super(props)
+        this.initialized = false
+    }
 
     getDefaultFormat() {
         return "d/m/Y";
@@ -1083,10 +1087,16 @@ export class DateTime extends LabelPropertyGenerationControl {
         this.setData()
     }
 
-    componentWillUpdate(props,state) {
-        this.setData();
+    componentDidUpdate(prevProps, prevState) {
+        let field = this.props.field;
+        let oldValue = prevProps.model.get(field.property)
+        let newValue = this.props.model.get(field.property)
+        
+        if (newValue != null && !this.initialized || oldValue != newValue) {
+            this.setData();
+        }
     }
-
+    
     onDateChanged(value) {
         let field = this.props.field;
         let model = this.props.model;
@@ -1096,7 +1106,7 @@ export class DateTime extends LabelPropertyGenerationControl {
     setData(){
         let options = {
             locale: this.props.locale || getLanguage(),
-            dateFormat: this.getFormat()
+            dateFormat: this.getFormat(),
         };
         
         let minDate = this.props.getMinDate && this.props.getMinDate(this.props.model);
@@ -1118,9 +1128,11 @@ export class DateTime extends LabelPropertyGenerationControl {
         let me = ReactDOM.findDOMNode(this);
         let value = this.getItemValue();
 
-        if (value)
+        if (value){
             options["defaultDate"] = value
-
+            this.initialized = true
+        }
+            
         options["onChange"] = (selectedDates, dateStr, instance) => {
             let date = flatpickr.parseDate(dateStr, options.dateFormat)
             this.setLabelProperty(moment(date.getTime()).format(M("dateFormat")))
@@ -1157,15 +1169,22 @@ export class DateTime extends LabelPropertyGenerationControl {
         let disabled = this.isDisabled();
 
         return (
-            <div className="input-group" style={{marginBottom: "0px"}}>
+            <div className="input-group" style={{marginBottom: "0px"}}
+                style={this.state.focus ? InputFocusStyle : InputStyle}
+                onFocus={this.onFocus.bind(this)}
+                onBlur={this.onBlur.bind(this)}
+            >
                 <input
                     style={{paddingLeft: "0px"}}
                     disabled={disabled}
                     type="text"
                     className="form-control input-sm"
+                    style={this.state.focus ? InputDateFocusStyle : InputDateStyle}
                     id={this.getItemId()}
                     data-property={this.getItemProperty()}
-                    placeholder={this.getItemPlaceHolder()} />
+                    placeholder={this.getItemPlaceHolder()} 
+                    
+                />
                 <div className="input-group-addon">
                     <span className="zmdi zmdi-calendar" />
                 </div>
@@ -1173,7 +1192,6 @@ export class DateTime extends LabelPropertyGenerationControl {
         )
     }
 }
-
 
 export class YesNo extends Control {
     onValueChange(e) {
@@ -1223,6 +1241,37 @@ export class YesNo extends Control {
 }
 
 
+export class Check extends Control {
+    onValueChange(e) {
+        let value = e.target.checked
+        let model = this.props.model
+        let field = this.props.field
+        model.set(field.property, value)
+        this.forceUpdate()
+    }
+
+    render() {
+        let field = this.props.field
+        let content = _.isFunction(field.htmlContent) ? field.htmlContent() : field.placeholder
+        
+        return (
+            <div className="checkbox">
+                <input
+                    type="checkbox"
+                    name={field.property}
+                    id={field.property}
+                    data-property={field.property}
+                    checked={optional(this.props.model.get(field.property), false)}
+                    onChange={this.onValueChange.bind(this)} />
+                <label className="checkbox__label" htmlFor={field.property}>
+                    {content}
+                </label>
+            </div>
+        )
+    }
+}
+
+
 export class Switch extends Control {
     onValueChange(e) {
         let value = e.target.checked
@@ -1260,11 +1309,6 @@ export class Number extends Control {
         this.setState({})
     }
 
-    // getMinValue() {
-    //     return _.isFunction(this.props.getMinValue) ? this.props.getMinValue(this.props.model) : 0;
-    // }
-
-
     onValueChange(e) {
         let value = e.target.value
         let model = this.props.model
@@ -1284,7 +1328,7 @@ export class Number extends Control {
 
     render() {
         let field = this.props.field
-
+        let placeholder = optional(field.placeholder, M("enterNumber"))
         return (
             <input
                 ref="text"
@@ -1292,7 +1336,7 @@ export class Number extends Control {
                 className="form-control input-sm"
                 id={field.property}
                 data-property={field.property}
-                placeholder={field.placeholder}
+                placeholder={placeholder}
                 value={optional(this.props.model.get(field.property), "")}
                 onChange={this.onValueChange.bind(this)}/>
         )
@@ -1571,7 +1615,7 @@ export class Select extends LabelPropertyGenerationControl {
         let multiple = optional(this.props.multiple, false)
 
         return (
-            <div className="fg-line">
+            <div className="fg-line mb-3">
                 <select
                     id={field.property}
                     className="form-control"
