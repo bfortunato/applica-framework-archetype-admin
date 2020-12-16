@@ -29,7 +29,7 @@ class Header extends React.Component {
     render() {
         return (
             <header id="header" className="header clearfix">
-                <div className="navigation-trigger hidden-xl-up" data-ma-action="aside-open" data-ma-target=".sidebar">
+                <div className={"navigation-trigger " + (this.props.sideBarHidden ? "" : "hidden-xl-up")} data-ma-action="aside-open" data-ma-target=".sidebar">
                     <div className="navigation-trigger__inner">
                         <i className="navigation-trigger__line"></i>
                         <i className="navigation-trigger__line"></i>
@@ -77,8 +77,6 @@ class ProfileBox extends React.Component {
                 </div>
 
                 <div className="dropdown-menu">
-                    <a className="dropdown-item" href="#">View Profile</a>
-                    <a className="dropdown-item" href="#">Settings</a>
                     <a className="dropdown-item" onClick={this.logout.bind(this)}><i className="zmdi zmdi-time-restore"></i> Logout</a>
                 </div>
             </div>
@@ -185,7 +183,7 @@ class MainMenu extends React.Component {
 class SideBar extends React.Component {
     render() {
         return (
-            <aside id="sidebar" className="sidebar">
+            <aside id="sidebar" className={"sidebar " + (this.props.hidden ? "sidebar--hidden" : "")}>
                 <div className="scroll-wrapper scrollbar-inner">
                     <ProfileBox />
                     <MainMenuContainer />
@@ -296,6 +294,26 @@ class Layout extends React.Component {
     }
 }
 
+class LayoutNoMenu extends React.Component {
+    render() {
+        return (
+            <div>
+                <Header sideBarHidden="true" />
+                <SideBar hidden="true" />
+
+
+                <section className="content content--full">
+                    <LayoutTransition className={this.props.layoutTransitionClassName}>
+                        {this.props.children}
+                    </LayoutTransition>                    
+                </section>
+
+                <Footer />
+            </div>
+        )
+    }
+}
+
 
 class FullScreenLayout extends React.Component {
     render() {
@@ -358,5 +376,6 @@ exports.Index = Index
 exports.Screen = Screen
 exports.FullScreenLayout = FullScreenLayout
 exports.Layout = Layout
+exports.LayoutNoMenu = LayoutNoMenu
 exports.Header = Header
 exports.Footer = Footer

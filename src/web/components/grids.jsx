@@ -1628,13 +1628,13 @@ export class Grid extends React.Component {
         const quickSearchEnabled = optional(parseBoolean(this.props.quickSearchEnabled), false)
         const quickSearchPlaceholder = optional(this.props.quickSearchPlaceholder, "")
         const headerVisible = optional(parseBoolean(this.props.headerVisible), true)
-        const headerVisibleNoResults = optional(parseBoolean(this.props.headerVisibleNoResults), true)
+        const headerVisibleNoResults = optional(parseBoolean(this.props.headerVisibleNoResults), false)
         const footerVisible = optional(parseBoolean(this.props.footerVisible), true)
         const summaryVisible = optional(parseBoolean(this.props.summaryVisible), true)
         const noResultsVisible = optional(parseBoolean(this.props.noResultsVisible), true)
         const filtersVisible = optional(parseBoolean(this.props.filtersVisible), true)
         const paginationEnabled = optional(parseBoolean(this.props.paginationEnabled), true)
-        let tableClassName = optional(this.props.tableClassName, "table table-striped table-hover table-bordered")
+        let tableClassName = optional(this.props.tableClassName, "table table-striped table-hover")
         if (showFilters) {
             tableClassName += " br-t"
         }

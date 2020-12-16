@@ -181,38 +181,18 @@ export class Card extends React.Component {
 }
 
 export class FloatingButton extends React.Component {
-
     onClick() {
         if (_.isFunction(this.props.onClick)) {
             this.props.onClick()
         }
     }
 
-    componentDidMount() {
-        $(this.refs.button).tooltip({trigger: "hover"})
-    }
-
     render() {
-        let className = "btn btn-float m-btn waves-effect waves-circle waves-float btn-danger "
-        if (this.props.className) {
-            className += this.props.className
-        }
-        
         return (
-            <button 
-                ref="button"
-                type="button" 
-                className={className} 
-                onClick={this.onClick.bind(this)}
-                data-toggle="tooltip" 
-                data-placement="left" 
-                title={optional(this.props.tooltip, "")}>
-                <i className={this.props.icon}></i>
-            </button>
+            <button type="button" className="btn btn--action btn-primary" onClick={this.onClick.bind(this)}><i className={this.props.icon}></i></button>
         )
     }
 }
-
 
 
 export class ActionsMatcher {
@@ -326,7 +306,7 @@ export class HeaderBlockWithBreadcrumbs extends React.Component {
 
         let title;
         if (_.isArray(this.props.title)) {
-            title = this.props.title.map((item, i) => <BreadcrumbItem key={Math.random()} title={item.title} url={item.url} first={i == 0} last={i < this.props.title.length -1} />);
+            title = this.props.title.map((item, i) => <BreadcrumbItem key={i} title={item.title} url={item.url} first={i == 0} last={i < this.props.title.length -1} />);
 
         } else {
             title = <span dangerouslySetInnerHTML={{__html: this.props.title}}></span>
@@ -353,23 +333,19 @@ export class HeaderBlockWithBreadcrumbs extends React.Component {
 class BreadcrumbItem extends React.Component {
     constructor(props) {
         super(props)
-        this.title = this.props.title;
-        this.url = this.props.url;
-        this.last = optional(this.props.last, false);
-        this.first = optional(this.props.first, false);
     }
 
     onClick() {
-        if (this.url) {
-            ui.navigate(this.url)
+        if (this.props.url) {
+            ui.navigate(this.props.url)
         }
     }
 
     render() {
+        
 
-
-        let style = { marginLeft:  !this.first? "10px" : "px"}
-        if (this.url)
+        let style = { marginLeft:  !this.props.first ? "10px" : "px"}
+        if (this.props.url)
             style.cursor = "pointer";
 
         let iconStyle= {
@@ -377,8 +353,8 @@ class BreadcrumbItem extends React.Component {
         }
         return (
             <span onClick={this.onClick.bind(this)} style={style}>
-                {this.title}
-                {this.last && <i style={iconStyle} className="zmdi zmdi-caret-right"/>}
+                <span dangerouslySetInnerHTML={{__html: this.props.title}}></span>
+                {this.props.last && <i style={iconStyle} className="zmdi zmdi-caret-right"/>}
             </span>
         )
     }

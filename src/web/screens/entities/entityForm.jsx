@@ -22,7 +22,7 @@ export default class EntityForm extends Screen {
 
         this.discriminator = "entity_form_" + props.entity
         this.initialEntity = null
-        this.willGoBack = false
+        this.willGoBack = true
 
         connectDiscriminated(this.discriminator, this, EntitiesStore, {data: null})
     }
@@ -242,7 +242,7 @@ export default class EntityForm extends Screen {
     }
 
     generateDataDescription(data) {
-        return data? data.description : ""
+        return data ? (data.description || "") : ""
     }
 
 

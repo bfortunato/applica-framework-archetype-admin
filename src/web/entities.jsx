@@ -31,7 +31,7 @@ const entities = {
                         searchForm: SEARCH_FORM_DATE_DESCRIPTOR("registrationDate"),
                     },
 					{property: "mail", header: M("mail"), cell: TextCell, sortable: true, searchable: true},
-					{property: "roleDescription", header: M("role"), cell: TextCell, sortable: true, searchable: true},
+					{property: "roles", header: M("roles"), cell: TextCell, sortable: false, searchable: false, props: { formatter: v => v.map(r => r.role).join(", ")}},
 					{
 						property: "active",
 						header: M("active"),
@@ -45,7 +45,10 @@ const entities = {
 		},
 		form: {
 			getTitle(data, params) {
-				return !data || !data.id ? M(["create", "user"]) : M(["edit", "user"]) + " <b>" + " <b>" + data.fullDescription + "</b>" + "</b>"
+				return [
+					{title: M("usersList"), url: "/entities/user" },
+					{title: !data || !data.id ? M(["create", "user"]) : M(["edit", "user"]) + " <b>" + data.fullDescription + "</b>"},
+				]
 			},
 			getActions(data) {
 				let actions = ["back", "save", "save-go-back", "revisions"];
@@ -141,13 +144,6 @@ const entities = {
 								control: Mail,
 								label: M("mail"),
 								placeholder: M("mailAddress"),
-								size: "col-sm-6"
-							},
-							{
-								property: "active",
-								control: YesNo,
-								label: M("active"),
-								size: "col-sm-6"
 							},
 							{
 								property: "roles",
@@ -172,6 +168,11 @@ const entities = {
 										]
 									}
 								}
+							},
+							{
+								property: "active",
+								control: YesNo,
+								label: M("active"),
 							},
 						]
 					}
