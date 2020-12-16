@@ -225,7 +225,7 @@ export default class AbstractEntitiesGrid extends Screen {
     
     getHeaderVisibleNoResults() {
         let grid = entities[this.getEntity()].grid
-        return optional(grid.headerVisibleNoResults, true)
+        return optional(grid.headerVisibleNoResults, false)
     }
 
     canEdit() {

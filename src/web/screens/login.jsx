@@ -77,15 +77,15 @@ export default class Login extends Screen {
 
                         <form action="" className="lcb-form" onSubmit={this.login.bind(this)} ref="login_form">
                             <div className="login__block__body">
-                                <div className="form-group form-group--float form-group--centered">
-                                    <input type="email" name="mail" className="form-control" autoComplete="username"/>
+                                <div className="form-group form-group--centered">
                                     <label>Email</label>
+                                    <input type="email" name="mail" className="form-control" autoComplete="username"/>
                                     <i className="form-group__bar"></i>
                                 </div>
 
-                                <div className="form-group form-group--float form-group--centered">
-                                    <input type="password" name="password" className="form-control" autoComplete="current-password" />
+                                <div className="form-group form-group--centered">
                                     <label>Password</label>
+                                    <input type="password" name="password" className="form-control" autoComplete="current-password" />
                                     <i className="form-group__bar"></i>
                                 </div>
 
