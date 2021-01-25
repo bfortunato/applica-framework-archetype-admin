@@ -14,7 +14,7 @@ import {clearTabState, setSelectedTab} from "../../actions/tabs";
 import * as ui from "../utils/ui";
 import traverse from "../../utils/traverse"
 import * as config from "../../framework/config";
-import { loadEntities } from "../../api/values";
+import { getEntity, loadEntities } from "../../api/values";
 import moment from "moment";
 
 export const VALIDATION_ERROR = {}
