@@ -11,6 +11,15 @@ import {flatten} from "../utils/lang";
 import * as query from "../framework/query";
 import {get} from "./utils";
 
+export function getEntity(entity, id) {
+    if (!entity || !id) {
+        throw new Error("entity or id required")
+    }
+
+    let url = config.get("values.entity.url") + "/" + entity + "/" + id
+    return get(url)
+}
+
 export function loadEntities(entity, _query) {
     if (_.isEmpty(_query)) {
         _query = query.create();
