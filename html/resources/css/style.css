@@ -168,7 +168,7 @@ html.ismobile .global-loader {
 .form .form-group .input-icon-container {
   border-bottom: 1px solid #f0f0f0;
   font-size: 20px;
-  color: #f0f0f0; }
+  color: #AAAAAA; }
 
 .form .has-error label {
   color: #FF3E63; }
@@ -486,6 +486,13 @@ tr.collapsible {
       line-height: 26px; }
     .grid-actions .grid-actions-container a.grid-action:hover {
       background-color: #d2d2d2; }
+
+.textcell-container {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 95% !important; }
+  .textcell-container p {
+    margin: auto; }
 
 .edit-text-cell .form-control {
   margin: 0px;
@@ -835,6 +842,14 @@ tr.collapsible {
 .checkbox .checkbox__label:hover {
   cursor: pointer; }
 
+.flatpickr-months .arrowUp, .flatpickr-months .arrowDown {
+  opacity: 1; }
+
+.flatpickr-months input.numInput.cur-year {
+  width: 48px; }
+  .flatpickr-months input.numInput.cur-year:hover {
+    background-color: #2ca097; }
+
 .br-t {
   border-top: 1px solid #f0f0f0; }
 
@@ -849,6 +864,32 @@ tr.collapsible {
 
 .br {
   border: 1px solid #f0f0f0; }
+
+.parent-table-content {
+  overflow-x: scroll; }
+
+.grid-cell-container {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  height: 48px !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden; }
+  .grid-cell-container span {
+    margin-bottom: 0px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis; }
+  .grid-cell-container.checkbox-container {
+    justify-content: center; }
+  .grid-cell-container .checkbox {
+    display: flex;
+    align-items: center;
+    height: 18px; }
+
+.checkbox-container {
+  width: 48px !important; }
 
 .m-t-0 {
   margin-top: 0px !important; }

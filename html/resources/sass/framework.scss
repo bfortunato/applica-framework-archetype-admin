@@ -212,10 +212,11 @@ html.ismobile .global-loader {
       }
     }
 
+
     .input-icon-container {
       border-bottom: 1px solid $border-color;
       font-size: 20px;
-      color: $border-color;
+      color: $color-grey;
     }
   }
 
@@ -476,6 +477,18 @@ tr.collapsible {
     }
   }
 }
+
+.textcell-container {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 95% !important;
+  p {
+    margin: auto
+  }
+}
+
+
+
 
 .edit-text-cell {
   .form-control {
@@ -985,6 +998,45 @@ tr.collapsible {
 .br {
   border: 1px solid $border-color;
 }
+
+.parent-table-content{
+  overflow-x: scroll;
+}
+
+
+.grid-cell-container {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  height: 48px !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+
+  span {
+    margin-bottom: 0px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &.checkbox-container {
+    justify-content: center;
+  }
+
+  .checkbox {
+    display: flex;
+    align-items: center;
+    height: 18px;
+
+
+  }
+}
+
+.checkbox-container {
+  width: 48px !important;
+}
+
 
 $max: 50;
 $offset: 5;
