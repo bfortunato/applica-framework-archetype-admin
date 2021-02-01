@@ -222,7 +222,7 @@ export default class AbstractEntitiesGrid extends Screen {
         let grid = entities[this.getEntity()].grid
         return optional(grid.quickSearchPlaceholder, "")
     }
-    
+
     getHeaderVisibleNoResults() {
         let grid = entities[this.getEntity()].grid
         return optional(grid.headerVisibleNoResults, false)
@@ -245,6 +245,11 @@ export default class AbstractEntitiesGrid extends Screen {
 
     hideFilters() {
         return false;
+    }
+
+
+    selectWithCheck() {
+        return optional(this.props.selectWithCheck, false)
     }
 
     generateHeaderBlock() {
@@ -279,7 +284,7 @@ export default class AbstractEntitiesGrid extends Screen {
                     quickSearchEnabled={this.isQuickSearchEnabled()}
                     quickSearchPlaceholder={this.getQuickSearchPlaceholder()}
                     headerVisibleNoResults={this.getHeaderVisibleNoResults()}
-                    // selectWithCheck="true"
+                    selectWithCheck={this.selectWithCheck()}
                 />
 
                 {this.renderExtra()}

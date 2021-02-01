@@ -19,12 +19,16 @@ export const AND = "and"
 export const RANGE = "range"
 export const EXACT = "exact"
 
+
+const DEFAULT_ROWS_PER_PAGE = 50
+const DEFAULT_PAGE = 1
+
 export class Query extends Observable {
     constructor(init) {
         super()
 
-        this.page = 0
-        this.rowsPerPage = 0
+        this.page = DEFAULT_PAGE
+        this.rowsPerPage = DEFAULT_ROWS_PER_PAGE
         this.sorts = []
         this.filters = []
         this.keyword = null
@@ -36,6 +40,10 @@ export class Query extends Observable {
 
     live() {
         this.invokationEnabled = true
+    }
+
+    hideFilter(property) {
+        updatedList(this.filters,  s => s.property === property, s => s.hide = true)
     }
 
     die() {
@@ -67,14 +75,6 @@ export class Query extends Observable {
 
         this.invokeChange()
         return this
-    }
-
-    hasFilter(property) {
-        return _.any(this.filters, f => f.property == property)
-    }
-
-    hasFilterValue(property, value) {
-        return _.any(this.filters, f => f.property == property && f.value == value)
     }
 
     like(prop, value) {
@@ -162,7 +162,8 @@ export class Query extends Observable {
     }
 
     clearFilters() {
-        this.filters = []
+        //preservo solo gli eventuali filtri nascosti
+        this.filters = _.filter(this.filters, f => f.hide)
         this.invokeChange()
         return this
     }
@@ -206,11 +207,11 @@ export class Query extends Observable {
 function cleanFilter(filter) {
     if (filter.type === OR || filter.type === AND) {
         if (!_.isArray(filter.value)) {
-            filter.children = []    
+            filter.children = []
         } else {
             filter.children = _.map(filter.value, f => cleanFilter(f));
             filter.value = filter.children;
-        }        
+        }
     }
 
     return filter;
@@ -269,11 +270,6 @@ const FILTERS = {
 
         return value > other
     },
-
-    hideFilter(property) {
-        updatedList(this.filters,  s => s.property === property, s => s.hide = true)
-    },
-
 
     ne: (value, other) => {
         return !FILTERS.eq(value, other)
@@ -377,7 +373,7 @@ export function apply(query, result) {
 
     for (let filter of query.filters) {
         const filterFn = FILTERS[filter.type] || FILTERS.eq
-        
+
         rows = _.filter(rows, r => filterFn(r.data[filter.property], filter.value))
     }
 
@@ -386,7 +382,7 @@ export function apply(query, result) {
             const value = r.data[sort.property];
             if (typeof(value) === "string") {
                 return stringPower(value) * (sort.descending ? -1 : 1)
-            } 
+            }
 
             return value * (sort.descending ? -1 : 1)
         });
@@ -394,7 +390,7 @@ export function apply(query, result) {
 
     const paginatedRows = paginate(rows, query)
 
-    return {totalRows: paginatedRows.length, rows: paginatedRows, originalRows, originalTotalRows}   
+    return {totalRows: paginatedRows.length, rows: paginatedRows, originalRows, originalTotalRows}
 }
 
 
@@ -407,7 +403,7 @@ export function merge(first, second) {
             if (!_.any(second.filters, f2 => f2.property === f.property)) {
                 filters.push({ property: f.property, type: f.type, value: f.value });
             }
-        });        
+        });
     }
 
     if (_.isArray(second.filters)) {
@@ -415,7 +411,7 @@ export function merge(first, second) {
             if (f.value) {
                 filters.push({ property: f.property, type: f.type, value: f.value });
             }
-        });        
+        });
     }
 
     const sorts = [];
@@ -425,13 +421,13 @@ export function merge(first, second) {
             if (!_.any(second.sorts, f2 => f2.property === f.property)) {
                 sorts.push({ property: f.property, descending: f.descending });
             }
-        });        
+        });
     }
 
     if (_.isArray(second.sorts)) {
         _.each(second.sorts, f => {
             sorts.push({ property: f.property, descending: f.descending });
-        });        
+        });
     }
 
     const projections = []
@@ -441,13 +437,13 @@ export function merge(first, second) {
             if (!_.any(second.projections, f2 => f2.property === f.property)) {
                 projections.push({ property: f.property, visible: f.visible });
             }
-        });        
+        });
     }
 
     if (_.isArray(second.projections)) {
         _.each(second.projections, f => {
             projections.push({ property: f.property, visible: f.visible });
-        });        
+        });
     }
 
     const nq = create()

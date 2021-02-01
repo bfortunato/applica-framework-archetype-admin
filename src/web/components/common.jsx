@@ -3,7 +3,45 @@ import {optional} from "../../utils/lang";
 import {isEnter} from "../utils/keyboard";
 import * as ui from "../utils/ui";
 import _ from "underscore";
+import ReactDOM from "react-dom";
 import {hasPermission} from "../../api/session";
+
+export class ComponentWithTooltips extends React.Component {
+
+    constructor(props) {
+        super(props);
+    }
+
+    initTooltip() {
+        _.each(this.getAllTooltipItems(), i => $(i).tooltip({trigger: "hover"}))
+    }
+
+    getAllTooltipItems() {
+        const me = ReactDOM.findDOMNode(this)
+        let items = []
+        $(me).find("[data-toggle=\"tooltip\"]").each(function() {
+            items.push(this);
+        })
+        return items;
+    }
+
+    destroyAllTooltips() {
+        _.each(this.getAllTooltipItems(), i => $(i).tooltip("dispose"))
+    }
+
+    componentDidMount() {
+        this.initTooltip()
+    }
+
+    componentDidUpdate() {
+        this.destroyAllTooltips();
+        this.initTooltip()
+    }
+
+    componentWillUnmount() {
+        this.destroyAllTooltips()
+    }
+}
 
 export class DropdownActionButton extends React.Component {
     componentDidMount() {

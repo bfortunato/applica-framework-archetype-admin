@@ -463,6 +463,13 @@ export function getLanguage() {
     return language
 }
 
+export function hasLabel(key) {
+    if (strings[language] && strings[language][key]) {
+        return true
+    } else
+        return false;
+}
+
 export default function M(key) {
 
     if (!_.isArray(key)) {

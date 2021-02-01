@@ -1,28 +1,65 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import M, { getLanguage } from "../../strings"
-import {Actions, Card, FloatingButton} from "./common"
-import {diff, forceBoolean, format, optional, parseBoolean} from "../../utils/lang"
+import M, {getLanguage} from "../../strings"
+import {Actions, Card, HeaderBlock} from "./common"
+import {diff, format, optional, parseBoolean, safeGet} from "../../utils/lang"
 import {Observable} from "../../aj/events"
-import {ActionsCell, Grid, resultToGridData} from "./grids"
-import * as query from "../../framework/query"
-import {isCancel, isEnter} from "../utils/keyboard"
+import {ActionsCell, Grid, HIDDEN_FILTER_LABEL, resultToGridData} from "./grids"
+import {isCancel} from "../utils/keyboard"
 import * as inputfile from "../utils/inputfile"
 import * as datasource from "../../utils/datasource"
 import _ from "underscore"
-import {clearTabState, setSelectedTab} from "../../actions/tabs";
-import * as ui from "../utils/ui";
-import traverse from "../../utils/traverse"
+import * as session from "../../api/session";
+import {getSessionToken, hasPermission, isSuperuser} from "../../api/session";
+import {toast} from "../../plugins";
 import * as config from "../../framework/config";
-import { loadEntities } from "../../api/values";
-import moment from "moment";
+import {connect} from "../utils/aj";
+import * as ui from "../utils/ui";
+import {clearTabState, setSelectedTab} from "../../actions/tabs";
+import {discriminated} from "../../utils/ajex";
+import {TabsStore} from "../../stores/tabs"
+import * as notificationCenter from "../../utils/notificationCenter";
+import {Dialog} from "./dialogs";
+import {formatDate, getDateFromString, momentInstance} from "../../utils/date";
 
 export const VALIDATION_ERROR = {}
+
+
+function isFieldVisible(field, descriptor, model) {
+
+    let isVisible = true;
+    if (_.isFunction(descriptor.visibility)) {
+        isVisible = descriptor.visibility(field, model, descriptor)
+    }
+
+    if (isVisible) {
+        if (_.isFunction(field.visibility)) {
+            isVisible = field.visibility(model)
+        }
+    }
+
+    return isVisible
+}
+
+function setValueInModel(model, property, value) {
+    let i;
+    property = property.split('.');
+    for (i = 0; i < property.length - 1; i++) {
+        if (i === 0) {
+            model = model.data[property[i]];
+        } else if (model != null) {
+            model = model[property[i]];
+        }
+    }
+    if (model != null)
+        model[property[i]] = value;
+}
 
 export class Model extends Observable {
     constructor(form) {
         super()
 
+        this.entity = null;
         this.descriptor = null
         this.initialData = {}
         this.data = {}
@@ -40,7 +77,7 @@ export class Model extends Observable {
 
     load(data) {
         this.data = data ? data : {}
-        if (!this.initialized && data != null) {
+        if (data != null && (!this.initialized || data != this.initialData)) {
             this.invoke("load", this)
             this.initialized = true
 
@@ -147,12 +184,12 @@ export class Model extends Observable {
     }
 
     set(property, value) {
-        const initialValue = traverse(this.data).get(property);
-        traverse(this.data).set(property, value);
+        let initialValue = this.data[property]
+        this.data[property] = value
 
         if (!this.changesTrackingDisabled) {
             this.invoke("property:change", property, value)
-        }   
+        }
     }
 
     assign(property, value) {
@@ -161,12 +198,15 @@ export class Model extends Observable {
     }
 
     get(property) {
-        const value = traverse(this.data).get(property);
-        return value !== undefined ? value : null;
+        if (_.has(this.data, property)) {
+            return this.data[property]
+        } else {
+            return null
+        }
     }
 
     validateField(validationResult, field) {
-        let value = this.get(field.property);
+        let value = this.data[field.property]
         try {
             if (_.isFunction(field.validator)) {
                 field.validator(value)
@@ -188,16 +228,14 @@ export class Model extends Observable {
         let sanitized = {}
 
         _.each(_.keys(this.data), property => {
-            if (!property.includes("__label")){
-                let value = this.get(property);
-                let field = this.findField(property);
-                if (field) {
-                    if (_.isFunction(field.sanitizer)) {
-                        value = field.sanitizer(value)
-                    }
+            let value = this.data[property]
+            let field = this.findField(property)
+            if (field) {
+                if (_.isFunction(field.sanitizer)) {
+                    value = field.sanitizer(value)
                 }
-                sanitized[property] = value
             }
+            sanitized[property] = value
         })
 
         return sanitized
@@ -262,31 +300,33 @@ export class Model extends Observable {
             valid: true
         }
     }
+
+    generateValidationResultForForm() {
+        return {
+            errors: _.filter(_.keys(this.validationResult), k => !this.validationResult[k].valid).map((k) => { return {property: k, message: this.validationResult[k].message}})
+        }
+    }
 }
 
 export class Label extends React.Component {
     render() {
-        let field = this.props.field
-        let className = optional(this.props.className, "")
+        let field = this.props.field;
+        let model = this.props.model;
+        let className = optional(this.props.className, "");
+        let text = _.isFunction(field.getLabel) ? field.getLabel(model) : field.label;
+        let isRequired = _.isFunction(field.isRequired) ? field.isRequired(model) : optional(field.isRequired, false)
+        if (isRequired) {
+            text = text + " *"
+        }
 
         return (
-            !_.isEmpty(field.label) && <label style={{width: "100%"}} htmlFor={field.property} className={className}>{field.label}</label>
+            !_.isEmpty(text) &&
+            <label style={{width: "100%"}} htmlFor={field.property} className={className}>{text}</label>
         )
     }
 }
 
 export class Area extends React.Component {
-
-    isFieldVisible(field) {
-        let descriptor = this.props.descriptor
-        let model = this.props.model
-
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
-        }
-
-        return true
-    }
 
     getExtra() {
         return null
@@ -298,16 +338,24 @@ export class Area extends React.Component {
         let inline = optional(descriptor.inline, false)
         inline = optional(area.inline, inline)
         let defaultFieldCass = inline ? InlineField : Field
-        let tabs = !_.isEmpty(area.tabs) && <Tabs tabs={area.tabs} model={this.props.model} descriptor={descriptor} />
-        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {key: f.property, model: this.props.model, field: f, descriptor: descriptor}))
+        let tabs = !_.isEmpty(area.tabs) &&
+            <Tabs areaId={optional(area.id, Math.random())} tabs={area.tabs} model={this.props.model}
+                  descriptor={descriptor}/>
+        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => isFieldVisible(f, descriptor, this.props.model)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {
+            key: f.property,
+            model: this.props.model,
+            field: f,
+            descriptor: descriptor
+        }))
+        let title = _.isFunction(area.getTitle) ? area.getTitle(this.props.model, this.props.params) : area.title;
 
         return (
-            <Card title={area.title} subtitle={area.subtitle} actions={area.actions}>
+            <Card title={title} subtitle={area.subtitle} actions={area.actions}>
                 {tabs}
-                <div className="row">
-
+                <div className="col-md-12 zero-padding">
+                    <div className="row">
                         {fields}
-
+                    </div>
                 </div>
                 <div className="clearfix"></div>
 
@@ -319,41 +367,82 @@ export class Area extends React.Component {
 
 export class AreaNoCard extends React.Component {
 
-    isFieldVisible(field) {
-        let descriptor = this.props.descriptor
-        let model = this.props.model
-
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
+    isAreaVisible() {
+        let model = this.props.model;
+        if (_.isFunction(this.props.area.visibility)) {
+            return this.props.area.visibility(model)
         }
+        return true;
+    }
 
-        return true
+    onClick() {
+        if (this.props.area.fields.length > 0 && _.isFunction(this.props.area.fields[0].onClick)) {
+            this.props.area.fields[0].onClick();
+        }
     }
 
     render() {
         let descriptor = this.props.descriptor
         let area = this.props.area
-        let tabs = !_.isEmpty(area.tabs) && <Tabs tabs={area.tabs} model={this.props.model} />
-        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => Field), {key: f.property, model: this.props.model, field: f,  descriptor: descriptor}))
+        let showTabs = _.isFunction(area.showTabs) ? area.showTabs(this.props.model) : true
+        let tabs = !_.isEmpty(area.tabs) && showTabs &&
+            <Tabs areaId={optional(area.id, Math.random())} lcid={lcid} tabs={area.tabs} model={this.props.model}/>
+        let fields = !_.isEmpty(area.fields) && _.filter(area.fields, f => isFieldVisible(f, descriptor, this.props.model)).map(f => React.createElement(optional(() => f.component, () => Field), {
+            key: f.property != null ? f.property : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+            model: this.props.model,
+            field: f,
+            descriptor: descriptor,
+            onCancel: this.props.onCancel,
+            onClick: this.onClick.bind(this)
+        }))
         let actionKey = 1
+        let className = "area-no-card col-12";
+        if (area.className) {
+            className += " " + area.className;
+        }
 
-        return (
-            <div className="area-no-card">
-                <div className="area-no-card-header">
-                    {area.title &&
+        let bodyClassName = "area-no-card-body";
+        if (area.bodyClassName) {
+            bodyClassName += " " + area.bodyClassName;
+        }
+        let useBootstrapRow = optional(descriptor.useBootstrapRow, true);
+        let style = useBootstrapRow
+            ? {
+                marginRight: "-15px",
+                marginLeft: "-15px",
+            }
+            : {
+                marginRight: "0",
+                marginLeft: "0",
+            };
+
+        if (this.isAreaVisible()) {
+            return (
+                <div className={className}>
+                    <div className="area-no-card-header">
+                        {area.title &&
                         <h2>{area.title} {area.subtitle && <small>{area.subtitle}</small>}</h2>
-                    }
+                        }
 
-                    <Actions actions={area.actions} />
+                        <Actions actions={area.actions}/>
+                    </div>
+                    <div className={bodyClassName} stformyle={style}>
+                        <div className="clearfix col-12">
+                            <div className="row">{fields}</div>
+                        </div>
+                        {tabs}
+                    </div>
+                    {area.separator &&
+                    <div className={area.separator}></div>
+                    }
                 </div>
-                <div className="area-no-card-body">
-                    {tabs}
-                    <div className="row">{fields}</div>
-                </div>
-            </div>
-        )
+            )
+        } else {
+            return <div/>
+        }
     }
 }
+
 
 export class Tabs extends React.Component {
 
@@ -377,19 +466,6 @@ export class Tabs extends React.Component {
         TabsStore.unsubscribe(this)
     }
 
-    isFieldVisible(field) {
-
-        let descriptor = this.props.descriptor
-        let model = this.props.model
-
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
-        }
-
-        return true
-
-    }
-
     canClearTabState() {
         return false;
     }
@@ -399,7 +475,7 @@ export class Tabs extends React.Component {
     }
 
     getTabClass(selectedTab, key, firstTabKey) {
-        if ((selectedTab && key === selectedTab) || (!selectedTab && key === firstTabKey)) {
+        if ((selectedTab && key == selectedTab) || (!selectedTab && key == firstTabKey)) {
             return "active"
         }
         return "";
@@ -443,7 +519,7 @@ export class Tabs extends React.Component {
 
             let defaultFieldClass = inline ? InlineField : Field
 
-            let fields = !_.isEmpty(c.fields) && _.filter(c.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldClass), {
+            let fields = !_.isEmpty(c.fields) && _.filter(c.fields, f => isFieldVisible(f, descriptor, this.props.model)).map(f => React.createElement(optional(() => f.component, () => defaultFieldClass), {
                 key: f.property,
                 model: this.props.model,
                 field: f,
@@ -488,7 +564,7 @@ export class Tabs extends React.Component {
 let AREA_KEY = 1
 let TAB_KEY = 1
 
-function generateKeys(descriptor) {
+export function generateKeys(descriptor) {
     if (!descriptor.hasKeys) {
         if (!_.isEmpty(descriptor.areas)) {
             descriptor.areas.forEach(a => {
@@ -497,7 +573,7 @@ function generateKeys(descriptor) {
                 }
 
                 if (!_.isEmpty(a.tabs)) {
-                    a.tabs.forEach(t => {
+                    a.tabs.forEach(t => {
                         if (_.isEmpty(t.key)) {
                             t.key = "tab" + TAB_KEY++
                         }
@@ -507,7 +583,7 @@ function generateKeys(descriptor) {
         }
 
         if (!_.isEmpty(descriptor.tabs)) {
-            descriptor.tabs.forEach(t => {
+            descriptor.tabs.forEach(t => {
                 if (_.isEmpty(t.key)) {
                     t.key = "tab" + TAB_KEY++
                 }
@@ -536,12 +612,12 @@ export class FormSubmitEvent {
 
 export class FormBody extends React.Component {
 
-    isFieldVisible(field) {
-        let descriptor = this.props.descriptor
+
+    isAreaVisible(area) {
         let model = this.props.model
 
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
+        if (_.isFunction(area.visibility)) {
+            return area.visibility(model)
         }
 
         return true
@@ -553,31 +629,55 @@ export class FormBody extends React.Component {
         let model = this.props.model
         let inline = optional(descriptor.inline, false)
         let defaultFieldCass = inline ? InlineField : Field
-        let areas = !_.isEmpty(descriptor.areas) && descriptor.areas.map(a => React.createElement(optional(() => a.component, () => Area), {key: a.key, model: model, area: a, descriptor}))
-        let tabs = !_.isEmpty(descriptor.tabs) && <Tabs tabs={descriptor.tabs} model={model} descriptor={descriptor} />
-        let fields = !_.isEmpty(descriptor.fields) && _.filter(descriptor.fields, f => this.isFieldVisible(f)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {key: f.property, model: model, field: f, descriptor: descriptor, params : this.props.params, onCancel: this.props.onCancel}))
+        let areas = !_.isEmpty(descriptor.areas) && _.filter(descriptor.areas, a => this.isAreaVisible(a)).map(a => React.createElement(optional(() => a.component, () => Area), {
+            key: a.key,
+            model: model,
+            area: a,
+            descriptor,
+            canSave: this.props.canSave,
+            onCancel: this.props.onCancel
+        }))
+        let tabs = !_.isEmpty(descriptor.tabs) &&
+            <Tabs areaId={optional(area.id, Math.random())} tabs={descriptor.tabs} model={model}
+                  descriptor={descriptor}/>
+        let fields = !_.isEmpty(descriptor.fields) && _.filter(descriptor.fields, f => isFieldVisible(f, descriptor, model)).map(f => React.createElement(optional(() => f.component, () => defaultFieldCass), {
+            key: f.property,
+            model: model,
+            field: f,
+            descriptor: descriptor,
+            params: this.props.params,
+            onCancel: this.props.onCancel
+        }))
         let showInCard = optional(descriptor.showInCard, true)
 
+        let className = "form-body clearfix " + optional(this.props.className, "")
+
         return (
-            <div className="form-body col-sm-12 zero-padding">
+            <div className={className}>
                 {areas}
                 {(tabs.length > 0 || fields.length > 0) &&
-                    (showInCard
+                (showInCard
                         ?
                         <Card padding="false">
                             {tabs}
-                            <div className="p-l-30 p-r-30">
-                                {fields}
-                            </div>                            
-                            <div className="clearfix"></div>
-                        </Card> 
+                            <div className="">
+                                <div className="row">
+                                    {fields}
+                                </div>
+                            </div>
+                            <div className="clearfix"/>
+                        </Card>
                         :
                         <div className="form-body-content">
-                            {tabs}
-                            {fields}
-                            <div className="clearfix"></div>
+                            <div className="col-12">
+                                <div className="row">
+                                    {tabs}
+                                    {fields}
+                                </div>
+                            </div>
+                            <div className="clearfix"/>
                         </div>
-                    )
+                )
                 }
             </div>
         )
@@ -589,6 +689,7 @@ export class Form extends React.Component {
         super(props)
 
         this.model = new Model(this);
+        this.model.entity = this.props.entity
         this.model.once("load", () => {
             let descriptor = this.props.descriptor;
             if (_.isFunction(descriptor.onModelLoadFirstTime)) {
@@ -603,7 +704,20 @@ export class Form extends React.Component {
             }
         })
 
+        let descriptor = this.props.descriptor;
 
+        if (descriptor.stores) {
+            descriptor.stores.forEach(s => connect(this, s))
+        }
+
+
+    }
+
+    componentWillUpdate(props, state) {
+        let descriptor = this.props.descriptor
+        if (_.isFunction(descriptor.formUpdateFunction)) {
+            descriptor.formUpdateFunction(state, this.state, this.model)
+        }
     }
 
     submit() {
@@ -666,28 +780,14 @@ export class Form extends React.Component {
         this.model.load(nextProps.data)
     }
 
-    isFieldVisible(field) {
-        let descriptor = this.props.descriptor
-        let model = this.model
-
-        if (_.isFunction(descriptor.visibility)) {
-            return descriptor.visibility(field, model, descriptor)
-        }
-
-        return true
-    }
-
     getExtra() {
         return null
     }
 
     showFormFooter() {
-        if (_.isFunction(this.props.descriptor.showFormFooter)) {
-            return this.props.descriptor.showFormFooter(this.model)
-        }
-
         return optional(this.props.descriptor.showFormFooter, true)
     }
+
 
     render() {
         let descriptor = this.props.descriptor
@@ -695,17 +795,17 @@ export class Form extends React.Component {
 
         let inline = optional(descriptor.inline, false)
         let className = inline ? "form-horizontal" : ""
-        
         let showFormFooter = this.showFormFooter();
+        let style = optional(this.props.style, {})
 
 
         return (
-            <div className="form">
+            <div className="form" style={style}>
                 <form action="" className={className} role="form" onSubmit={this.onSubmit.bind(this)}>
-                    <FormBody descriptor={descriptor} model={model} />
+                    <FormBody  descriptor={descriptor} model={model} onCancel={this.onCancel.bind(this)}/>
 
                     {showFormFooter &&
-                    <FormFooter descriptor={descriptor}  model={model} onCancel={this.onCancel.bind(this)} onClickFloatingBtn={this.submit.bind(this)} />
+                    <FormFooter canCancel={this.props.canCancel} canSave={this.props.canSave} descriptor={descriptor} model={model} onCancel={this.onCancel.bind(this)}/>
                     }
                     <div className="clearfix"></div>
                     {this.getExtra()}
@@ -714,21 +814,17 @@ export class Form extends React.Component {
         )
     }
 }
+
 class FormFooter extends React.Component {
 
     constructor(props) {
         super(props)
     }
 
-    onCancel() {
-        if(_.isFunction(this.props.onCancel)) {
-            this.props.onCancel();
-        }
-    }
 
-    onClickFloatingBtn() {
-        if(_.isFunction(this.props.onClickFloatingBtn)) {
-            this.props.onClickFloatingBtn();
+    onCancel() {
+        if (_.isFunction(this.props.onCancel)) {
+            this.props.onCancel();
         }
     }
 
@@ -742,71 +838,87 @@ class FormFooter extends React.Component {
         return _.isFunction(descriptor.canCancel) ? descriptor.canCancel(this.props.model) : true
     }
 
-    showFloatingSaveBtn() {
-        let descriptor = this.props.descriptor;
-        return forceBoolean(descriptor.showFloatingSaveBtn)
-    }
-
     render() {
         const descriptor = this.props.descriptor;
 
         let submitText = M("save");
         let cancelText = M("back");
-        if(descriptor) {
-            if(descriptor.submitText) {
+        if (descriptor) {
+            if (descriptor.submitText) {
                 submitText = descriptor.submitText;
             }
-            if(descriptor.cancelText) {
+            if (descriptor.cancelText) {
                 cancelText = descriptor.cancelText;
             }
         }
 
-        const style = {marginBottom: "30px"}
+        const style = {paddingBottom: "30px"}
 
         const canSave = this.canSave();
         const canCancel = this.canCancel();
-        const showFloatingSaveBtn = this.showFloatingSaveBtn();
 
         return (
 
             <div className="btn-actions-bar" style={style}>
-                {canSave && showFloatingSaveBtn && <FloatingButton icon="zmdi zmdi-save" tooltip={M("save")} onClick={this.onClickFloatingBtn.bind(this)}  />}
 
                 {canCancel &&
-                <button type="button" className="btn btn-dark" onClick={this.onCancel.bind(this)}><i className="zmdi zmdi-arrow-back" /> {cancelText}</button>
+                <button type="button" className="btn btn-dark" onClick={this.onCancel.bind(this)}><i
+                    className="zmdi zmdi-arrow-back"/> {cancelText}</button>
                 }
-                {canSave && <button type="submit" className="btn btn-primary"><i className="zmdi zmdi-save" /> {submitText}</button>}
+                {canSave &&
+                <button type="submit" className="btn btn-primary"><i className="zmdi zmdi-save"/> {submitText}</button>}
             </div>
-
         );
     }
 
 }
 
 /************************
-    Controls and Fields
+ Controls and Fields
  ************************/
 export const FORM_FOOTER = "actionsButtons"
+
 export class Field extends React.Component {
+
+    componentDidMount() {
+        let self = this;
+        let me = ReactDOM.findDOMNode(this)
+        $(me).find("#" + this.generatePopoverId()).popover();
+        $('body').on('click', function (e) {
+            $('[data-toggle=popover]').each(function () {
+                // hide any open popovers when the anywhere else in the body is clicked
+                if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
+                    $(this).popover('hide');
+                }
+            });
+        });
+    }
+
+    generatePopoverId() {
+        return "popover_" + this.props.field.property
+    }
+
     render() {
 
-        if(this.props.field.property == FORM_FOOTER) {
+        if (this.props.field.property == FORM_FOOTER) {
 
             return (
-
-                <FormFooter descriptor={this.props.descriptor}  model={this.props.model} onCancel={this.onCancel.bind(this)} />
+                <div className="col-12">
+                    <FormFooter descriptor={this.props.descriptor} model={this.props.model}
+                                onCancel={this.props.onCancel.bind(this)}/>
+                </div>
 
             );
 
         }
-
+        let popoverId = this.generatePopoverId()
         let model = this.props.model
         let className = "form-group " + (this.props.field.size ? this.props.field.size : "col-sm-12")
         let control = React.createElement(_.isFunction(this.props.field.getControl) ? this.props.field.getControl(model) : this.props.field.control, _.assign({
             field: this.props.field,
             model: this.props.model
         }, this.props.field.props));
-        let hasLabel = this.props.field.label != undefined && this.props.field.label != null
+        let hasLabel = (this.props.field.label != undefined && this.props.field.label != null) || _.isFunction(this.props.field.getLabel)
         let validationResult = optional(model.validationResult[this.props.field.property], {valid: true})
         if (!validationResult.valid) {
             className += " has-error"
@@ -814,14 +926,37 @@ export class Field extends React.Component {
         if (!_.isEmpty(this.props.field.className)) {
             className += " " + this.props.field.className
         }
+
+        let style = {};
+
+        if (this.props.field.emptyRow) {
+            style["minHeight"] = 0;
+            style["marginBottom"] = 0;
+        } else {
+            style["minHeight"] = 58;
+        }
+
+        if (this.props.field.hidden && this.props.field.hidden == true) {
+            className = "";
+            style = {};
+        }
+        let hasToolTip = this.props.field.tooltip != undefined && this.props.field.tooltip != null
         return (
-            <div className={className} style={{minHeight: 58}}>
-                {hasLabel &&
-                    <Label field={this.props.field}/>
-                }
+            <div className={className} style={style}>
+                <div style={{display: 'inline-flex'}}>
+                    {hasLabel &&
+                    <Label field={this.props.field} model={model}/>
+                    }
+                    {hasToolTip &&
+                    <a id={popoverId} style={{cursor: 'pointer', marginLeft: '5px', color: '#2196F3'}} className=""
+                       title=""
+                       data-toggle="popover" data-placement="top" data-original-title={this.props.field.tooltip}>
+                        <i className="zmdi zmdi-info-outline"/>
+                    </a>}
+                </div>
                 {control}
                 {!validationResult.valid && !_.isEmpty(validationResult.message) &&
-                    <small className="help-block">{validationResult.message}</small>
+                <small className="help-block">{validationResult.message}</small>
                 }
                 <i className="form-group__bar"></i>
             </div>
@@ -831,16 +966,20 @@ export class Field extends React.Component {
 
 export class InlineField extends React.Component {
     render() {
-        if(this.props.field.property == FORM_FOOTER) {
+        if (this.props.field.property == FORM_FOOTER) {
             return (
-                <FormFooter descriptor={this.props.descriptor} model={this.props.model}  onCancel={this.onCancel.bind(this)} />
+                <FormFooter descriptor={this.props.descriptor} model={this.props.model}
+                            onCancel={this.onCancel.bind(this)}/>
             );
 
         }
 
         let model = this.props.model
-        let className = "row m-b-20 " + (this.props.field.size ? this.props.field.size : "col-sm-12")
-        let control = React.createElement(this.props.field.control, _.assign({field: this.props.field, model: this.props.model}, this.props.field.props))
+        let className = "form-group " + (this.props.field.size ? this.props.field.size : "col-sm-12")
+        let control = React.createElement(this.props.field.control, _.assign({
+            field: this.props.field,
+            model: this.props.model
+        }, this.props.field.props))
         let hasLabel = this.props.field.label != undefined && this.props.field.label != null
         let inline = optional(this.props.inline, false)
         let controlSize = hasLabel ? "col-sm-10" : "col-sm-12"
@@ -862,7 +1001,7 @@ export class InlineField extends React.Component {
                 <div className={controlSize}>
                     {control}
                     {!validationResult.valid && !_.isEmpty(validationResult.message) &&
-                        <small className="help-block">{validationResult.message}</small>
+                    <small className="help-block">{validationResult.message}</small>
                     }
                 </div>
                 <i className="form-group__bar"></i>
@@ -877,16 +1016,6 @@ export class Control extends React.Component {
         super(props)
     }
 
-    onKeyDown(e) {
-        if (isEnter(e.which)) {
-            e.preventDefault()
-        }
-
-        if (_.isFunction(this.props.onKeyDown)) {
-            this.props.onKeyDown(this.props.model, e)
-        }
-    }
-
     onValueChange(e) {
         let value = e.target.value
         let model = this.props.model
@@ -896,36 +1025,73 @@ export class Control extends React.Component {
     }
 }
 
-export class LabelPropertyGenerationControl extends Control {
+//TODO: non funziona ancora
+export class Currency extends Control {
+
     constructor(props) {
-        super(props)
+        super(props);
+        this.decimal = props.decimal || ",";
+        this.prefix = props.prefix || "€";
+        this.thousands = props.thousands || ".";
+        this.precision = props.precision || 2
     }
 
-    setLabelProperty(label) {
-        let model = this.props.model
+    componentDidUpdate() {
         let field = this.props.field
-        let labelProp = field.property+"__label"
-        model.untrackChanges()
-        model.set(labelProp, label)
-        model.trackChanges()
+        let me = ReactDOM.findDOMNode(this)
+        $(me).find("#" + field.property).maskMoney({
+            prefix: this.prefix,
+            thousands: this.thousands,
+            decimal: this.decimal,
+            precision: this.precision
+        });
     }
-}
 
-
-export class Text extends Control {
     render() {
         let field = this.props.field
+        let maxLength = optional(this.props.maxLength, "");
 
         return (
             <input
                 type="text"
-                className="form-control input-sm"
                 id={field.property}
+                className="form-control input-sm"
                 data-property={field.property}
                 placeholder={field.placeholder}
                 value={optional(this.props.model.get(field.property), "")}
-                onKeyDown={this.onKeyDown.bind(this)}
-                onChange={this.onValueChange.bind(this)} />
+                onChange={this.onValueChange.bind(this)}
+                maxLength={maxLength}/>
+        )
+    }
+}
+
+export class Text extends Control {
+    render() {
+        let field = this.props.field
+        let maxLength = optional(this.props.maxLength, "");
+        let icon = optional(field.icon, null);
+        let style = {};
+        if (icon != null)
+            style.paddingRight = "20px";
+
+        return (
+            <div className="input-group" style={{marginBottom: "0px"}}>
+                <input
+                    type="text"
+                    className="form-control input-sm"
+                    id={field.property}
+                    data-property={field.property}
+                    placeholder={field.placeholder}
+                    style={style}
+                    value={optional(this.props.model.get(field.property), "")}
+                    onChange={this.onValueChange.bind(this)}
+                    maxLength={maxLength}/>
+                {icon != null && <div className="input-group-addon m-t-7" style={{marginLeft: "-10px"}}>
+                    <span className={icon}/>
+                </div>}
+                <i className="form-group__bar"></i>
+            </div>
+
         )
     }
 }
@@ -944,7 +1110,141 @@ export class TextArea extends Control {
                 data-property={field.property}
                 placeholder={field.placeholder}
                 value={optional(this.props.model.get(field.property), "")}
-                onChange={this.onValueChange.bind(this)} />
+                onChange={this.onValueChange.bind(this)}/>
+        )
+    }
+}
+
+export class ReadOnlyTextArea extends Control {
+    render() {
+        let field = this.props.field
+        let style = {
+            height: optional(this.props.height, "150px")
+        }
+        return (
+            <textarea
+                style={style}
+                className="form-control"
+                id={field.property}
+                data-property={field.property}
+                placeholder={field.placeholder}
+                value={optional(this.props.model.get(field.property), "")}
+                disabled="disabled"
+                onChange={this.onValueChange.bind(this)}/>
+        )
+    }
+}
+
+export class CountdownReadonly extends Control {
+
+    constructor(props) {
+        super(props)
+        this.date = null;
+        this.timer = null;
+    }
+
+    componentDidMount() {
+        let field = this.props.field
+        let model = this.props.model
+        let formatter = optional(() => this.props.getValue, () => {
+            return v => v
+        });
+        this.date = optional(formatter(model.get(field.property), model), "")
+
+        this.timer = setInterval(() => {
+            this.forceUpdate();
+        }, 1000);
+    }
+
+    getValue() {
+        if (this.date != null) {
+            var ms = momentInstance()(this.date).diff(momentInstance()(new Date()));
+            var d = momentInstance().duration(ms);
+            return Math.floor(d.asHours()) + momentInstance().utc(ms).format(":mm:ss");
+
+        }
+        return "";
+
+
+    }
+
+    componentWillUnmount() {
+        if (this.timer != null)
+            clearInterval(this.timer);
+    }
+
+    render() {
+        let field = this.props.field
+
+
+        return (
+            <div className="fg-line">
+                <input
+                    disabled="disabled"
+                    readOnly="readOnly"
+                    type="text"
+                    className="form-control input-sm"
+                    id={field.property}
+                    data-property={field.property}
+                    placeholder={field.placeholder}
+                    value={this.getValue()}
+                    onChange={this.onValueChange.bind(this)}/>
+            </div>
+        )
+    }
+}
+
+export const BUTTON_COLOR_RED = "btn-danger";
+export const BUTTON_COLOR_BLUE = "btn-primary";
+export const BUTTON_COLOR_SUCCESS = "btn-success";
+export const BUTTON_COLOR_WHITE = "btn-default";
+export const BUTTON_COLOR_ORANGE = "btn-orange";
+
+
+export class MultiButton extends React.Component {
+    render() {
+        let model = this.props.model
+
+        let buttons = _.map(_.filter(this.props.buttons, b => _.isFunction(b.isVisible) ? b.isVisible(model) : true), b => {
+                let iconClass = "zmdi " + b.icon;
+                let classname = "btn waves-effect " + optional(b.color, BUTTON_COLOR_WHITE);
+                let text = b.text;
+                return <a key={b.property + Math.random()} style={{marginRight: "10px", color: "white", cursor: "pointer"}}
+                          onClick={b.click.bind(this, model)}
+                          className={classname}><i className={iconClass}/> {text} </a>
+            }
+        );
+
+        return (
+            <div>
+                {buttons}
+            </div>
+        )
+    }
+}
+
+
+export class ReadOnlySimpleText extends Control {
+
+    getText() {
+        let field = this.props.field
+        let model = this.props.model
+        let formatter = optional(() => this.props.formatter, () => {
+            return v => v
+        })
+        return optional(formatter(model.get(field.property), model), "")
+    }
+
+
+    render() {
+        let field = this.props.field
+        let style = {
+            color: "#9E9E9E",
+            fontSize: "12px"
+        }
+
+        return (
+            <span style={style}>{this.getText()}</span>
         )
     }
 }
@@ -954,13 +1254,22 @@ export class ReadOnlyText extends Control {
     getText() {
         let field = this.props.field
         let model = this.props.model
-        let formatter = optional(() => this.props.formatter, () => { return v => v })
-        return optional(formatter(model.get(field.property)), "")
+        let formatter = optional(() => this.props.formatter, () => {
+            return v => v
+        })
+        return optional(formatter(model.get(field.property), this.props.model), "")
     }
 
     render() {
         let field = this.props.field
-
+        let showIcon = optional(this.props.showIcon, true)
+        let className = "form-control input-sm";
+        if (_.isFunction(this.props.getClassName)) {
+            className = this.props.getClassName(this.props.model);
+        }
+        if (_.isFunction(this.props.getExtraClassName)) {
+            className = className + " " + this.props.getExtraClassName(this.props.model);
+        }
         return (
 
             <div className="input-group m-b-0">
@@ -969,53 +1278,33 @@ export class ReadOnlyText extends Control {
                     disabled="disabled"
                     readOnly="readOnly"
                     type="text"
-                    className="form-control input-sm"
+                    className={className}
                     id={field.property}
                     data-property={field.property}
                     placeholder={field.placeholder}
                     value={this.getText()}
-                    onChange={this.onValueChange.bind(this)} />
+                    onChange={this.onValueChange.bind(this)}/>
 
-                <div className="input-icon-container">
+                {showIcon && <div className="input-icon-container">
                     <i className="zmdi zmdi-lock zmdi-hc-fw"/>
-                </div>
+                </div>}
+
             </div>
         )
-    }
-}
-
-export default class AutogeneratedCode extends ReadOnlyText {
-    getText() {
-        let model = this.props.model
-        let id = model.get("id")
-        if (_.isEmpty(id)) {
-            return M("autogenerated")
-        } else {
-            return super.getText()
-        }
     }
 }
 
 export class Color extends Control {
 
     componentDidMount() {
-        let self = this
         let field = this.props.field
         let model = this.props.model
         let me = ReactDOM.findDOMNode(this)
         let input = $(me).find("#" + field.property)
-
-        $(me).find(".color-picker").colorpicker({
-            format: optional(this.props.format, "rgba")
+        $(me).find(".color-picker").farbtastic(v => {
+            model.set(field.property, v)
+            this.forceUpdate()
         })
-
-        $(me).on('change', '.color-picker', function () {
-            $(this).next('.color-picker__preview').css('backgroundColor', $(this).val());
-
-            model.set(field.property, $(this).val())
-            self.forceUpdate()
-        });
-
     }
 
     render() {
@@ -1025,18 +1314,25 @@ export class Color extends Control {
 
         return (
             <div className="cp-container">
-                <div className="input-group">
-                    <input
-                        type="text"
-                        className="form-control color-picker"
-                        id={field.property}
-                        data-property={field.property}
-                        placeholder={field.placeholder}
-                        value={optional(this.props.model.get(field.property), "")}
-                        onChange={this.onValueChange.bind(this)} />
+                <div className="">
+                    <div className="dropdown">
+                        <input
+                            type="text"
+                            className="form-control cp-value"
+                            data-toggle="dropdown"
+                            aria-expanded="false"
+                            id={field.property}
+                            data-property={field.property}
+                            placeholder={field.placeholder}
+                            value={optional(this.props.model.get(field.property), "")}
+                            onChange={this.onValueChange.bind(this)}/>
 
-                    <i className="color-picker__preview" style={colorStyle}/>
-                    <i className="form-group__bar"/>
+                        <div className="dropdown-menu">
+                            <div className="color-picker" data-cp-default="#000000"></div>
+                        </div>
+
+                        <i className="cp-value" style={colorStyle}/>
+                    </div>
                 </div>
             </div>
         )
@@ -1044,9 +1340,39 @@ export class Color extends Control {
 }
 
 export class Spacer extends Control {
+
+    getContent() {
+        if (_.isFunction(this.props.formatter)) {
+            let model = this.props.model;
+            return this.props.formatter(model);
+        }
+        if (this.props.content) {
+            return this.props.content;
+        }
+        return null;
+    }
+
+    onClick() {
+        if (_.isFunction(this.props.onClick))
+            this.props.onClick()
+    }
+
     render() {
+        let defaultTheme = parseBoolean(optional(this.props.defaultTheme, true));
+        let className = (defaultTheme) ? "form-spacer-control" : "";
+        if (this.props.className) {
+            className += " " + this.props.className;
+        }
+        let content = this.getContent();
+        let showBorderBottom = optional(this.props.showBorderBottom, false);
+        //<div className={((defaultTheme) ? "form-spacer-control" : "")}>
         return (
-            <div className="form-spacer-control"></div>
+            <div className={className}>
+                {content &&
+                <div onClick={this.onClick.bind(this)}>{content}</div>}
+                {showBorderBottom &&
+                <hr style={{width: "100%"}}></hr>}
+            </div>
         )
     }
 }
@@ -1054,91 +1380,81 @@ export class Spacer extends Control {
 export class Mail extends Control {
     render() {
         let field = this.props.field
-        let placeholder = optional(field.placeholder, M("enterMail"))
+
         return (
             <input
                 type="email"
                 className="form-control input-sm"
                 id={field.property}
                 data-property={field.property}
-                placeholder={placeholder}
+                placeholder={field.placeholder}
                 value={optional(this.props.model.get(field.property), "")}
-                onChange={this.onValueChange.bind(this)} />
+                onChange={this.onValueChange.bind(this)}/>
         )
     }
 }
 
 //https://flatpickr.js.org/options/
-export class DateTime extends LabelPropertyGenerationControl {
-    constructor(props) {
-        super(props)
-        this.initialized = false
-    }
+export class DateTime extends Control {
 
     getDefaultFormat() {
         return "d/m/Y";
     }
 
-    getFormat() {
-        return this.props.format ? this.props.format : this.getDefaultFormat() 
+    componentDidMount() {
+
     }
 
-    componentDidMount() {
+    componentWillUpdate(props, state) {
         this.setData()
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        let field = this.props.field;
-        let oldValue = prevProps.model.get(field.property)
-        let newValue = this.props.model.get(field.property)
-        
-        if (newValue != null && !this.initialized || oldValue != newValue) {
-            this.setData();
-        }
-    }
-    
     onDateChanged(value) {
         let field = this.props.field;
         let model = this.props.model;
-        model.set(field.property, value)
+        let date = value?  getDateFromString(value).valueOf() : null
+        model.set(field.property, date)
+
+        if (date) {
+            if (optional(this.props.putLabelInModel, false))
+                model.set(field.property +  HIDDEN_FILTER_LABEL, formatDate(new Date(date)))
+        }
+
     }
 
-    setData(){
+    setData() {
         let options = {
+            //TODO: default locale dalle impo
             locale: this.props.locale || getLanguage(),
-            dateFormat: this.getFormat(),
+            dateFormat: this.props.format ? this.props.format : this.getDefaultFormat()
         };
-        
+
         let minDate = this.props.getMinDate && this.props.getMinDate(this.props.model);
         let maxDate = this.props.getMaxDate && this.props.getMaxDate(this.props.model);
         let disabledDates = this.props.getDisabledDates && this.props.getDisabledDates(this.props.model);
 
-        if(minDate) {
+        if (minDate) {
             options["minDate"] = minDate
         }
 
-        if(maxDate) {
+        if (maxDate) {
             options["maxDate"] = maxDate
         }
 
-        if(disabledDates) {
+        if (disabledDates) {
             options["disabledDates"] = disabledDates
         }
 
         let me = ReactDOM.findDOMNode(this);
         let value = this.getItemValue();
 
-        if (value){
-            options["defaultDate"] = value
-            this.initialized = true
-        }
-            
-        options["onChange"] = (selectedDates, dateStr, instance) => {
-            let date = flatpickr.parseDate(dateStr, options.dateFormat)
-            this.setLabelProperty(moment(date.getTime()).format(M("dateFormat")))
-            this.onDateChanged(date.getTime())
-        };
 
+        if (value)
+            options["defaultDate"] = value
+
+        options["onChange"] = (selectedDates, dateStr, instance) => {
+            this.onDateChanged(dateStr)
+        }
         $(me).find("#" + this.getItemId()).flatpickr(options);
     }
 
@@ -1161,37 +1477,32 @@ export class DateTime extends LabelPropertyGenerationControl {
     getItemPlaceHolder() {
         return this.props.field.placeholder;
     }
+
     isDisabled() {
-        return _.isFunction(this.props.isDisabled) ?  this.props.isDisabled(this.props.model) : false
+        return _.isFunction(this.props.isDisabled) ? this.props.isDisabled(this.props.model) : false
     }
 
     render() {
         let disabled = this.isDisabled();
 
         return (
-            <div className="input-group" style={{marginBottom: "0px"}}
-                style={this.state.focus ? InputFocusStyle : InputStyle}
-                onFocus={this.onFocus.bind(this)}
-                onBlur={this.onBlur.bind(this)}
-            >
+            <div className="input-group" style={{marginBottom: "0px"}}>
                 <input
                     style={{paddingLeft: "0px"}}
                     disabled={disabled}
                     type="text"
                     className="form-control input-sm"
-                    style={this.state.focus ? InputDateFocusStyle : InputDateStyle}
                     id={this.getItemId()}
                     data-property={this.getItemProperty()}
-                    placeholder={this.getItemPlaceHolder()} 
-                    
-                />
+                    placeholder={this.getItemPlaceHolder()}/>
                 <div className="input-group-addon">
-                    <span className="zmdi zmdi-calendar" />
+                    <span className="zmdi zmdi-calendar"/>
                 </div>
             </div>
         )
     }
 }
+
 
 export class YesNo extends Control {
     onValueChange(e) {
@@ -1221,51 +1532,25 @@ export class YesNo extends Control {
 
     render() {
         const field = this.props.field
-        const yesText = optional(this.props.yesText, "Yes")
-        const noText = optional(this.props.noText, "No")
+        const yesText = optional(this.props.yesText, M("yes"))
+        const noText = optional(this.props.noText, M("no"))
         const yesId = `__yesno-${field.property}-yes`
         const noId = `__yesno-${field.property}-no`
+        const className = "yesno " + (this.props.className || "");
         return (
-            <div className="yesno">
-            <div className="radio radio--inline">
-                <input id={yesId} type="radio" name={field.property} value="true" checked={optional(this.props.model.get(field.property), false)} onChange={this.onValueChange.bind(this)} />
-                <label htmlFor={yesId} className="radio__label">{yesText}</label>
-            </div>
-            <div className="radio radio--inline">
-                <input id={noId} type="radio" name={field.property} value="false" checked={!(optional(this.props.model.get(field.property), false))} onChange={this.onValueChange.bind(this)} />
-                <label htmlFor={noId} className="radio__label">{noText}</label>
-            </div>
-        </div>
-        )
-    }
-}
-
-
-export class Check extends Control {
-    onValueChange(e) {
-        let value = e.target.checked
-        let model = this.props.model
-        let field = this.props.field
-        model.set(field.property, value)
-        this.forceUpdate()
-    }
-
-    render() {
-        let field = this.props.field
-        let content = _.isFunction(field.htmlContent) ? field.htmlContent() : field.placeholder
-        
-        return (
-            <div className="checkbox">
-                <input
-                    type="checkbox"
-                    name={field.property}
-                    id={field.property}
-                    data-property={field.property}
-                    checked={optional(this.props.model.get(field.property), false)}
-                    onChange={this.onValueChange.bind(this)} />
-                <label className="checkbox__label" htmlFor={field.property}>
-                    {content}
-                </label>
+            <div className={className}>
+                <div className="radio radio--inline">
+                    <input id={yesId} type="radio" name={field.property} value="true"
+                           checked={optional(this.props.model.get(field.property), false)}
+                           onChange={this.onValueChange.bind(this)}/>
+                    <label htmlFor={yesId} className="radio__label">{yesText}</label>
+                </div>
+                <div className="radio radio--inline">
+                    <input id={noId} type="radio" name={field.property} value="false"
+                           checked={!(optional(this.props.model.get(field.property), false))}
+                           onChange={this.onValueChange.bind(this)}/>
+                    <label htmlFor={noId} className="radio__label">{noText}</label>
+                </div>
             </div>
         )
     }
@@ -1293,7 +1578,7 @@ export class Switch extends Control {
                     id={field.property}
                     data-property={field.property}
                     checked={optional(this.props.model.get(field.property), false)}
-                    onChange={this.onValueChange.bind(this)} />
+                    onChange={this.onValueChange.bind(this)}/>
 
                 <label htmlFor={field.property} className="ts-helper"></label>
                 <label htmlFor={field.property} className="ts-label">{field.placeholder}</label>
@@ -1308,6 +1593,11 @@ export class Number extends Control {
 
         this.setState({})
     }
+
+    // getMinValue() {
+    //     return _.isFunction(this.props.getMinValue) ? this.props.getMinValue(this.props.model) : 0;
+    // }
+
 
     onValueChange(e) {
         let value = e.target.value
@@ -1328,7 +1618,7 @@ export class Number extends Control {
 
     render() {
         let field = this.props.field
-        let placeholder = optional(field.placeholder, M("enterNumber"))
+
         return (
             <input
                 ref="text"
@@ -1336,178 +1626,15 @@ export class Number extends Control {
                 className="form-control input-sm"
                 id={field.property}
                 data-property={field.property}
-                placeholder={placeholder}
+                placeholder={field.placeholder}
                 value={optional(this.props.model.get(field.property), "")}
                 onChange={this.onValueChange.bind(this)}/>
         )
     }
 }
 
-export class Autocomplete extends LabelPropertyGenerationControl {
 
-    constructor(props) {
-        super(props)
-
-        this.entity = this.props.entity
-        if (_.isEmpty(this.entity)) {
-            throw new Error("Please specify entity of autocomplete")
-        }
-
-        this.query = this.props.query || query.create()
-        this.query.rowsPerPage = 50
-        this.query.page = 1
-
-        const baseQuery = this.props.baseQuery
-        let finalQuery = this.query
-        if (baseQuery) {
-            finalQuery = query.merge(this.query, baseQuery);
-            this.query = finalQuery
-        }
-
-        this.select2Element = null
-    }
-
-    getUrl() {
-        return config.get("values.entities.url") + "/" + this.entity
-    }
-
-    componentDidMount() {
-        let me = ReactDOM.findDOMNode(this)
-        let model = this.props.model
-        let field = this.props.field
-        let self = this
-        let placeholder = optional(this.props.placeholder, M("typeForSearching"))
-        let valueInModel = model.get(field.property)
-
-        const modalParent = $(".modal-dialog").has(me)
-        const dropdownParent = modalParent.length > 0 ? $(modalParent).children() : $(document.body)
-        
-        this.select2Element = $(me).find("select").select2({
-            placeholder: placeholder,
-            allowClear: true,
-            language: "it",
-            dropdownParent: dropdownParent,
-            width: '100%',
-            ajax: {
-                url: self.getUrl(),
-                delay: 500,
-                minimumInputLength: 1,
-                cache: true,
-                transport: function (params, success, failure) {
-                    loadEntities(self.entity, params.data)
-                    .then(r => {
-                        success(r.value)
-                    }).catch(e => {
-                        failure(e)
-                    })
-                },
-                data: function (params) {
-                    self.query.setKeyword(params.term)
-                    self.query.setPage(params.page || 1)
-                    return self.query;
-                },
-                processResults: function (data) {
-                    return {
-                        results: _.map(data, i => {
-                            return {
-                                id: i.value,
-                                text: i.label
-                            }
-                        }),
-                        pagination: {
-                            more: data.length > 0
-                        }
-                    };
-                },
-            }
-
-        })
-        .on('select2:select', function (e) {
-            var data = e.params.data;
-            console.log(data);
-
-            self.onValueChange(data)
-        });
-
-
-        if (valueInModel){
-            this.setInitialValue(valueInModel)
-        }
-    }
-
-    setInitialValue(value) {
-        let self = this
-
-        getEntity(this.entity, value)
-            .then(r => {
-                let data = r.value
-
-                 // create the option and append to Select2
-                self.label = data.label
-                var option = new Option(data.label, data.id, true, true);
-                self.select2Element.append(option).trigger('change');
-
-                // manually trigger the `select2:select` event
-                self.select2Element.trigger({
-                    type: 'select2:select',
-                    params: {
-                        data: data
-                    }
-                });
-
-            }).catch(e => {
-                throw new Error(e);
-            })
-    }
-
-    onValueChange(data) {
-        if (!data){
-            data = {}
-        }
-
-        let value = data.id
-        let label = data.text
-        let model = this.props.model
-        let field = this.props.field
-        let valueInModel = model.get(field.property)
-
-        if (!_.isEmpty(valueInModel) && !this.props.allowNull && _.isEmpty(value)) {
-            console.log("Value is already present")
-        }else {
-            model.set(field.property, value)
-            this.setLabelProperty(label)
-        }
-
-        if (_.isFunction(this.props.performOnChange)) {
-            this.props.performOnChange(this.props.model, value);
-        }
-
-        this.forceUpdate()
-    }
-
-    render() {
-        let model = this.props.model
-        let field = this.props.field
-        let multiple = optional(this.props.multiple, false)
-        let value = optional(model.get(field.property), multiple ? [] : "")
-        let nullText = optional(this.props.nullText, M("none"))
-
-        return (
-            <div className="fg-line">
-                <select
-                    id={field.property}
-                    ref="select"
-                    className="form-control"
-                    data-property={field.property}
-                    defaultValue={value}
-                    multiple={multiple}>
-                </select>
-            </div>
-        )
-    }
-}
-
-export class Select extends LabelPropertyGenerationControl {
+export class Select extends Control {
 
     constructor(props) {
         super(props)
@@ -1522,15 +1649,6 @@ export class Select extends LabelPropertyGenerationControl {
         let value = $(e.target).val()
         let model = this.props.model
         let field = this.props.field
-        let label = ""
-
-        if (e) {
-            let index = e.nativeEvent.target.selectedIndex;
-            label = e.nativeEvent.target[index].text;
-        }else {
-            let me = ReactDOM.findDOMNode(this);
-            label = $(me).find("select option:first").text()
-        }
 
         if (multiple) {
             if (value == null) {
@@ -1539,8 +1657,10 @@ export class Select extends LabelPropertyGenerationControl {
         }
 
         model.set(field.property, value)
-        this.setLabelProperty(label)
-        
+
+        if (optional(this.props.putLabelInModel, false))
+            model.set(field.property +  HIDDEN_FILTER_LABEL, this.generateValueLabel(value))
+
         this.forceUpdate()
     }
 
@@ -1562,6 +1682,7 @@ export class Select extends LabelPropertyGenerationControl {
                 $(me).removeClass("fg-toggled")
             })
 
+        let self = this;
         $(me).find("select")
             .selectpicker({
                 liveSearch: optional(this.props.searchEnabled, false)
@@ -1578,9 +1699,20 @@ export class Select extends LabelPropertyGenerationControl {
 
                     model.untrackChanges()
                     model.set(field.property, value)
+                    if (optional(self.props.putLabelInModel, false))
+                        model.set(field.property + HIDDEN_FILTER_LABEL, self.generateValueLabel(value))
                     model.trackChanges()
                 }
             })
+    }
+
+    generateValueLabel(value) {
+        try {
+            let label = this.getSingleItemLabel(this.props.datasource.data.rows.filter(o => o.id === value || o.value === value)[0])
+            return label;
+        } catch (e) {
+            return value
+        }
     }
 
     componentDidUpdate() {
@@ -1610,12 +1742,16 @@ export class Select extends LabelPropertyGenerationControl {
         let model = this.props.model
         let field = this.props.field
         let datasource = this.props.datasource
-        let options = optional(() => datasource.data.rows, []).map(o => <option key={this.getSingleItemValue(o)}
-                                                                                value={this.getSingleItemValue(o)}>{this.getSingleItemLabel(o)}</option>)
+        let options = optional(() => datasource.data.rows, []).map(o =>
+            <option
+                key={this.getSingleItemValue(o)}
+                value={this.getSingleItemValue(o)}>{
+                this.getSingleItemLabel(o)}
+            </option>)
         let multiple = optional(this.props.multiple, false)
 
         return (
-            <div className="fg-line mb-3">
+            <div className="fg-line">
                 <select
                     id={field.property}
                     className="form-control"
@@ -1642,7 +1778,8 @@ export class Lookup extends Control {
 
         this.datasource = this.props.datasource || datasource.create()
         this.query = this.props.query || query.create()
-        
+        this.entityPrefixUrl = isSuperuser() ? "entities/" : "settings/";
+
         this.__dataSourceOnChange = (data) => {
             this.forceUpdate()
         }
@@ -1654,34 +1791,16 @@ export class Lookup extends Control {
         }
     }
 
-    openEntity(e) {
-        e.stopPropagation()
-
-        let enabled = optional(parseBoolean(this.props.enable), true)
-        if (!enabled){
-            return;
-        }
-
-        let model = this.props.model
-        let field = this.props.field
-        let current = optional(model.get(field.property), [])
-
-        if (!_.isEmpty(current)) {
-            ui.navigate("/entities/"+this.props.entity+"/" + current.id, true)
-        }
-    }
-
-
     componentDidMount() {
         this.datasource.on("change", this.__dataSourceOnChange)
         this.query.on("change", this.__queryChange)
 
         let me = ReactDOM.findDOMNode(this)
         $(me).find(".selection-row")
-            .mouseenter(function() {
+            .mouseenter(function () {
                 $(this).find(".action").stop().fadeIn(250)
             })
-            .mouseleave(function() {
+            .mouseleave(function () {
                 $(this).find(".action").stop().fadeOut(250)
             })
             .find(".action").hide()
@@ -1731,7 +1850,7 @@ export class Lookup extends Control {
         let selection = optional(grid.getSelection(), [])
         let mode = this.checkedMode()
         let result = null
-        if (mode == "single") {
+        if (mode == "single") {
             if (selection.length == 0) {
                 return
             }
@@ -1762,7 +1881,7 @@ export class Lookup extends Control {
         e.stopPropagation()
 
         let mode = this.checkedMode()
-        if (mode == "single") {
+        if (mode == "single") {
             this.removeAll()
         } else if (mode == "multiple") {
             this.removeSelection()
@@ -1810,7 +1929,7 @@ export class Lookup extends Control {
         let model = this.props.model
         let field = this.props.field
         let v = null
-        if (mode == "single") {
+        if (mode == "single") {
             v = null
         } else if (mode == "multiple") {
             v = []
@@ -1887,84 +2006,117 @@ export class Lookup extends Control {
         }
     }
 
+    openEntity(e) {
+        e.stopPropagation()
+
+        let enabled = optional(parseBoolean(this.props.enable), true)
+        if (!enabled) {
+            return;
+        }
+
+        let model = this.props.model
+        let field = this.props.field
+        let current = optional(model.get(field.property), [])
+
+        if (!_.isEmpty(current)) {
+            ui.navigate(this.entityPrefixUrl + this.props.entity + "/" + current.id, true)
+        }
+    }
+
+    createEntity(e) {
+        e.stopPropagation()
+        ui.navigate(this.entityPrefixUrl + this.props.entity + "/new", true)
+    }
+
+
     render() {
         let mode = this.checkedMode()
         let model = this.props.model
         let field = this.props.field
         let rows = model.get(field.property) || []
-        let selectionGrid = mode == "multiple" ? _.assign({}, this.props.selectionGrid, {columns: _.union(this.props.selectionGrid.columns, [{
-            cell: ActionsCell,
-            tdClassName: "grid-actions",
-            actions: [
-                {icon: "zmdi zmdi-delete", action: (row) => this.removeRow(row)}
-            ]
-        }])}) : null
-        let addClassName
-        if (mode == "single") {
-            addClassName = "zmdi zmdi-more"
-        } else if (mode == "multiple") {
-            addClassName = "zmdi zmdi-plus"
-        }
+        let selectionGrid = mode == "multiple" ? _.assign({}, this.props.selectionGrid, {
+            columns: _.union(this.props.selectionGrid.columns, [{
+                cell: ActionsCell,
+                tdClassName: "grid-actions",
+                actions: [
+                    {icon: "zmdi zmdi-delete", action: (row) => this.removeRow(row)}
+                ]
+            }])
+        }) : null
+        let addClassName = "zmdi zmdi-more"
 
-        let openEntity = optional(this.props.openEntity, true) && mode == "single" && !_.isEmpty(this.props.entity)
+
+        let openEntity = mode == "single" && !_.isEmpty(this.props.entity) && rows.length !== 0 && optional(this.props.openEntity, hasPermission([this.props.entity + ":edit"]))
+        let createEntity = !_.isEmpty(this.props.entity) && optional(this.props.openEntity, hasPermission([this.props.entity + ":new"]))
+
 
         return (
             <div className="fg-line" tabIndex="0">
-                <div className="lookup">
+                <div className="lookup" style={{marginBottom: "0px"}}>
                     <div className="lookup-header" onClick={this.showEntities.bind(this)}>
                         <div className="actions">
-                            <a href="javascript:;" className="actions__item" title={M("remove")} onClick={this.remove.bind(this)}><i className="zmdi zmdi-close" /></a>
-                            <a href="javascript:;" className="actions__item" title={M("add")} onClick={this.showEntities.bind(this)}><i className={addClassName} /></a>
-                            {openEntity && <a href="javascript:;" className="actions__item m-r-0" title={M("openEntity")} onClick={this.openEntity.bind(this)}><i className="zmdi zmdi-open-in-new" /></a>}
+                            <a href="javascript:;" className="actions__item" title={M("remove")}
+                               onClick={this.remove.bind(this)}><i className="zmdi zmdi-close"/></a>
+                            <a href="javascript:;" className="actions__item" title={M("add")}
+                               onClick={this.showEntities.bind(this)}><i className={addClassName}/></a>
+                            {openEntity &&
+                            <a href="javascript:;" className="actions__item m-r-0" title={M("openEntity")}
+                               onClick={this.openEntity.bind(this)}><i className="zmdi zmdi-open-in-new"/></a>}
+                            {createEntity &&
+                            <a href="javascript:;" className="actions__item m-r-0" title={M("createEntity")}
+                               onClick={this.createEntity.bind(this)}><i className="zmdi zmdi-plus"/></a>}
+
                         </div>
                         <span className="lookup-current-value">{this.getHeaderText()}</span>
                         <div className="clearfix"></div>
                     </div>
 
                     {mode == "multiple" &&
-                        <Grid
-                            ref="selectionGrid"
-                            descriptor={selectionGrid}
-                            data={resultToGridData({rows: rows, totalRows: rows.length})}
-                            showInCard="false"
-                            quickSearchEnabled="false"
-                            headerVisible="false"
-                            footerVisible="false"
-                            summaryVisible="false"
-                            noResultsVisible="false"
-                            paginationEnabled="false"
-                            filtersVisible="false"
-                            tableClassName="table table-condensed table-hover"
-                            onKeyDown={this.onGridKeyDown.bind(this)}
-                        />
+                    <Grid
+                        ref="selectionGrid"
+                        descriptor={selectionGrid}
+                        data={resultToGridData({rows: rows, totalRows: rows.length})}
+                        showInCard="false"
+                        quickSearchEnabled="false"
+                        headerVisible="false"
+                        footerVisible="false"
+                        summaryVisible="false"
+                        noResultsVisible="false"
+                        paginationEnabled="false"
+                        tableClassName="table table-condensed table-hover"
+                        onKeyDown={this.onGridKeyDown.bind(this)}
+                    />
                     }
                 </div>
 
-                <div className="lookup-grid modal fade" id="myModal" tabIndex="-1" role="dialog" aria-labelledby="myModalLabel">
+                <div className="lookup-grid modal fade" id="myModal" tabIndex="-1" role="dialog"
+                     aria-labelledby="myModalLabel">
                     <div className="modal-dialog modal-lg" role="document">
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title" id="myModalLabel">{field.label}</h5>
                             </div>
                             <div className="modal-body">
-                                <Grid 
-                                    ref="searchGrid" 
+                                <Grid
+                                    ref="searchGrid"
                                     descriptor={this.props.popupGrid}
                                     data={resultToGridData(this.datasource.data)}
                                     query={this.props.query}
-                                    showInCard="false" 
+                                    showInCard="false"
                                     quickSearchEnabled="true"
                                     footerVisible="true"
+                                    selectWithCheck="true"
                                     summaryVisible="true"
                                     paginationEnabled="true"
-                                    filtersVisible="false"
-                                    tableClassName="table table-condensed table-striped table-hover"
+                                    tableClassName="table table-condensed table-hover"
                                     onRowDoubleClick={this.select.bind(this)}
                                 />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-link" onClick={this.select.bind(this)}>{M("ok")}</button>
-                                <button type="button" className="btn btn-link" data-dismiss="modal">{M("cancel")}</button>
+                                <button type="button" className="btn btn-link ok-button"
+                                        onClick={this.select.bind(this)}>{M("ok")}</button>
+                                <button type="button" className="btn btn-link"
+                                        data-dismiss="modal">{M("cancel")}</button>
                             </div>
                         </div>
                     </div>
@@ -1981,7 +2133,7 @@ export class File extends Control {
         this.state = {filename: null}
     }
 
-    onFileSelected(e) {
+    onFileSelected(e) {
         let model = this.props.model
         let field = this.props.field
         let file = e.target.files[0]
@@ -2021,21 +2173,24 @@ export class File extends Control {
                     {!hasValue ?
                         <div>
                             <div className="actions pull-right">
-                                <a title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i className="zmdi zmdi-search" /></a>
+                                <a href="javascript:;" title={M("search")} onClick={this.search.bind(this)}
+                                   className="m-r-0"><i className="zmdi zmdi-search"/></a>
                             </div>
                             <span className="placeholder">{field.placeholder}</span>
                         </div>
-                    : 
+                        :
                         <div>
                             <div className="actions pull-right">
-                                <a title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i className="zmdi zmdi-close" /></a>
+                                <a href="javascript:;" title={M("remove")} onClick={this.remove.bind(this)}
+                                   className="m-r-0"><i className="zmdi zmdi-close"/></a>
                             </div>
-                            <span className="input-file-name"><span className="zmdi zmdi-file"></span> {this.state.filename}</span>
+                            <span className="input-file-name"><span
+                                className="zmdi zmdi-file"></span> {this.state.filename}</span>
                         </div>
                     }
                 </div>
 
-                <input type="file" accept={field.accept} onChange={this.onFileSelected.bind(this)} />
+                <input type="file" accept={field.accept} onChange={this.onFileSelected.bind(this)}/>
             </div>
         )
     }
@@ -2046,7 +2201,7 @@ export class Image extends Control {
         super(props)
     }
 
-    onFileSelected(e) {
+    onFileSelected(e) {
         let model = this.props.model
         let field = this.props.field
         let file = e.target.files[0]
@@ -2104,15 +2259,18 @@ export class Image extends Control {
                     {!_.isEmpty(imageData) ?
                         <div className="input-image-container">
                             <div className="actions">
-                                <a onClick={this.delete.bind(this)} className="delete-button"><i className="zmdi zmdi-close"></i></a>
+                                <a href="javascript:;" onClick={this.delete.bind(this)} className="delete-button"><i
+                                    className="zmdi zmdi-close"></i></a>
                             </div>
-                            <div className="input-image-img" style={_.assign(imgStyle, {"backgroundImage": `url("${imageData}")`})}></div>
+                            <div className="input-image"
+                                 style={_.assign(imgStyle, {"backgroundImage": `url("${imageData}")`})}></div>
                         </div>
-                    :
-                        <div className="input-image-img" style={_.assign(imgStyle, {"backgroundImage": `url("resources/images/noimage.png")`})}></div>
+                        :
+                        <div className="input-image"
+                             style={_.assign(imgStyle, {"backgroundImage": `url("resources/images/noimage.png")`})}></div>
                     }
                 </div>
-                <input type="file" accept={accept} onChange={this.onFileSelected.bind(this)} />
+                <input type="file" accept={accept} onChange={this.onFileSelected.bind(this)}/>
             </div>
         )
     }
@@ -2170,7 +2328,7 @@ export class Gallery extends Control {
     createSingleImageComponent(imageData) {
         this.counter++;
 
-        return <SingleImage key={this.field.property+ "_" + this.counter}
+        return <SingleImage key={this.field.property + "_" + this.counter}
                             imageData={imageData}
                             onImageAdd={this.onImageAdd.bind(this)}
                             onImageDelete={this.onImageDelete.bind(this)}
@@ -2251,8 +2409,8 @@ export class MultiFile extends Control {
     createSingleFileComponent(data) {
         this.counter++;
 
-        return <SingleFile key={this.field.property+ "_" + this.counter}
-                           file={data? data : {}}
+        return <SingleFile key={this.field.property + "_" + this.counter}
+                           file={data ? data : {}}
                            fileTypes={this.fileTypes}
                            onAdd={this.onAdd.bind(this)}
                            onDelete={this.onDelete.bind(this)}
@@ -2357,7 +2515,7 @@ export class SingleImage extends Control {
                     {!_.isEmpty(imageData) ?
                         <div className="input-image-container">
                             <div className="actions">
-                                <a onClick={this.delete.bind(this)} className="delete-button"><i
+                                <a href="javascript:;" onClick={this.delete.bind(this)} className="delete-button"><i
                                     className="zmdi zmdi-close"></i></a>
                             </div>
                             <div className="input-image"
@@ -2452,7 +2610,7 @@ export class SingleFile extends Control {
         let value = optional(this.state.data, null)
         //let fileName = optional(this.state.filename, null)
         let hasValue = !_.isEmpty(value)
-        let readOnly =  optional(this.props.readOnly, false)
+        let readOnly = optional(this.props.readOnly, false)
         let canDownload = hasValue && !value.includes("base64");
         let component = null
         let fileTypes = optional(this.props.fileTypes, "*")
@@ -2461,7 +2619,7 @@ export class SingleFile extends Control {
             component = (
                 <div>
                     <div className="actions pull-right">
-                        <a title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i
+                        <a href="javascript:;" title={M("search")} onClick={this.search.bind(this)} className="m-r-0"><i
                             className="zmdi zmdi-search"/></a>
                     </div>
                     <span className="placeholder"></span>
@@ -2471,9 +2629,10 @@ export class SingleFile extends Control {
             component = (
                 <div>
                     <div className="actions pull-right">
-                        {readOnly && <a title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i
+                        {readOnly &&
+                        <a href="javascript:;" title={M("remove")} onClick={this.remove.bind(this)} className="m-r-0"><i
                             className="zmdi zmdi-close"/></a>}
-                        {canDownload && <a title={M("download")} onClick={this.download.bind(this)}
+                        {canDownload && <a href="javascript:;" title={M("download")} onClick={this.download.bind(this)}
                                            className="m-r-0"><i className="zmdi zmdi-download"/></a>}
                     </div>
                     <span className="input-file-name"><span className="zmdi zmdi-file"/> {this.state.filename} </span>
@@ -2492,6 +2651,703 @@ export class SingleFile extends Control {
                 </div>
             </div>
 
+        )
+    }
+}
+
+export const MULTI_FILE_MODE_SINGLE = "multiFileSingle";
+export const MULTI_FILE_MODE_MULTIPLE = "multiFileMultiple";
+
+//Dropzone
+export class NewMultiFile extends Control {
+    constructor(props) {
+        super(props)
+        this.state = {files: []};
+        this.model = this.props.model;
+        this.field = this.props.field;
+        this.dropzone = null;
+        this.addRemoveLinks = this.props.addRemoveLinks;
+        this.maxFilesize = this.props.maxFilesize || null;
+        this.maxFiles = optional(this.props.maxFiles, null);
+        this.mode = this.props.mode || MULTI_FILE_MODE_MULTIPLE;
+        this.acceptedFiles = this.props.acceptedFiles || null;
+        this.disableInitOnModelLoad = this.props.disableInitOnModelLoad || false
+    }
+
+    isMultiple() {
+        return this.mode === MULTI_FILE_MODE_MULTIPLE;
+    }
+
+    initDropzone() {
+        if (this.dropzone != null)
+            this.dropzone.destroy();
+
+        $(ReactDOM.findDOMNode(this)).find("div#dropzone").html("")
+
+        this.dropzone = new Dropzone("div#dropzone", this.generateOptions());
+
+        //if multiple is an array else is an object
+        let value = optional(this.model.get(this.field.property), null);
+        let files = [];
+        if (this.isMultiple() && value != null) {
+            files.push(value)
+        } else {
+            if (value)
+                files = value ? value : files;
+        }
+        _.assign(this.state, {files: files});
+
+        if (_.isFunction(this.props.onValueChange)) {
+            if (this.isMultiple())
+                this.props.onValueChange(files, this.model);
+            else
+                this.props.onValueChange(value, this.model);
+        }
+
+        let filesToAdd = _.isArray(files) ? files : [files]
+
+        var filtered = _.filter(filesToAdd, f => f != null)
+        if (filtered) {
+            _.forEach(filtered, f => {
+                this.dropzone.options.addedfile.call(this.dropzone, f)
+                this.dropzone.emit("success", f);
+                this.dropzone.emit("complete", f);
+                this.dropzone.options.maxFiles--;
+            })
+        }
+
+        // files.forEach((f) =>    this.dropzone.options.addedfile.call(this.dropzone, f))
+        this.forceUpdate()
+    }
+
+    componentDidMount() {
+
+        if (!this.disableInitOnModelLoad) {
+            this.model.once("load", () => {
+                this.initDropzone();
+            })
+        } else {
+            this.dropzone = new Dropzone("div#dropzone", this.generateOptions());
+        }
+
+
+    }
+
+    componentWillUnmount() {
+        if (this.dropzone != null)
+            this.dropzone.destroy();
+    }
+
+    generateOptions() {
+        let options = {};
+        options.url = config.get("upload.url");
+
+        options.headers = {
+            'token': getSessionToken()
+        }
+
+        options.timeout = 180000
+
+        if (this.acceptedFiles) {
+            options.acceptedFiles = this.acceptedFiles;
+        }
+        if (this.maxFiles) {
+            options.maxFiles = this.maxFiles;
+        }
+        if (this.maxFilesize) {
+            options.maxFilesize = this.maxFilesize;
+        }
+
+        if (this.addRemoveLinks && _.isFunction(this.addRemoveLinks)) {
+            options.addRemoveLinks = this.addRemoveLinks(this.model);
+        }
+
+        options.dictRemoveFileConfirmation = M("areYouSure");
+
+        options.success = this.onAdd.bind(this)
+        options.error = this.onError.bind(this);
+        options.removedfile = this.onDelete.bind(this);
+        return options;
+    }
+
+    onError(file, errorMessage) {
+        this.dropzone.removeFile(file)
+        toast(errorMessage)
+
+    }
+
+    generateToken() {
+        return session.getSessionToken()
+    }
+
+    onAdd(file, uploadedFile) {
+        if ((uploadedFile == null || !uploadedFile.value) && !file.path) {
+            toast("Errore durante l'upload del file")
+
+        } else {
+            let files = optional(this.state.files, []);
+
+            let newFile = uploadedFile != null ? uploadedFile.value : file
+            newFile.size = file.size
+
+            if (!this.disableInitOnModelLoad) {
+                $(file.previewElement).click(() => {
+                    location.href = config.get("attachment.download") + "?path=" + newFile.path + "&filename=" + newFile.name + "&__TOKEN=" + encodeURIComponent(getSessionToken());
+                })
+
+                if (!_.any(files, i => i != null && i.data === newFile.data)) {
+                    files.push(newFile);
+                    _.assign(this.state, {files: files})
+
+                    this.model.set(this.field.property, (this.isMultiple()) ? files : newFile)
+                    if (_.isFunction(this.props.onValueChange)) {
+                        this.props.onValueChange(newFile, this.model);
+                    }
+
+                    this.forceUpdate()
+                    return true;
+                }
+            } else {
+                if (_.isFunction(this.props.onValueChange)) {
+                    this.props.onValueChange(newFile);
+                }
+                this.dropzone.removeAllFiles(true);
+            }
+            return false;
+        }
+
+    }
+
+    onDelete(toRemove) {
+
+        if (!this.disableInitOnModelLoad) {
+            let files = optional(this.state.files, []);
+            files = _.filter(files, i => i.data !== toRemove.data)
+            _.assign(this.state, {files: files})
+            this.model.set(this.field.property, this.isMultiple() ? files : null);
+            this.initDropzone()
+
+            if (_.isFunction(this.props.onValueChange)) {
+                this.props.onValueChange(null, this.model);
+            }
+        }
+
+
+    }
+
+    render() {
+        let files = optional(this.state.files, []);
+        let fields = [];
+        let actions = [];
+        let title = this.props.field != null ? optional(this.props.field.title, M("attachments")) : ""
+
+        if (files.length > 0) {
+            //_.forEach(files, (e) => {fields.push(this.createSingleFileComponent(e))})
+        }
+
+        if (this.filesNumber === null || (this.filesNumber !== null && files.length < this.filesNumber)) {
+            // fields.push(this.createSingleFileComponent())
+        }
+
+        let label = this.props.field != null ? this.props.field.label : ""
+
+        return (
+            <div>
+                {(label != "" || title != "" || actions.length > 0) &&
+                <HeaderBlock title={title} label={label} actions={actions}/>}
+                <div id="dropzone" className="dropzone">
+                </div>
+
+            </div>
+
+
+        )
+    }
+}
+
+export class FieldContainer extends React.Component {
+
+}
+
+export class Column extends FieldContainer {
+
+    constructor(props) {
+        super(props);
+    }
+
+    componentDidMount() {
+        let me = ReactDOM.findDOMNode(this);
+        $(me).parent().css("margin-bottom", "0").css("padding-bottom", "10px").css("padding-top", "20px");
+    }
+
+    setValueInModel(model, property, value) {
+        let i;
+        property = property.split('.');
+        for (i = 0; i < property.length - 1; i++) {
+            if (i === 0) {
+                model = model.data[property[i]];
+            } else if (model != null) {
+                model = model[property[i]];
+            }
+        }
+        if (model != null)
+            model[property[i]] = value;
+    }
+
+    render() {
+
+        let className = optional(this.props.className, "")
+        className += " " + optional(this.props.size, "col-sm-12")
+        // let size = _.isFunction(this.props.field.getSize) ? this.props.field..getSize(this.props.model) : optional(this.props.size, "col-sm-12")
+        let style = {};
+        if (this.props.field.noLateralPadding) {
+            style.paddingLeft = "0";
+            style.paddingRight = "0";
+        }
+
+        let defaultFieldCass = Field;
+        let fields = this.props.field.fields;
+        let descriptor = this.props.descriptor;
+
+        let fieldsComponents = !_.isEmpty(fields) && _.filter(fields, f => isFieldVisible(f, descriptor, this.props.model)).map((f, i) => React.createElement(optional(() => f.component, () => defaultFieldCass), {
+            key: f.property + "-" + i,
+            model: this.props.model,
+            field: f,
+            descriptor: descriptor,
+            onCancel: this.props.onCancel
+        }));
+
+        return (
+
+            <div className={className} style={style}>
+                {!_.isEmpty(this.props.title) &&
+                <h4>{this.props.title}</h4>
+                }
+                <div className="row">
+                    {fieldsComponents}
+                </div>
+            </div>
+
+        );
+
+    }
+
+}
+
+export class Button extends React.Component {
+    onClick() {
+        if (_.isFunction(this.props.onClick)) {
+            this.props.onClick(this.props.model)
+        }
+    }
+
+    render() {
+
+        let disabled = _.isFunction(this.props.isDisabled) ? this.props.isDisabled(this.props.model) : false
+
+        return (
+            <button onClick={this.onClick.bind(this)} type="button" className={this.props.className + " btn"}
+                    style={{fontWeight: 700, width: "100%"}} disabled={disabled}>{this.props.text}</button>
+        )
+    }
+}
+
+export class AdvancedTextEditor extends Control {
+    constructor(props) {
+        super(props);
+        this.emptyEditorValue = "<p><br></p>";
+        this.formatProperty = safeGet(props.field, "formatProperty", "format");
+        this.formatDatasource = TextFormatDatasource;
+        this.format = props.format != null ? props.format : TextFormat.ADVANCED_TEXT.value;
+        this.state = {
+            showFormatModal: false,
+            submit: false,
+        };
+        this.randomId = Math.floor(Math.random() * (9999 - 1));
+    }
+
+    getEditorDOMElement() {
+        return $(ReactDOM.findDOMNode(this)).find(".jodit_container");
+    }
+
+    getEditorTarget() {
+        return this.editor;
+    }
+
+    componentDidMount() {
+        this.initEditor();
+        notificationCenter.addObserver("refreshEditor:clicked", this.reloadEditor.bind(this))
+    }
+
+    generateButtons() {
+        let buttons = this.props.readOnlyForm ? [] : [
+            // this.getModeButton()
+        ];
+
+        if (this.format === TextFormat.ADVANCED_TEXT.value) {
+            buttons.push(
+                {name: "bold", icon: "bold", tooltip: M("bold")},
+                {name: "strikethrough", icon: "strikethrough", tooltip: M("strikethrough")},
+                {name: "underline", icon: "underline", tooltip: M("underline")},
+                {name: "italic", icon: "italic", tooltip: M("italic")},
+                {name: "|", icon: "|"},
+                // {name: "superscript", icon: "superscript", tooltip: M("superscript")},
+                // {name: "subscript", icon: "subscript", tooltip: M("subscript")},
+                // {name: "|", icon: "|"},
+                {name: "ul", icon: "ul", tooltip: M("ul")},
+                {name: "ol", icon: "ol", tooltip: M("ol")},
+                {name: "outdent", icon: "outdent", tooltip: M("outdent")},
+                {name: "indent", icon: "indent", tooltip: M("indent")},
+                {name: "|", icon: "|"},
+                // {name: "font", icon: "font", tooltip: M("font")},
+                // {name: "fontsize", icon: "fontsize", tooltip: M("fontsize")},
+                {name: "brush", icon: "brush", tooltip: M("brush")},
+                // {name: "paragraph", icon: "paragraph", tooltip: M("paragraph")},
+                {name: "align", icon: "left", tooltip: M("align")},
+                {name: "hr", icon: "hr", tooltip: M("hr")},
+                {name: "|", icon: "|"},
+                // {name: "symbol", icon: "omega", tooltip: M("symbol")},
+                // {name: "table", icon: "table", tooltip: M("table")},
+                // {name: "|", icon: "|"},
+                {name: "link", icon: "link", tooltip: M("link")},
+                // {name: "image", icon: "image", tooltip: M("image")},
+                // {name: "video", icon: "video", tooltip: M("video")},
+            );
+        }
+
+        return buttons;
+    }
+
+    initEditor() {
+        let self = this;
+        let placeholder = _.isFunction(this.props.field.getPlaceholder) ? this.props.field.getPlaceholder(this.props.model) : optional(this.props.field.placeholder, this.props.placeholder);
+        if (placeholder == null)
+            placeholder = M("writeCommentHere");
+        let buttons = this.generateButtons();
+
+        let mode = this.format === TextFormat.HTML.value ? Jodit.MODE_SOURCE : Jodit.MODE_WYSIWYG;
+
+        let askBeforePasteHTML = this.format !== TextFormat.SIMPLE_TEXT.value;
+
+        let height = optional(this.props.field.height, 200);
+        let minHeight = optional(this.props.field.minHeight, 165);
+
+        Jodit.defaultOptions.controls.table.data.classList = [];
+
+        let popupImages = [
+            {name: 'bin'},
+            {name: 'pencil'},
+            {name: 'valign'},
+            {name: 'left'},
+        ];
+
+        this.editor = new Jodit(this.getComponentId(), {
+            "askBeforePasteHTML": askBeforePasteHTML,
+            "askBeforePasteFromWord": askBeforePasteHTML,
+            "defaultActionOnPaste": askBeforePasteHTML ? "" : "insert_clear_html",
+            "readonly": optional(this.props.readOnlyForm, false),
+            "toolbarSticky": false,
+            "toolbarAdaptive": false,
+            "height": height,
+            "minHeight": minHeight,
+            "buttons": buttons,
+            "defaultMode": mode,
+            "placeholder": placeholder,
+            "allowResizeY": false,
+            "spellcheck": false,
+            "showCharsCounter": false,
+            "showWordsCounter": false,
+            "showXPathInStatusbar": false,
+            "addNewLineOnDBLClick ": false,
+            "enter": 'br',
+            "addNewLine": false,
+            "limitChars": optional(this.props.maxLength, null),
+            "events": {
+                getIcon: function (name, control, clearName) {
+                    switch (clearName) {
+                        case 'textFormat':
+                            return '<div style="width: auto !important; padding-left: 10px; padding-right: 10px;"><span style="font-size:14px;">' + self.getFormatName() + '</span></div>';
+                    }
+                },
+                change: function (newValue, oldValue) {
+                    self.onChange(newValue);
+                },
+                afterOpenPasteDialog: (dialog, msg, title, callback) => {
+                    $(".jodit_dialog_header-title").text(M("pasteAsHtml"));
+                    $(".jodit_promt").text(M("pasteAsHtmlDescription"));
+                    $($(".jodit_button span")[0]).text(M("keep"));
+                    $($(".jodit_button span")[1]).text(M("insertAsText"));
+                    $($(".jodit_button span")[2]).text(M("insertOnlyText"));
+                    $($(".jodit_button span")[3]).text(M("cancel"));
+                },
+            },
+        });
+
+        //post init ops
+        let editorDOMElement = this.getEditorDOMElement(); //summernote doesn't even assign custom placeholder to codeview mode
+
+        // editorDOMElement.find(".jodit_toolbar_btn-textFormat").css({"position":"absolute", "right":"0", "padding-right": "10px"});
+        editorDOMElement.find(".jodit_toolbar").addClass("min-height-32");
+        let value = this.getValue();
+        if (value)
+            this.updateEditor(value);//value update
+    }
+
+    getValue() {
+        return optional(this.props.content, null)
+    }
+
+    onChange(newValue) {
+        if (_.isFunction(this.props.onChange))
+            this.props.onChange(newValue)
+    }
+
+    getFormatName() {
+        switch (this.format) {
+            case TextFormat.SIMPLE_TEXT.value:
+                return TextFormat.SIMPLE_TEXT.label;
+            case TextFormat.ADVANCED_TEXT.value:
+                return TextFormat.ADVANCED_TEXT.label;
+            case TextFormat.HTML.value:
+                return TextFormat.HTML.label;
+        }
+    }
+
+    // getValue() {
+    //     let model = this.model;
+    //     let property = this.props.field.property;
+    //     let value = model.get(property);
+    //     value = this.format !== TextFormat.HTML.value ? objectUtils.textToHtml(value) : value
+    //     return value;
+    // }
+
+    // setValue(editorContents) {
+    //     let value = editorContents === this.emptyEditorValue ? null : editorContents;
+    //     if (_.isFunction(this.props.onChange))
+    //         this.props.onChange(value);
+    //     else {
+    //         let props = this.props;
+    //         let model = props.model;
+    //         let property = props.field.property;
+    //
+    //         if (this.format === TextFormat.SIMPLE_TEXT.value) {
+    //             value = objectUtils.stripHtml(value);
+    //         }
+    //         model.set(property, value);
+    //     }
+    // }
+
+    generateComponentId() {
+        return this.props.field.property + "_editor_" + this.randomId;
+    }
+
+    getComponentId() {
+        return "#" + this.props.field.property + "_editor_" + this.randomId;
+    }
+
+    updateEditor(modelValue) {
+        let target = this.getEditorTarget();
+        let editorDOMElement = this.getEditorDOMElement();
+        let editorValue = target.getEditorValue();
+        //if necessary, strip code of HTML tags. Otherwise handle updates
+        if (modelValue != null && !_.isArray(modelValue) && modelValue !== editorValue) {
+            target.setEditorValue(modelValue);
+        }
+
+        target.setMode(this.format === TextFormat.HTML.value ? Jodit.MODE_SOURCE : Jodit.MODE_WYSIWYG);
+    }
+
+    destroyEditor() {
+        let target = this.getEditorTarget();
+        if (target)
+            target.destruct();
+    }
+
+    reloadEditor() {
+        try {
+            this.destroyEditor();
+            this.initEditor();
+        } catch (e) {
+
+        }
+    }
+
+    manageFormat(callback = null) {
+        let modelFormat = this.getFormat();
+        let currentFormat = this.format;
+        //se format non è presente o è un valore non valido inizializzo a default
+        if (
+            (_.isNull(modelFormat) || _.isUndefined(modelFormat) || _.isEmpty(modelFormat.toString())) ||
+            !_.contains(
+                _.map(this.formatDatasource.data.rows, r => r.value.toString()),
+                modelFormat.toString()
+            )
+        ) {
+            this.setFormat(TextFormat.SIMPLE_TEXT.value);
+        } else if (modelFormat !== currentFormat) { //se l'editor non è allineato al formato corrente
+            this.format = modelFormat;
+            this.reloadEditor();
+        } else {
+            //eseguo eventuali callback
+            if (_.isFunction(callback)) {
+                callback();
+            }
+        }
+    }
+
+    onHidden() {
+        if (this.state.submit) {
+            this.setState(
+                {
+                    submit: false,
+                    showFormatModal: false,
+                },
+                function () {
+                    this.setFormat(TextFormat.SIMPLE_TEXT.value);
+                }
+            );
+        } else {
+            this.setState(
+                {
+                    submit: false,
+                    showFormatModal: false,
+                }
+            )
+        }
+    }
+
+    hide(e) {
+        if (e != null)
+            e.preventDefault();
+        // $(ReactDOM.findDOMNode(this)).find('[role="dialog"]').modal("hide");
+        this.onHidden()
+    }
+
+    submit(e) {
+        if (e != null)
+            e.preventDefault();
+        this.setState({submit: true}, function () {
+            this.hide();
+        })
+    }
+
+    componentWillUnmount() {
+        notificationCenter.removeObserver("refreshEditor:clicked", this.reloadEditor.bind(this))
+        this.destroyEditor()
+    }
+
+    render() {
+        let id = this.generateComponentId();
+
+        return (
+            <div key={id} className="html-editor">
+                <div id={id}/>
+                {this.state.showFormatModal &&
+                <Dialog
+                    noPadding={true}
+                    backdrop={false}
+                    keyboard={false}
+                    headerHidden={true}
+                    footerHidden={true}
+                    className={"areYouSureModal modal-p-0"}
+                    onHidden={this.onHidden.bind(this)}
+                >
+                    <div className="p-l-30 p-r-30 p-b-30">
+                        <div className="p-t-30 ff-roboto fs-18 fw-medium color-primary-active">
+                            <div className="wrapper-zmdi-24 m-r-10"><i className="zmdi zmdi-alert-circle-o"></i></div>
+                            {M("areYouSure")}
+                        </div>
+                        <div className="p-t-30">
+                            {M("allFormattingWillBeLost")}
+                        </div>
+                    </div>
+                    <div className="wizard-footer bradius-b p-30">
+                        <div className="row">
+                            <div className="col-sm-6 text-center text-left-sm">
+                                <button
+                                    className="btn btn-primary-invert btn-w-medium waves-effect"
+                                    onClick={this.hide.bind(this)}
+                                >
+                                    {M("cancel")}
+                                </button>
+                            </div>
+                            <div className="m-b-16 visible-xs-block"/>
+                            <div className="col-sm-6 text-center text-right-sm">
+                                <button
+                                    className="btn btn-primary btn-w-medium btn-shadow waves-effect"
+                                    onClick={this.submit.bind(this)}>
+                                    {M("confirm")}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Dialog>
+                }
+            </div>
+        )
+    }
+}
+
+export class NewComment extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    onChange(newValue) {
+        if (_.isFunction(this.props.onChange))
+            this.props.onChange(newValue)
+    }
+
+    toggleEditor() {
+        if (_.isFunction(this.props.toggleEditor))
+            this.props.toggleEditor();
+    }
+
+    onSave(e) {
+        if (e != null) {
+            e.preventDefault();
+        }
+        if (_.isFunction(this.props.onSave))
+            this.props.onSave()
+    }
+
+    onCancel(e) {
+        if (e != null) {
+            e.preventDefault();
+        }
+        if (_.isFunction(this.props.onCancel))
+            this.props.onCancel()
+    }
+
+    isDisabled() {
+        return optional(this.props.loading, false)
+    }
+
+    render() {
+        let field = this.props.field;
+        let showCancelButton = optional(this.props.showCancelButton, false);
+        let showSaveButton = optional(this.props.showSaveButton, true);
+        return (
+            <div style={{width: "100%"}}>
+                {!this.props.showEditor ?
+                    <div className="fake-comment-input" onClick={this.toggleEditor.bind(this)}>
+                        <span>{M("writeCommentHere")}</span>
+                    </div>
+                    :
+                    <div className="edit-comment-container">
+                        <AdvancedTextEditor content={this.props.content} field={field}
+                                            onChange={this.onChange.bind(this)}/>
+                        {showSaveButton && <button key="save" disabled={this.isDisabled()} type="button"
+                                                   className={"float-right btn-link btn waves-effect ok-button m-t-8 m-l-16"}
+                                                   onClick={this.onSave.bind(this)}>{M("save")}</button>
+                        }
+                        {showCancelButton && <button key="cancel" type="button"
+                                                     className={"float-right btn btn-outline-grey btn-link waves-effect m-r-0 m-t-8 "}
+                                                     onClick={this.onCancel.bind(this)}>{M("cancel")}</button>
+                        }
+                    </div>
+                }
+            </div>
         )
     }
 }
